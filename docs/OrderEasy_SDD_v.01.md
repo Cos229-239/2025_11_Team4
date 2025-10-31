@@ -93,6 +93,8 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
   ]
 }
 
+---
+
 ## 10) “Live prep” timeline (engagement)
 - **Trigger** — when an order enters `IN_PREP`.
 - **Display** — time-based stepper (e.g., `Gathering → Chopping → Sautéing → Plating`).
