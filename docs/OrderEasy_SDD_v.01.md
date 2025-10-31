@@ -81,21 +81,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 9) API (MVP)
-**GET** `/menu` → categories + available items.  
-
-**POST** `/orders` → create order  
-```json
-{
-  "tableCode": "A12",
-  "items": [
-    { "menuItemId": 1, "qty": 2, "notes": "no onions" }
-  ]
-}
-
----
-
-## 10) “Live prep” timeline (engagement)
+## 9) “Live prep” timeline (engagement)
 - **Trigger** — when an order enters `IN_PREP`.
 - **Display** — time-based stepper (e.g., `Gathering → Chopping → Sautéing → Plating`).
 - **Timing** — split the estimated `IN_PREP` duration (e.g., ~20 min) evenly across steps.
@@ -104,7 +90,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 11) POS Strategy (companion first)
+## 10) POS Strategy (companion first)
 - **MVP** — staff may manually key orders into the restaurant’s POS (common practice with platform orders).
 - **Outbound** — emit a webhook on `order.created` with order payload for future adapters.
 - **Adapters** — one adapter per POS (e.g., Toast, Square, Clover); translate OrderEasy → POS schema.
@@ -113,7 +99,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 12) Hosting & Environments
+## 11) Hosting & Environments
 - **Host** — Railway (free tier).
 - **Environments** — `dev` (shared testing), `main` (demo).
 - **Runtime** — Node 20 for API; static build for Web on CDN edge.
@@ -122,7 +108,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 13) Branching & Naming (proposal)
+## 12) Branching & Naming (proposal)
 - **Permanent branches** — `main` (protected, demo-ready), `dev` (integration).
 - **Lanes** — `frontend/`, `backend/`, `ui/` prefixes for short-lived feature branches.
 - **Pattern** — `<lane>/<task>-<item>` (e.g., `frontend/feat-menu-page`).
@@ -131,7 +117,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 14) CI/CD (light)
+## 13) CI/CD (light)
 - **Trigger** — on PRs targeting `dev` or `main`.
 - **Build** — if `web/` or `api/` exist: `npm ci` → `npm run build --if-present`.
 - **Checks** — fail fast on build errors; surface logs in PR.
@@ -139,7 +125,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 15) Risks & Mitigations
+## 14) Risks & Mitigations
 - **Scope creep** — enforce MVP checklist; backlog everything else.
 - **Adoption** — keep kitchen UI minimal; add shortcuts/tooltips after feedback.
 - **Network** — Socket.IO auto-reconnect; add manual “Refresh status”.
@@ -148,7 +134,7 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 16) Definition of Done (DoD)
+## 15) Definition of Done (DoD)
 - **Functionality** — all MVP items implemented and tested.
 - **Accessibility** — keyboard nav, focus states, contrast, `aria-live` announcements verified.
 - **Quality** — CI green; lint clean; no console errors in happy path.
@@ -156,13 +142,13 @@ OrderEasy lets dine-in guests scan a table QR, view the menu, place orders, and 
 
 ---
 
-## 17) Milestones (2 sprints)
+## 16) Milestones (2 sprints)
 - **Sprint 1 (backbone)** — 
 - **Sprint 2 (polish)** — 
 
 ---
 
-## 18) Glossary (quick refs)
+## 17) Glossary (quick refs)
 - **86** — temporarily mark an item unavailable.
 - **Socket** — a persistent connection for instant updates (via WebSockets).
 - **MVP** — smallest usable version we can demo and learn from.
