@@ -1,0 +1,7 @@
+/* App-specific styles - cleaned up from Vite defaults */
+
+#root {
+  /* Allow full-width, full-height content */
+  width: 100%;
+  min-height: 100vh;
+}

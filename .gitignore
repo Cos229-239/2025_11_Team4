@@ -1,25 +1,5 @@
-# Node / JS
 node_modules/
+.env
 dist/
 build/
-coverage/
-npm-debug.log*
-yarn-error.log*
-pnpm-lock.yaml
-
-# Env
-.env
-web/.env
-.env.local
-.env.*.local
-# OS / IDE
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# Logs
-*.log
-
-# Misc
-*.local
+backend/schema.sql
