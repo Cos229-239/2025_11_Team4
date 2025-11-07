@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const net = require('net');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
@@ -82,13 +83,47 @@ app.use((req, res) => {
 const { errorHandler } = require('./middleware/error.middleware');
 app.use(errorHandler);
 
-// Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-});
+// Start server with automatic port fallback
+const PREFERRED_PORT = parseInt(process.env.PORT, 10) || 5000;
+
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const tester = net
+      .createServer()
+      .once('error', () => resolve(false))
+      .once('listening', () => tester.once('close', () => resolve(true)).close())
+      .listen(port, '0.0.0.0');
+  });
+}
+
+async function findAvailablePort(start, attempts = 20) {
+  let port = start;
+  for (let i = 0; i < attempts; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    const free = await isPortFree(port);
+    if (free) return port;
+    port += 1;
+  }
+  // Fallback to ephemeral port if all tried are busy
+  return 0;
+}
+
+(async () => {
+  const chosenPort = await findAvailablePort(PREFERRED_PORT);
+  if (chosenPort !== PREFERRED_PORT) {
+    console.warn(`⚠️  Port ${PREFERRED_PORT} is in use. Falling back to ${chosenPort || 'an ephemeral port'}.`);
+  }
+  server.listen(chosenPort, () => {
+    const address = server.address();
+    const boundPort = typeof address === 'object' && address ? address.port : chosenPort;
+    console.log(`Server running on port ${boundPort}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    if (boundPort !== PREFERRED_PORT) {
+      console.log(`Note: Frontend requests must target http://localhost:${boundPort}. Set VITE_API_URL accordingly.`);
+    }
+  });
+})();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
