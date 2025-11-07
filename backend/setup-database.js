@@ -2,10 +2,27 @@
 // This script will create all necessary tables and seed data
 // Run with: node setup-database.js
 
-const { Pool } = require('pg');
+const pg = require('pg');
+const { Pool } = pg;
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+
+// Decide if SSL should be enabled (Supabase/remote DBs)
+const wantsSSL = (() => {
+  const dbSsl = String(process.env.DB_SSL || '').toLowerCase();
+  if (dbSsl === 'true' || dbSsl === '1' || dbSsl === 'require') return true;
+  const url = process.env.DATABASE_URL || '';
+  return url !== '' && !/localhost|127\.0\.0\.1/i.test(url);
+})();
+
+// In dev, relax TLS verification for self-signed chains
+if (wantsSSL && (process.env.NODE_ENV !== 'production')) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = process.env.NODE_TLS_REJECT_UNAUTHORIZED || '0';
+}
+if (wantsSSL) {
+  pg.defaults.ssl = { rejectUnauthorized: false };
+}
 
 async function setupDatabase() {
   console.log('🗄️  Setting up OrderEasy Database...\n');
@@ -13,13 +30,17 @@ async function setupDatabase() {
 
   // Create connection pool
   const poolConfig = process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL }
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
+      }
     : {
         host: process.env.DB_HOST || 'localhost',
         port: process.env.DB_PORT || 5432,
         database: process.env.DB_NAME || 'ordereasy',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD,
+        ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
       };
 
   const pool = new Pool(poolConfig);
