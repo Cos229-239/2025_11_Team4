@@ -85,6 +85,11 @@ const CartPage = () => {
     }
   };
 
+  const handleBrowseMenu = () => {
+  // Safe default: go to the restaurants listing
+  navigate('/restaurants');
+};
+
   // Handle direct quantity input
   const handleQuantityInput = (itemId, value) => {
     const quantity = parseInt(value);
@@ -151,7 +156,7 @@ const CartPage = () => {
             Add some delicious items from our menu to get started!
           </p>
           <button
-            onClick={() => navigate(`/menu/${tableId}`)}
+            onClick={handleBrowseMenu}
             className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30"
           >
             Browse Menu
