@@ -48,7 +48,7 @@ coverage/
 
 # Claude Code
 .claude/
-IMPROVEMENTS.md
+MOCK_DATA_REMOVAL.md
+ALIGNMENT_CHECK.md
 SECURITY.md
 Team 4 Project.pdf
-MOCK_DATA_REMOVAL.md
