@@ -25,6 +25,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiting
+const { apiLimiter, authLimiter, orderLimiter } = require('./middleware/rateLimiter');
+app.use('/api/', apiLimiter); // Apply general rate limiting to all API routes
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -53,14 +57,14 @@ const restaurantRoutes = require('./routes/restaurant.routes');
 const reservationRoutes = require('./routes/reservation.routes');
 
 app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderRoutes);
+app.use('/api/orders', orderLimiter, orderRoutes); // Apply order-specific rate limiting
 app.use('/api/tables', tableRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/reservations', reservationRoutes);
 const userRoutes = require('./routes/user.routes');
 app.use('/api/users', userRoutes);
 const authRoutes = require('./routes/auth.routes');
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Apply strict rate limiting to auth routes
 
 // Make io available in routes for Socket.IO events
 app.set('io', io);
