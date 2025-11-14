@@ -1,5 +1,21 @@
-node_modules/
-.env
-dist/
-build/
+# --- FRONTEND ---
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/.DS_Store
 
+# --- BACKEND ---
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.local
+
+# --- GENERAL ---
+node_modules/
+dist/
+.env
+.env.local
+.vscode/
+.idea/
+.DS_Store
+*.log
