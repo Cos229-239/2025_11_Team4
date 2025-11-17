@@ -1,3 +1,6 @@
 // updated the webpage ux/ui to create a ideal flow for the actual customer (restaurant owner) to see because its equally important to see, ill later post a link
 // i cleaned up the mobile aspect of our project although i still am contemplating a few things that i want to discuss with our team
 // we have a blueprint of the client side of what i would like it to look like but we are awaiting deliberation amognst the team and ill update this as soon as we come up with a stronger plan.
+
+// ive finished the client side flow and ive fleshed out the process made it 100 interactable prototype in figma for clarity,
+// ive been learning front end since im going to be doing that all this week.
