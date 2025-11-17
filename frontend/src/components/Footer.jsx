@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 
@@ -47,37 +46,26 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#menu"
+                <Link
+                  to="/restaurants"
                   className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  Menu
-                </a>
+                  Restaurants
+                </Link>
               </li>
               <li>
-                <a
-                  href="#about"
+                <Link
+                  to="/about"
                   className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                   About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#contact"
-                  className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

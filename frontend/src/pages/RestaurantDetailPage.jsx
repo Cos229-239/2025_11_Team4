@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -46,7 +46,12 @@ const RestaurantDetailPage = () => {
   return (
     <div className="min-h-screen bg-dark-bg">
       <div className="container mx-auto px-4 py-6">
-        <button onClick={() => navigate(-1)} className="text-text-secondary hover:text-brand-orange mb-4">← Back</button>
+        <button
+          onClick={() => navigate('/restaurants')}
+          className="text-text-secondary hover:text-brand-orange mb-4"
+        >
+          Back to Restaurants
+        </button>
 
         <div className="bg-dark-card rounded-3xl border border-dark-surface overflow-hidden">
           {restaurant.image_url ? (
@@ -63,13 +68,33 @@ const RestaurantDetailPage = () => {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <button
-                onClick={() => navigate(`/restaurant/${id}/menu`)}
+                onClick={() =>
+                  navigate(`/restaurant/${id}/menu`, {
+                    state: {
+                      orderType: 'browse',
+                      restaurantId: id
+                    }
+                  })
+                }
                 className="bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-bold hover:bg-brand-lime/90"
               >
                 View Menu
               </button>
               <button
-                onClick={() => navigate(`/reserve/${id}`)}
+                onClick={() =>
+                  navigate(`/restaurant/${id}/menu`, {
+                    state: {
+                      orderType: 'takeout',
+                      restaurantId: id
+                    }
+                  })
+                }
+                className="bg-dark-surface text-text-primary px-6 py-3 rounded-full font-bold border border-dark-surface hover:border-brand-lime/70"
+              >
+                Order Takeout
+              </button>
+              <button
+                onClick={() => navigate(`/restaurant/${id}/reserve`)}
                 className="bg-brand-orange text-white px-6 py-3 rounded-full font-bold hover:bg-brand-orange/90"
               >
                 Reserve a Table
@@ -105,3 +130,4 @@ const RestaurantDetailPage = () => {
 };
 
 export default RestaurantDetailPage;
+

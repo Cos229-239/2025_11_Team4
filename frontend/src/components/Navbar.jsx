@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useUserAuth } from '../context/UserAuthContext';
@@ -12,7 +12,7 @@ import Logo from './Logo';
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { cartItemCount, tableId } = useCart();
+  const { cartItemCount } = useCart();
   const { token, user, logout } = useUserAuth ? useUserAuth() : { token: null };
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -69,11 +69,7 @@ const Navbar = () => {
   }, [isMenuOpen]);
 
   const handleCartClick = () => {
-    if (tableId) {
-      navigate(`/cart/${tableId}`);
-    } else {
-      navigate('/cart');
-    }
+    navigate('/cart');
   };
 
   // Don't show navbar on certain pages
@@ -127,18 +123,6 @@ const Navbar = () => {
               >
                 Restaurants
               </Link>
-              {false && tableId && (
-                <Link
-                  to={`/menu/${tableId}`}
-                  className={`font-medium transition-colors ${
-                    location.pathname.includes('/menu')
-                      ? 'text-brand-orange'
-                      : 'text-text-secondary hover:text-brand-orange'
-                  }`}
-                >
-                  Menu
-                </Link>
-              )}
               {/* Future: Orders link for logged in users */}
               {/* <Link
                 to="/orders"
@@ -336,9 +320,9 @@ const Navbar = () => {
             </Link> */}
 
             {/* Mobile Cart Link */}
-            {showCartButton && tableId && (
+            {showCartButton && (
               <Link
-                to={`/cart/${tableId}`}
+                to="/cart"
                 className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
                   location.pathname.includes('/cart')
                     ? 'bg-brand-orange text-white'

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useUserAuth } from '../context/UserAuthContext';
@@ -24,7 +23,7 @@ import {
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cartItemCount, tableId } = useCart();
+  const { cartItemCount } = useCart();
   const { token } = useUserAuth ? useUserAuth() : { token: null };
 
   // Don't show bottom nav on kitchen/admin/special pages
@@ -54,7 +53,7 @@ const BottomNav = () => {
     {
       id: 'cart',
       label: 'Cart',
-      path: tableId ? `/cart/${tableId}` : '/cart/1',
+      path: '/cart',
       icon: ShoppingCartIcon,
       iconSolid: ShoppingCartIconSolid,
       badge: cartItemCount > 0 ? cartItemCount : null
@@ -85,7 +84,7 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-brand-orange/20 shadow-2xl z-50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-dark-bg border-t border-brand-orange/20 shadow-2xl z-50 safe-area-bottom">
       <div className="flex items-center justify-around h-20 max-w-screen-xl mx-auto px-4">
         {navItems.map((item) => {
           const isActive = isItemActive(item);
@@ -99,7 +98,7 @@ const BottomNav = () => {
                 flex flex-col items-center justify-center
                 w-full h-full gap-1
                 transition-all duration-200
-                ${isActive ? 'text-brand-orange scale-110' : 'text-gray-500'}
+                ${isActive ? 'text-brand-orange scale-110' : 'text-text-secondary'}
                 hover:text-brand-orange
                 active:scale-95
               `}
@@ -119,7 +118,7 @@ const BottomNav = () => {
 
               <span className={`
                 text-[10px] font-semibold tracking-wide
-                ${isActive ? 'text-brand-orange' : 'text-gray-500'}
+                ${isActive ? 'text-brand-orange' : 'text-text-secondary'}
               `}>
                 {item.label}
               </span>

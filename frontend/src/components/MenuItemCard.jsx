@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 /**
  * MenuItemCard Component
@@ -31,7 +31,7 @@ const MenuItemCard = ({ item, onAddToCart }) => {
   };
 
   // Default fallback image with dark theme
-  const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%232a2a2a" width="400" height="300"/%3E%3Ctext fill="%23a0a0a0" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3E' + encodeURIComponent(item.name) + '%3C/text%3E%3C/svg%3E';
+  const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%233A3A3A" width="400" height="300"/%3E%3Ctext fill="%23736262" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3E' + encodeURIComponent(item.name) + '%3C/text%3E%3C/svg%3E';
 
   return (
     <div className="bg-dark-card rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:shadow-brand-orange/20 transition-all duration-300 transform hover:-translate-y-1 border border-dark-surface">
@@ -47,14 +47,14 @@ const MenuItemCard = ({ item, onAddToCart }) => {
         {/* Unavailable Overlay */}
         {!item.available && (
           <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center backdrop-blur-sm">
-            <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
+            <span className="bg-[#ef4444] text-white px-4 py-2 rounded-lg font-['Lora'] font-semibold shadow-lg" style={{ fontSize: '17px' }}>
               Unavailable
             </span>
           </div>
         )}
 
         {/* Category Badge */}
-        <div className="absolute top-3 right-3 bg-brand-orange/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
+        <div className="absolute top-3 right-3 bg-brand-orange/90 backdrop-blur-sm px-3 py-1 rounded-full font-['Lora'] font-bold text-white shadow-lg" style={{ fontSize: '12px' }}>
           {item.category}
         </div>
 
@@ -69,12 +69,12 @@ const MenuItemCard = ({ item, onAddToCart }) => {
       {/* Content Section */}
       <div className="p-5">
         {/* Name */}
-        <h3 className="text-lg font-bold text-text-primary mb-2 line-clamp-2">
+        <h3 className="font-['Playfair_Display'] font-bold text-text-primary mb-2 line-clamp-2" style={{ fontSize: '20px' }}>
           {item.name}
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-text-secondary mb-4 min-h-[3rem] line-clamp-3">
+        <p className="text-text-secondary font-['Lora'] mb-4 min-h-[3rem] line-clamp-3" style={{ fontSize: '14px' }}>
           {truncateDescription(item.description)}
         </p>
 
@@ -82,13 +82,14 @@ const MenuItemCard = ({ item, onAddToCart }) => {
         <button
           onClick={handleAddToCart}
           disabled={!item.available || isAdding}
-          className={`w-full py-3 px-4 rounded-xl font-bold transition-all duration-300 ${
+          className={`w-full py-3 px-4 rounded-xl font-['Lora'] font-bold transition-all duration-300 ${
             !item.available
               ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
               : isAdding
               ? 'bg-brand-lime text-dark-bg scale-95'
               : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-lg hover:shadow-brand-lime/30 active:scale-95'
           }`}
+          style={{ fontSize: '17px' }}
         >
           {isAdding ? (
             <span className="flex items-center justify-center">

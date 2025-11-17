@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -299,7 +299,8 @@ const RestaurantListPage = () => {
                 setSearchQuery('');
                 setActiveCategory('All');
               }}
-              className="bg-brand-lime text-dark-bg px-8 py-3 rounded-full font-bold hover:bg-brand-lime/90 transition-all"
+              className="bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-['Lora'] font-bold hover:bg-brand-lime/90 transition-all"
+              style={{ fontSize: '17px' }}
             >
               Clear Filters
             </button>

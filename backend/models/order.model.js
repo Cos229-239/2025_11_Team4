@@ -2,7 +2,18 @@ const db = require('../config/database');
 
 // Create new order with items (using transaction)
 const createOrder = async (orderData) => {
-  const { table_id, items, customer_notes } = orderData;
+  const {
+    table_id,
+    items,
+    customer_notes,
+    order_type = 'dine-in',
+    reservation_id = null,
+    scheduled_for = null,
+    payment_status = 'pending',
+    payment_method = null,
+    payment_intent_id = null,
+    payment_amount = null
+  } = orderData;
 
   // Get a client from the pool for transaction
   const client = await db.pool.connect();
@@ -30,12 +41,38 @@ const createOrder = async (orderData) => {
       }
     }
 
-    // Insert order
+    // Insert order with new payment and order type fields
     const orderResult = await client.query(
-      `INSERT INTO orders (table_id, total_amount, customer_notes, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())
-       RETURNING *`,
-      [table_id, 0, customer_notes || '', 'pending'] // Will update total_amount after calculating
+      `INSERT INTO orders (
+        table_id,
+        total_amount,
+        customer_notes,
+        status,
+        order_type,
+        reservation_id,
+        scheduled_for,
+        payment_status,
+        payment_method,
+        payment_intent_id,
+        payment_amount,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      RETURNING *`,
+      [
+        table_id,
+        0, // Will update total_amount after calculating
+        customer_notes || '',
+        'pending',
+        order_type,
+        reservation_id,
+        scheduled_for,
+        payment_status,
+        payment_method,
+        payment_intent_id,
+        payment_amount
+      ]
     );
 
     const order = orderResult.rows[0];
@@ -77,6 +114,14 @@ const createOrder = async (orderData) => {
     );
 
     order.total_amount = totalAmount;
+
+    // If this is a pre-order linked to a reservation, update the reservation
+    if (order_type === 'pre-order' && reservation_id) {
+      await client.query(
+        'UPDATE reservations SET has_pre_order = true WHERE id = $1',
+        [reservation_id]
+      );
+    }
 
     // Commit transaction
     await client.query('COMMIT');
@@ -130,7 +175,15 @@ const getAllOrders = async () => {
 const getOrderById = async (id) => {
   try {
     const orderResult = await db.query(
-      'SELECT * FROM orders WHERE id = $1',
+      `SELECT 
+         o.*,
+         t.table_number,
+         t.restaurant_id AS table_restaurant_id,
+         r.name AS restaurant_name
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       LEFT JOIN restaurants r ON t.restaurant_id = r.id
+       WHERE o.id = $1`,
       [id]
     );
 

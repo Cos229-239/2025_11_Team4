@@ -10,6 +10,13 @@ Create `frontend/.env`:
 VITE_API_URL=http://localhost:5000
 ```
 
+## Reservation Policy
+
+- Payment-first flow: reservations are created as `tentative` and expire if unpaid.
+- Cancellation/refund window for confirmed reservations is controlled by backend env `CANCELLATION_WINDOW_HOURS` (default 12 hours).
+- Within that window, cancelling a confirmed reservation is blocked and refunds are not allowed.
+- Tentative reservations can be cancelled any time before payment.
+
 ## Scripts
 
 - `npm install` — install deps

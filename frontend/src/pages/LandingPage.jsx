@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import {
@@ -56,7 +55,7 @@ const LandingPage = () => {
 
             {/* CTA Button */}
             <button
-              onClick={() => navigate('/scan-qr')}
+              onClick={() => navigate('/qr-check')}
               className="
                 w-full
                 bg-brand-orange text-white
@@ -68,7 +67,7 @@ const LandingPage = () => {
                 shadow-xl shadow-brand-orange/30 hover:shadow-brand-orange/50
               "
             >
-              Scan QR Code
+              Start Ordering
             </button>
           </div>
 
