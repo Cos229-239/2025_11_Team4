@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const http = require('http');
+const net = require('net');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
@@ -105,6 +106,7 @@ app.use((req, res) => {
 // Centralized error handler
 const { errorHandler } = require('./middleware/error.middleware');
 app.use(errorHandler);
+
 
 // Start server with dynamic port selection
 const PORT = process.env.PORT || 5000;
