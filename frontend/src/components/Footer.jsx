@@ -1,11 +1,9 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 
 /**
  * Footer Component
- * Restaurant information and useful links
- * Updated to match Team Vision dark theme design
+ * Platform information and useful links
  */
 const Footer = () => {
   const location = useLocation();
@@ -27,8 +25,8 @@ const Footer = () => {
               <Logo size="sm" />
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
-              Modern QR code ordering system for restaurants. Order from your
-              table, skip the wait, and enjoy your meal!
+              Multi restaurant reservation and dine in ordering platform.
+              Browse restaurants, reserve tables, and order seamlessly.
             </p>
           </div>
 
@@ -48,37 +46,26 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#menu"
+                <Link
+                  to="/restaurants"
                   className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  Menu
-                </a>
+                  Restaurants
+                </Link>
               </li>
               <li>
-                <a
-                  href="#about"
+                <Link
+                  to="/about"
                   className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                   About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#contact"
-                  className="text-sm hover:text-brand-orange transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -87,52 +74,6 @@ const Footer = () => {
           <div>
             <h3 className="text-text-primary font-semibold mb-4 text-lg">Contact Us</h3>
             <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <svg
-                  className="w-5 h-5 text-brand-orange mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <div className="text-sm">
-                  <p className="text-gray-400">123 Restaurant Street</p>
-                  <p className="text-gray-400">City, State 12345</p>
-                </div>
-              </li>
-              <li className="flex items-center gap-3">
-                <svg
-                  className="w-5 h-5 text-brand-orange flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-                <a
-                  href="tel:+1234567890"
-                  className="text-sm hover:text-brand-orange transition-colors"
-                >
-                  (123) 456-7890
-                </a>
-              </li>
               <li className="flex items-center gap-3">
                 <svg
                   className="w-5 h-5 text-brand-orange flex-shrink-0"
@@ -148,34 +89,36 @@ const Footer = () => {
                   />
                 </svg>
                 <a
-                  href="mailto:hello@ordereasy.com"
+                  href="mailto:support@ordereasy.com"
                   className="text-sm hover:text-brand-orange transition-colors"
                 >
-                  hello@ordereasy.com
+                  support@ordereasy.com
                 </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg
+                  className="w-5 h-5 text-brand-orange flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+                <span className="text-sm text-text-secondary">
+                  Available 24/7
+                </span>
               </li>
             </ul>
           </div>
 
-          {/* Hours & Social */}
+          {/* Social */}
           <div>
-            <h3 className="text-text-primary font-semibold mb-4 text-lg">Opening Hours</h3>
-            <ul className="space-y-2 mb-6">
-              <li className="flex justify-between text-sm">
-                <span className="text-text-secondary">Mon - Fri</span>
-                <span className="text-text-primary font-medium">11:00 AM - 10:00 PM</span>
-              </li>
-              <li className="flex justify-between text-sm">
-                <span className="text-text-secondary">Saturday</span>
-                <span className="text-text-primary font-medium">10:00 AM - 11:00 PM</span>
-              </li>
-              <li className="flex justify-between text-sm">
-                <span className="text-text-secondary">Sunday</span>
-                <span className="text-text-primary font-medium">10:00 AM - 9:00 PM</span>
-              </li>
-            </ul>
-
-            <h3 className="text-text-primary font-semibold mb-3 text-lg">Follow Us</h3>
+            <h3 className="text-text-primary font-semibold mb-4 text-lg">Follow Us</h3>
             <div className="flex gap-3">
               <a
                 href="https://facebook.com"

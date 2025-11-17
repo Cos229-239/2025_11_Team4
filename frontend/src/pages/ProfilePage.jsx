@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUserAuth } from '../context/UserAuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';

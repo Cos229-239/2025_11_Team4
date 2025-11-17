@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -14,7 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 /**
  * RestaurantListPage Component
  * Browse restaurants for delivery/takeout with search and filters
- * Team Vision Design with mock data
+ * Loads data from backend API
  */
 const RestaurantListPage = () => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const RestaurantListPage = () => {
   const [coords, setCoords] = useState(null);
   const [nearbyOnly, setNearbyOnly] = useState(false);
 
-  // Load restaurants from API
+  // Load geolocation
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -38,6 +38,7 @@ const RestaurantListPage = () => {
     }
   }, []);
 
+  // Fetch restaurants from API
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
@@ -56,7 +57,7 @@ const RestaurantListPage = () => {
           setRestaurantsApi(data.data);
         }
       } catch (e) {
-        // ignore, fallback to mock
+        console.error('Failed to load restaurants:', e);
       } finally {
         setApiLoaded(true);
       }
@@ -64,131 +65,8 @@ const RestaurantListPage = () => {
     fetchRestaurants();
   }, [coords, nearbyOnly]);
 
-  // Mock restaurant data
-  const mockRestaurants = [
-    {
-      id: 0,
-      name: "OrderEasy Restaurant",
-      description: "Your favorite local spot with fresh, made-to-order dishes",
-      cuisine: "American",
-      rating: 4.8,
-      deliveryTime: "15-25 min",
-      distance: "0.3 mi",
-      image: "🍽️",
-      source: "internal",
-      priceRange: "$$",
-      categories: ["American", "Burgers"]
-    },
-    {
-      id: 1,
-      name: "Pizza Paradise",
-      description: "Authentic wood-fired pizza with fresh ingredients",
-      cuisine: "Italian",
-      rating: 4.6,
-      deliveryTime: "25-35 min",
-      distance: "1.2 mi",
-      image: "🍕",
-      source: "external",
-      priceRange: "$$",
-      categories: ["Pizza", "Italian"]
-    },
-    {
-      id: 2,
-      name: "Burger Empire",
-      description: "Gourmet burgers and hand-cut fries",
-      cuisine: "American",
-      rating: 4.7,
-      deliveryTime: "20-30 min",
-      distance: "0.8 mi",
-      image: "🍔",
-      source: "external",
-      priceRange: "$$$",
-      categories: ["Burgers", "American"]
-    },
-    {
-      id: 3,
-      name: "Dragon Wok",
-      description: "Traditional Chinese cuisine with modern twists",
-      cuisine: "Chinese",
-      rating: 4.5,
-      deliveryTime: "30-40 min",
-      distance: "1.5 mi",
-      image: "🥡",
-      source: "external",
-      priceRange: "$$",
-      categories: ["Asian", "Chinese"]
-    },
-    {
-      id: 4,
-      name: "Sushi Supreme",
-      description: "Fresh sushi and Japanese specialties",
-      cuisine: "Japanese",
-      rating: 4.9,
-      deliveryTime: "25-35 min",
-      distance: "1.0 mi",
-      image: "🍣",
-      source: "external",
-      priceRange: "$$$",
-      categories: ["Asian", "Sushi"]
-    },
-    {
-      id: 5,
-      name: "Taco Fiesta",
-      description: "Authentic Mexican street food and tacos",
-      cuisine: "Mexican",
-      rating: 4.4,
-      deliveryTime: "20-30 min",
-      distance: "0.9 mi",
-      image: "🌮",
-      source: "external",
-      priceRange: "$",
-      categories: ["Mexican"]
-    },
-    {
-      id: 6,
-      name: "Mediterranean Grill",
-      description: "Fresh Mediterranean dishes and kebabs",
-      cuisine: "Mediterranean",
-      rating: 4.6,
-      deliveryTime: "25-35 min",
-      distance: "1.3 mi",
-      image: "🥙",
-      source: "external",
-      priceRange: "$$",
-      categories: ["Mediterranean"]
-    },
-    {
-      id: 7,
-      name: "Thai Spice",
-      description: "Spicy and flavorful Thai classics",
-      cuisine: "Thai",
-      rating: 4.7,
-      deliveryTime: "30-40 min",
-      distance: "1.8 mi",
-      image: "🍜",
-      source: "external",
-      priceRange: "$$",
-      categories: ["Asian", "Thai"]
-    }
-  ];
-
-  // Category options
-  const categories = [
-    'All',
-    'American',
-    'Asian',
-    'Burgers',
-    'Pizza',
-    'Italian',
-    'Mexican',
-    'Mediterranean',
-    'Sushi'
-  ];
-
-  // Filter restaurants based on search and category
-  // Prefer live restaurants if loaded; map to existing shape expected by UI
+  // Map API data to UI format
   const restaurantsData = useMemo(() => {
-    if (!apiLoaded || restaurantsApi.length === 0) return mockRestaurants;
     return restaurantsApi.map((r) => ({
       id: r.id,
       name: r.name,
@@ -198,10 +76,19 @@ const RestaurantListPage = () => {
       deliveryTime: '',
       distance: typeof r.distance_km === 'number' ? `${Number(r.distance_km).toFixed(1)} km` : '',
       image: '',
-      source: 'external',
+      source: 'api',
       priceRange: '$$'
     }));
-  }, [apiLoaded, restaurantsApi]);
+  }, [restaurantsApi]);
+
+  // Get unique cuisine types from restaurants for categories
+  const categories = useMemo(() => {
+    const cuisineSet = new Set(['All']);
+    restaurantsApi.forEach(r => {
+      if (r.cuisine_type) cuisineSet.add(r.cuisine_type);
+    });
+    return Array.from(cuisineSet);
+  }, [restaurantsApi]);
 
   const filteredRestaurants = useMemo(() => {
     let filtered = restaurantsData;
@@ -384,7 +271,18 @@ const RestaurantListPage = () => {
         )}
 
         {/* Restaurant Grid */}
-        {filteredRestaurants.length === 0 ? (
+        {!apiLoaded ? (
+          // Loading State
+          <div className="max-w-2xl mx-auto bg-dark-card rounded-3xl p-12 text-center border border-dark-surface">
+            <div className="text-7xl mb-4 animate-pulse">🍽️</div>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">
+              Loading Restaurants...
+            </h3>
+            <p className="text-text-secondary">
+              Please wait while we fetch the latest data
+            </p>
+          </div>
+        ) : filteredRestaurants.length === 0 ? (
           // Empty State
           <div className="max-w-2xl mx-auto bg-dark-card rounded-3xl p-12 text-center border border-dark-surface">
             <div className="text-7xl mb-4">🔍</div>
@@ -392,14 +290,17 @@ const RestaurantListPage = () => {
               No Restaurants Found
             </h3>
             <p className="text-text-secondary mb-6">
-              Try adjusting your search or filters
+              {restaurantsApi.length === 0
+                ? 'No restaurants available in the database. Please add some restaurants first.'
+                : 'Try adjusting your search or filters'}
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setActiveCategory('All');
               }}
-              className="bg-brand-lime text-dark-bg px-8 py-3 rounded-full font-bold hover:bg-brand-lime/90 transition-all"
+              className="bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-['Lora'] font-bold hover:bg-brand-lime/90 transition-all"
+              style={{ fontSize: '17px' }}
             >
               Clear Filters
             </button>
@@ -504,7 +405,6 @@ const RestaurantListPage = () => {
           </div>
         )}
 
-        {/* Info Notice removed: now using live data */}
       </div>
     </div>
   );

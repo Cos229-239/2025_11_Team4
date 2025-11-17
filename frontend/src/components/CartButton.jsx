@@ -1,5 +1,4 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 /**
@@ -9,7 +8,6 @@ import { useCart } from '../context/CartContext';
  */
 const CartButton = ({ position = 'bottom-right', className = '' }) => {
   const navigate = useNavigate();
-  const { tableId } = useParams();
   const { cartItemCount, cartTotal } = useCart();
 
   // Don't show button if no items in cart or if we're already on cart page
@@ -21,18 +19,7 @@ const CartButton = ({ position = 'bottom-right', className = '' }) => {
 
   // Handle navigation to cart
   const handleClick = () => {
-    if (tableId) {
-      navigate(`/cart/${tableId}`);
-    } else {
-      // If no tableId in URL, check if we have one in context/storage
-      const storedTableId = sessionStorage.getItem('ordereasy_table_id');
-      if (storedTableId) {
-        navigate(`/cart/${storedTableId}`);
-      } else {
-        // Fallback to a default or prompt user
-        navigate('/cart/0');
-      }
-    }
+    navigate('/cart');
   };
 
   // Position classes

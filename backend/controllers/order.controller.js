@@ -13,16 +13,108 @@ const STATUS_TRANSITIONS = {
 // Create new order
 const createOrder = async (req, res) => {
   try {
-    const { table_id, items, customer_notes } = req.body;
+    const {
+      table_id,
+      items,
+      customer_notes,
+      order_type = 'dine-in',
+      reservation_id,
+      scheduled_for,
+      payment_status,
+      payment_method,
+      payment_intent_id,
+      payment_amount
+    } = req.body;
 
-    // Validation
-    if (!table_id) {
+    // Validate order_type
+    const validOrderTypes = ['dine-in', 'pre-order', 'walk-in'];
+    if (!validOrderTypes.includes(order_type)) {
       return res.status(400).json({
         success: false,
-        error: 'Table ID is required'
+        error: `Invalid order_type. Must be one of: ${validOrderTypes.join(', ')}`
       });
     }
 
+    // Validate payment is completed before creating order
+    if (payment_status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment must be completed before creating order'
+      });
+    }
+
+    // Validate payment details are provided
+    if (!payment_intent_id || !payment_amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment intent ID and payment amount are required'
+      });
+    }
+
+    // Idempotency guard: avoid creating duplicate orders for the same payment
+    if (payment_intent_id) {
+      try {
+        const existing = await db.query(
+          'SELECT id FROM orders WHERE payment_intent_id = $1 LIMIT 1',
+          [payment_intent_id]
+        );
+
+        if (existing.rows.length > 0) {
+          const existingOrder = await orderModel.getOrderById(existing.rows[0].id);
+          return res.status(200).json({
+            success: true,
+            data: existingOrder,
+            message: 'Order already exists for this payment'
+          });
+        }
+      } catch (e) {
+        console.warn('Order idempotency check failed:', e.message);
+        // Continue with normal creation on idempotency check failure
+      }
+    }
+
+    // Validation based on order type
+    if (order_type === 'dine-in' || order_type === 'walk-in') {
+      if (!table_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Table ID is required for dine-in and walk-in orders'
+        });
+      }
+    }
+
+    if (order_type === 'pre-order') {
+      if (!reservation_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Reservation ID is required for pre-orders'
+        });
+      }
+
+      // Verify reservation exists and is valid
+      const reservationCheck = await db.query(
+        'SELECT * FROM reservations WHERE id = $1',
+        [reservation_id]
+      );
+
+      if (reservationCheck.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Reservation not found'
+        });
+      }
+
+      const reservation = reservationCheck.rows[0];
+
+      if (reservation.status === 'cancelled') {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot create pre-order for cancelled reservation'
+        });
+      }
+    }
+
+    // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -48,43 +140,93 @@ const createOrder = async (req, res) => {
     }
 
     // Optional: detect imminent reservations for this table (guard)
-    // Guard dine-in orders: block if an upcoming reservation exists within the next 90 minutes
-    const guardQuery = `
-      SELECT r.*
-      FROM reservations r
-      WHERE r.table_id = $1
-        AND r.status IN ('pending','confirmed')
-        AND (r.reservation_date::timestamp + r.reservation_time)
-              BETWEEN NOW() AND (NOW() + interval '90 minutes')
-      ORDER BY r.reservation_date, r.reservation_time ASC
-      LIMIT 1
-    `;
-    try {
-      const guardRes = await db.query(guardQuery, [table_id]);
-      if (guardRes.rows.length > 0) {
-        return res.status(409).json({
-          success: false,
-          error: 'Upcoming reservation detected for this table within 90 minutes',
-          reservation: guardRes.rows[0]
-        });
+    // Only for dine-in/walk-in orders
+    if ((order_type === 'dine-in' || order_type === 'walk-in') && table_id) {
+      // Load restaurant_id for the table and use per-restaurant setting
+      const rRow = await db.query('SELECT restaurant_id FROM tables WHERE id = $1', [table_id]);
+      const restaurantId = rRow.rows[0]?.restaurant_id || null;
+      const { getReservationDurationMinutes } = require('../utils/settings.service');
+      const BUFFER_MINUTES = await getReservationDurationMinutes(restaurantId);
+      const guardQuery = `
+        SELECT r.*
+        FROM reservations r
+        WHERE r.table_id = $1
+          AND r.status IN ('pending','confirmed')
+          AND (r.reservation_date::timestamp + r.reservation_time)
+                BETWEEN NOW() AND (NOW() + ($2 || ' minutes')::interval)
+        ORDER BY r.reservation_date, r.reservation_time ASC
+        LIMIT 1
+      `;
+      try {
+        const guardRes = await db.query(guardQuery, [table_id, BUFFER_MINUTES]);
+        if (guardRes.rows.length > 0) {
+          return res.status(409).json({
+            success: false,
+            error: `Upcoming reservation detected for this table within ${BUFFER_MINUTES} minutes`,
+            reservation: guardRes.rows[0]
+          });
+        }
+      } catch (e) {
+        // Continue on guard error, do not block ordering
+        console.warn('Reservation guard check failed:', e.message);
       }
-    } catch (e) {
-      // Continue on guard error, do not block ordering
-      console.warn('Reservation guard check failed:', e.message);
     }
 
     // Create order
     const order = await orderModel.createOrder({
       table_id,
       items,
-      customer_notes
+      customer_notes,
+      order_type,
+      reservation_id,
+      scheduled_for,
+      payment_status,
+      payment_method,
+      payment_intent_id,
+      payment_amount
     });
 
-    // Emit socket event for new order
+    // CRITICAL: Confirm reservation after successful payment (per flowchart)
+    if (order_type === 'pre-order' && reservation_id && payment_status === 'completed') {
+      try {
+        console.log(`[ORDER] Confirming reservation ${reservation_id} after successful payment`);
+
+        const confirmResult = await db.query(
+          `UPDATE reservations
+           SET status = 'confirmed',
+               confirmed_at = NOW(),
+               payment_id = $1,
+               has_pre_order = true,
+               updated_at = NOW()
+           WHERE id = $2 AND status = 'tentative'
+           RETURNING *`,
+          [payment_intent_id, reservation_id]
+        );
+
+        if (confirmResult.rows.length === 0) {
+          console.warn(`[ORDER] Failed to confirm reservation ${reservation_id} - may already be confirmed or expired`);
+        } else {
+          console.log(`[ORDER] Reservation ${reservation_id} confirmed successfully`);
+        }
+      } catch (err) {
+        console.error(`[ORDER] Error confirming reservation ${reservation_id}:`, err.message);
+        // Don't fail the order creation if reservation confirmation fails
+        // Order is already created and paid, just log the error
+      }
+    }
+
+    // Only emit socket event to kitchen for dine-in orders with completed payment
+    // Pre-orders will be sent to kitchen when customer checks in or at scheduled time
     const io = req.app.get('io');
     if (io) {
-      io.to('kitchen').emit('new-order', order);
-      io.to('admin').emit('new-order', order);
+      if (order_type === 'dine-in' || order_type === 'walk-in') {
+        // Immediate orders go to kitchen right away
+        io.to('kitchen').emit('new-order', order);
+        io.to('admin').emit('new-order', order);
+      } else if (order_type === 'pre-order') {
+        // Pre-orders only notify admin, not kitchen (kitchen gets notified on check-in or scheduled time)
+        io.to('admin').emit('new-pre-order', order);
+      }
     }
 
     res.status(201).json({
@@ -126,6 +268,63 @@ const getAllOrders = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch orders',
+      message: error.message
+    });
+  }
+};
+
+// Get single order by "order number" (human-facing)
+// For now, order number maps directly to the numeric order ID,
+// but this keeps the API flexible if we later introduce a separate
+// order_number column or formatted values (e.g. "#123").
+const getOrderByNumber = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+
+    if (!orderNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order number is required'
+      });
+    }
+
+    // Normalize: strip non-digits so we can accept inputs like "#15"
+    const normalized = String(orderNumber).replace(/[^\d]/g, '');
+
+    if (!normalized) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid order number'
+      });
+    }
+
+    const id = parseInt(normalized, 10);
+
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid order number'
+      });
+    }
+
+    const order = await orderModel.getOrderById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Error fetching order by number:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order',
       message: error.message
     });
   }
@@ -271,6 +470,13 @@ const updateOrderStatus = async (req, res) => {
       io.to(`table-${updatedOrder.table_id}`).emit('order-updated', updatedOrder);
       io.to('kitchen').emit('order-updated', updatedOrder);
       io.to('admin').emit('order-updated', updatedOrder);
+
+      const statusPayload = {
+        orderNumber: updatedOrder.order_number || String(updatedOrder.id),
+        status: updatedOrder.status,
+        estimatedTime: updatedOrder.estimated_completion || null
+      };
+      io.to(`table-${updatedOrder.table_id}`).emit('order-status-update', statusPayload);
     }
 
     res.json({
@@ -294,5 +500,6 @@ module.exports = {
   getOrderById,
   getActiveOrders,
   getOrdersByTable,
-  updateOrderStatus
+  updateOrderStatus,
+  getOrderByNumber
 };

@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUserAuth } from '../context/UserAuthContext';
+import { useCart } from '../context/CartContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ReservationPage = () => {
   const { id } = useParams(); // restaurant id
   const navigate = useNavigate();
+  const { setPreOrderContext } = useCart();
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('19:00');
@@ -19,7 +21,7 @@ const ReservationPage = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
-  const [userId, setUserId] = useState(() => sessionStorage.getItem('ordereasy_user_id'));
+  const [userId] = useState(() => sessionStorage.getItem('ordereasy_user_id'));
   const [toast, setToast] = useState('');
   const { token } = useUserAuth ? useUserAuth() : { token: null };
 
@@ -77,7 +79,7 @@ const ReservationPage = () => {
         reservation_time: time,
         special_requests: notes
       };
-      const res = await fetch(`${API_URL}/api/reservations`, {
+      const res = await fetch(`${API_URL}/api/reservations/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(body)
@@ -88,10 +90,32 @@ const ReservationPage = () => {
         navigate('/login');
         return;
       }
-      if (!data.success) throw new Error(data.message || 'Failed to create reservation');
-      setToast('Reservation confirmed');
+      if (!data.success) throw new Error(data.message || 'Failed to create reservation intent');
+      // Backend creates a short-lived *reservation intent* (no DB row yet).
+      // Immediately push user into pre-order flow so there is no "reservation only" path.
+      const intentToken = data.data.intentToken;
+      const scheduledFor = `${date}T${time}`;
+
+      setToast('Reservation hold created - now choose your dishes and pay to confirm.');
       setTimeout(() => setToast(''), 2500);
-      navigate(`/confirmation/${data.data.id}`);
+
+      setPreOrderContext({
+        reservation_intent: intentToken,
+        scheduled_for: scheduledFor,
+        restaurant_id: Number(id)
+      });
+
+      navigate(`/restaurant/${id}/menu`, {
+        state: {
+          orderType: 'reservation',
+          reservationId: null,
+          restaurantId: Number(id),
+          preOrderContext: {
+            reservation_intent: intentToken,
+            scheduled_for: scheduledFor
+          }
+        }
+      });
     } catch (e) {
       setError(e.message || 'Failed to create reservation');
     } finally {
