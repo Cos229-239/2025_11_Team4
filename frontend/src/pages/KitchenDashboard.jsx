@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -181,12 +181,12 @@ const KitchenDashboard = () => {
     <div className="min-h-screen bg-dark-bg">
       {/* Header */}
       <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-2xl sticky top-0 z-20">
-        <div className="container mx-auto px-6 py-5">
-          <div className="flex justify-between items-center mb-5">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-4">
               <Logo size="sm" />
               <div>
-                <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
+                <h1 className="text-2xl font-bold">Kitchen Dashboard</h1>
                 <p className="text-sm opacity-90 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -200,12 +200,12 @@ const KitchenDashboard = () => {
               {/* Connection Status */}
               <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${
                 isConnected
-                  ? 'bg-green-500/20 border-green-400'
-                  : 'bg-red-500/20 border-red-400'
+                  ? 'bg-status-success/20 border-status-success'
+                  : 'bg-status-danger/20 border-status-danger'
               }`}>
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    isConnected ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-red-400'
+                    isConnected ? 'bg-status-success animate-pulse shadow-lg shadow-status-success/50' : 'bg-status-danger'
                   }`}
                 ></div>
                 <span className="text-sm font-bold">
@@ -237,7 +237,7 @@ const KitchenDashboard = () => {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-red-600 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-status-danger text-white px-4 py-2 rounded-xl font-bold hover:bg-status-danger/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                 title="Logout"
               >
                 <ArrowRightOnRectangleIcon className="w-5 h-5" />
@@ -296,17 +296,17 @@ const KitchenDashboard = () => {
       <div className="container mx-auto px-6 py-6">
         {/* Error Message */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+          <div className="bg-status-danger/10 border border-status-danger/20 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-status-danger flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-red-400 font-semibold">{error}</p>
+                <p className="text-status-danger font-semibold">{error}</p>
               </div>
               <button
                 onClick={fetchActiveOrders}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all"
+                className="bg-status-danger/20 hover:bg-status-danger/30 text-status-danger px-4 py-2 rounded-lg font-semibold transition-all"
               >
                 Retry
               </button>
@@ -364,11 +364,11 @@ const KitchenDashboard = () => {
                   <span className="text-text-secondary text-sm">New</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-yellow-500">{orderCounts.preparing}</span>
+                  <span className="text-3xl font-bold text-status-warning">{orderCounts.preparing}</span>
                   <span className="text-text-secondary text-sm">Preparing</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-500">{orderCounts.ready}</span>
+                  <span className="text-3xl font-bold text-status-success">{orderCounts.ready}</span>
                   <span className="text-text-secondary text-sm">Ready</span>
                 </div>
               </div>

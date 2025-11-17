@@ -9,9 +9,10 @@ frontend/   # React + Vite app (dark theme, Restaurants flow, cart)
 backend/    # Node.js + Express + Socket.IO API (Postgres)
 ```
 
-Key READMEs:
+Key Documentation:
 - Frontend: `frontend/README.md`
 - Backend: `backend/README.md`
+- Security: `SECURITY.md` — **Read this before deployment!**
 
 ## Features
 
@@ -25,14 +26,19 @@ Key READMEs:
 
 1) Backend env (Supabase/Railway/local Postgres)
 
-Create `backend/.env`:
+Copy `backend/.env.example` to `backend/.env` and update with your values:
 
+```bash
+cp backend/.env.example backend/.env
 ```
-PORT=5000
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require
+
+**Generate a strong JWT secret:**
+```bash
+cd backend
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
+
+Update `backend/.env` with your database credentials and the generated JWT secret
 
 2) Initialize database schema + seeds
 
@@ -53,10 +59,10 @@ npm run dev
 
 4) Frontend env + dev server
 
-Create `frontend/.env`:
+Copy `frontend/.env.example` to `frontend/.env`:
 
-```
-VITE_API_URL=http://localhost:5000
+```bash
+cp frontend/.env.example frontend/.env
 ```
 
 Then run:
@@ -69,11 +75,26 @@ npm run dev
 
 Frontend dev server runs at http://localhost:5173
 
+## Security
+
+**IMPORTANT:** Review `SECURITY.md` before deploying to production!
+
+Key security features:
+- Rate limiting on all API endpoints (100 req/15min)
+- Strict auth rate limiting (5 attempts/15min)
+- JWT authentication with bcrypt password hashing
+- Parameterized database queries (SQL injection protection)
+- CORS whitelist protection
+
+**Known Issues:**
+- Kitchen PIN is hardcoded in frontend (security risk - see SECURITY.md)
+- No CSRF protection (planned for future release)
+
 ## Notable Backend Behavior
 
 - Reservation overlap protection at DB level (90‑minute window per table) — exclusion constraint via btree_gist
 - Setting reservation to `seated` marks table `occupied`; completing/cancelling/no‑show frees table when safe
-- Creating a dine‑in order is blocked (409) if there’s an imminent reservation on the same table (within 90 minutes)
+- Creating a dine‑in order is blocked (409) if there's an imminent reservation on the same table (within 90 minutes)
 - GET `/api/restaurants` supports `lat`,`lng`,`radius_km` for proximity filtering
 
 ## Primary Routes
@@ -93,9 +114,4 @@ Backend (see backend/README.md for full list)
 - `/api/reservations` (+ status updates)
 - `/api/orders` (+ active, status updates)
 
-## Housekeeping
-
-- Only three READMEs are kept: this root README.md, plus frontend/README.md and backend/README.md.
-- To remove screenshots:
-  - PowerShell: `Remove-Item -Recurse -Force .\ScreenShots`
 

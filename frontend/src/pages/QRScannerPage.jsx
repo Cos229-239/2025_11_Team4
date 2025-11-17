@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import {
@@ -15,15 +15,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 /**
  * QRScannerPage Component
- * Allows users to scan QR codes or manually enter table numbers
- * Manual input is the primary/prominent option
+ * Dine-in flow entry: scan table QR code only
  */
 const QRScannerPage = () => {
   const navigate = useNavigate();
   const { setTableId } = useCart();
 
-  // State management
-  const [tableNumber, setTableNumber] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -58,45 +55,6 @@ const QRScannerPage = () => {
     } catch (err) {
       console.error('Error validating table:', err);
       return { valid: false, message: 'Unable to connect to server' };
-    }
-  };
-
-  /**
-   * Handle manual table number submission
-   */
-  const handleManualSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!tableNumber || tableNumber.trim() === '') {
-      setError('Please enter a table number');
-      return;
-    }
-
-    const tableNum = parseInt(tableNumber);
-    if (isNaN(tableNum) || tableNum < 1) {
-      setError('Please enter a valid table number');
-      return;
-    }
-
-    setIsValidating(true);
-
-    // Validate table exists
-    const validation = await validateTableNumber(tableNum);
-
-    setIsValidating(false);
-
-    if (validation.valid) {
-      setSuccess(`Table ${tableNum} found! Redirecting...`);
-      setTableId(tableNum);
-
-      // Navigate after brief delay
-      setTimeout(() => {
-        navigate(`/menu/${tableNum}`);
-      }, 1000);
-    } else {
-      setError(validation.message);
     }
   };
 
@@ -153,16 +111,18 @@ const QRScannerPage = () => {
     stopScanning();
 
     // Extract table number from QR code
-    // Assuming QR code format: "TABLE:5" or just "5" or full URL
+    // Assuming QR code format: "TABLE:5" or just "5" or full URL containing /menu/{tableId}
     let tableNum;
 
     if (decodedText.includes('TABLE:')) {
       tableNum = parseInt(decodedText.split('TABLE:')[1]);
-    } else if (decodedText.includes('/menu/')) {
-      const matches = decodedText.match(/\/menu\/(\d+)/);
-      tableNum = matches ? parseInt(matches[1]) : null;
     } else {
-      tableNum = parseInt(decodedText);
+      const matches = decodedText.match(/\/menu\/(\d+)/);
+      if (matches) {
+        tableNum = parseInt(matches[1]);
+      } else {
+        tableNum = parseInt(decodedText);
+      }
     }
 
     if (!tableNum || isNaN(tableNum)) {
@@ -170,7 +130,6 @@ const QRScannerPage = () => {
       return;
     }
 
-    setTableNumber(tableNum.toString());
     setIsValidating(true);
 
     // Validate table exists
@@ -182,10 +141,18 @@ const QRScannerPage = () => {
       setSuccess(`Table ${tableNum} found! Redirecting...`);
       setTableId(tableNum);
 
-      // Navigate after brief delay
+      // Get restaurant ID from table data
+      const restaurantId = validation.table?.restaurant_id;
+
+      // Navigate after brief delay to QR Check page
       setTimeout(() => {
-        navigate(`/menu/${tableNum}`);
-      }, 1000);
+        if (restaurantId) {
+          navigate(`/qr-check?restaurant=${restaurantId}&table=${tableNum}`);
+        } else {
+          // Fallback if no restaurant ID
+          navigate(`/qr-check?table=${tableNum}`);
+        }
+      }, 800);
     } else {
       setError(validation.message);
     }
@@ -195,7 +162,7 @@ const QRScannerPage = () => {
    * Handle QR code scan errors
    */
   const onScanError = (errorMessage) => {
-    // Don't show errors for every frame - only log
+    // We don't show per-frame errors to the user; just log if needed.
     // console.log('QR Scan error:', errorMessage);
   };
 
@@ -228,10 +195,10 @@ const QRScannerPage = () => {
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-2">
-            Welcome!
+            Scan Your Table QR
           </h1>
           <p className="text-text-secondary text-lg">
-            Enter your table number to get started
+            Use your camera to scan the QR code at your table to start a new order.
           </p>
         </div>
 
@@ -246,7 +213,6 @@ const QRScannerPage = () => {
           </div>
         )}
 
-        {/* Success Message */}
         {success && (
           <div className="mb-6 bg-brand-lime/10 border border-brand-lime/50 rounded-2xl p-4 flex items-start gap-3">
             <CheckCircleIcon className="w-6 h-6 text-brand-lime flex-shrink-0 mt-0.5" />
@@ -257,131 +223,7 @@ const QRScannerPage = () => {
           </div>
         )}
 
-        {/* Manual Input Form - PRIMARY METHOD */}
-        <div className="bg-dark-card rounded-3xl p-6 sm:p-8 border border-dark-surface mb-6">
-          <h2 className="text-xl font-bold text-text-primary mb-4 text-center">
-            Enter Table Number
-          </h2>
-
-          <form onSubmit={handleManualSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="tableNumber" className="block text-text-secondary text-sm mb-2">
-                Table Number
-              </label>
-              <input
-                id="tableNumber"
-                type="number"
-                min="1"
-                placeholder="e.g., 5"
-                value={tableNumber}
-                onChange={(e) => {
-                  setTableNumber(e.target.value);
-                  setError('');
-                  setSuccess('');
-                }}
-                disabled={isValidating}
-                className="
-                  w-full
-                  bg-dark-surface
-                  text-text-primary text-center text-2xl
-                  border-2 border-dark-surface
-                  focus:border-brand-lime
-                  rounded-xl
-                  px-6 py-4
-                  outline-none
-                  transition-colors
-                  disabled:opacity-50
-                "
-                autoFocus
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isValidating || !tableNumber}
-              className="
-                w-full
-                bg-brand-lime text-dark-bg
-                px-8 py-4 rounded-full
-                text-lg font-bold uppercase tracking-wide
-                hover:bg-brand-lime/90
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transform hover:scale-105 active:scale-95
-                transition-all duration-200
-                shadow-xl shadow-brand-lime/30 hover:shadow-brand-lime/50
-                flex items-center justify-center gap-2
-              "
-            >
-              {isValidating ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Validating...
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="w-5 h-5" />
-                  Continue to Menu
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Quick Demo Access */}
-          <div className="mt-6 pt-6 border-t border-dark-surface">
-            <p className="text-text-secondary text-sm text-center mb-3">
-              Quick Demo Access:
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[1, 2, 3, 4, 5, 6].map((num) => (
-                <button
-                  key={num}
-                  onClick={() => {
-                    setTableNumber(num.toString());
-                    setError('');
-                    setSuccess('');
-                  }}
-                  className="
-                    bg-dark-surface
-                    text-text-primary
-                    hover:bg-brand-lime hover:text-dark-bg
-                    px-3 py-2 rounded-lg
-                    font-semibold text-sm
-                    transition-all
-                    transform hover:scale-105
-                  "
-                >
-                  Table {num}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* OR Divider */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 h-px bg-dark-surface"></div>
-          <span className="text-text-secondary text-sm uppercase tracking-wider">
-            Or
-          </span>
-          <div className="flex-1 h-px bg-dark-surface"></div>
-        </div>
-
-        {/* Camera Scanner - OPTIONAL/ADVANCED */}
+        {/* Camera Scanner */}
         <div className="bg-dark-card rounded-3xl p-6 sm:p-8 border border-dark-surface">
           <h2 className="text-xl font-bold text-text-primary mb-4 text-center flex items-center justify-center gap-2">
             <CameraIcon className="w-6 h-6 text-brand-orange" />
@@ -389,7 +231,7 @@ const QRScannerPage = () => {
           </h2>
 
           <p className="text-text-secondary text-sm text-center mb-4">
-            Use your device camera to scan the QR code at your table
+            Point your camera at the QR code on your table to continue.
           </p>
 
           {!showScanner ? (
@@ -438,7 +280,7 @@ const QRScannerPage = () => {
           )}
 
           <p className="text-text-secondary text-xs text-center mt-4">
-            Note: Camera permissions are required for scanning
+            Note: Camera permissions are required for scanning.
           </p>
         </div>
       </div>
@@ -447,3 +289,4 @@ const QRScannerPage = () => {
 };
 
 export default QRScannerPage;
+

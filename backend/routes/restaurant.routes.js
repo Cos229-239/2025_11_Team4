@@ -238,6 +238,8 @@ router.get('/:id/availability', async (req, res) => {
   try {
     const { id } = req.params;
     const { date, time, partySize } = req.query;
+    const { getReservationDurationMinutes } = require('../utils/settings.service');
+    const BUFFER_MINUTES = await getReservationDurationMinutes(parseInt(id, 10));
 
     if (!date || !time || !partySize) {
       return res.status(400).json({
@@ -276,12 +278,12 @@ router.get('/:id/availability', async (req, res) => {
         AND status NOT IN ('cancelled', 'completed', 'no-show')
         AND (
           -- Check if the requested time overlaps with existing reservations
-          (reservation_time <= $3::time AND ($3::time - reservation_time) < interval '90 minutes')
+          (reservation_time <= $3::time AND ($3::time - reservation_time) < (($4 || ' minutes')::interval))
           OR
-          (reservation_time > $3::time AND (reservation_time - $3::time) < interval '90 minutes')
+          (reservation_time > $3::time AND (reservation_time - $3::time) < (($4 || ' minutes')::interval))
         )
     `;
-    const reservedTablesResult = await pool.query(reservedTablesQuery, [id, date, time]);
+    const reservedTablesResult = await pool.query(reservedTablesQuery, [id, date, time, BUFFER_MINUTES]);
     const reservedTableIds = reservedTablesResult.rows.map(row => row.table_id);
 
     // Filter out reserved tables

@@ -39,6 +39,12 @@ DB_PORT=5432
 DB_NAME=ordereasy
 DB_USER=postgres
 DB_PASSWORD=your_password
+JWT_SECRET=replace-with-strong-secret
+JWT_EXPIRES_IN=7d
+SEND_EMAILS=false
+EMAIL_FROM="OrderEasy <no-reply@ordereasy.app>"
+# Reservation policy: hours before start to allow cancel/refund for confirmed
+CANCELLATION_WINDOW_HOURS=12
 ```
 
 ## Running the Server
@@ -117,14 +123,21 @@ backend/
 - `GET /api/restaurants/:id/menu` — menu items (filters: `category`, `available`)
 - `GET /api/restaurants/:id/menu/categories` — categories
 - `GET /api/restaurants/:id/tables` — tables (filters: `status`, `capacity`)
-- `GET /api/restaurants/:id/availability?date=YYYY-MM-DD&time=HH:MM&partySize=N` — available tables (90‑min window)
+- `GET /api/restaurants/:id/availability?date=YYYY-MM-DD&time=HH:MM&partySize=N` - available tables (90-min window)
+- `GET /api/restaurants/:id/availability?date=YYYY-MM-DD&time=HH:MM&partySize=N` - available tables (window = `RESERVATION_DURATION_MINUTES`)
 
 ### Reservations
-- `POST /api/reservations` — create (conflict detection on time range)
-- `GET /api/reservations/:id` — details
-- `GET /api/reservations` — list with filters (supports `user_id`)
-- `PATCH /api/reservations/:id/status` — seat/complete/cancel/no‑show (seating marks table occupied; complete/cancel frees if safe)
-- `GET /api/reservations/restaurant/:restaurant_id/today` — today’s reservations
+- `POST /api/reservations` - create (conflict detection on time range)
+- `GET /api/reservations/:id` - details
+- `GET /api/reservations` - list with filters (supports `user_id`)
+- `PATCH /api/reservations/:id/status` - seat/complete/cancel/no-show (seating marks table occupied; complete/cancel frees if safe)
+- `GET /api/reservations/restaurant/:restaurant_id/today` - today's reservations
+
+### Payments
+- `POST /api/payments/create-intent` – create payment intent (extends tentative hold)
+- `POST /api/payments/confirm` – confirm a payment and reservation
+- `POST /api/payments/refund` – refund and cancel reservation (policy enforced)
+- `POST /api/payments/webhook` – Square webhook (raw body; signature verified)
 
 ### Orders
 - `POST /api/orders` — create dine‑in order (guarded against imminent reservation on same table)
@@ -175,6 +188,14 @@ backend/
 - Overlap protection: exclusion constraint blocks overlapping active reservations for the same table.
 - Seating logic: setting reservation to `seated` marks the table `occupied`; completing/cancelling/no‑show frees it if no other seated reservations remain.
 - Users table for basic profiles; reservations optionally link to `user_id`.
+
+### Cleanup Job (single runner)
+- The cron job that expires tentative reservations runs in-process and uses a Postgres advisory lock (`CLEANUP_ADVISORY_LOCK_KEY`) so only one instance performs updates across multiple app instances.
+
+### Square Webhook
+- Mounted at `/api/payments/webhook` before the JSON body parser to keep the raw body for HMAC verification.
+- Set `SQUARE_WEBHOOK_SIGNATURE_KEY` to your Square Webhook Signature Key; set `SQUARE_WEBHOOK_ENABLED=true` to enable.
+- The handler confirms reservations on `payment.created/updated` with `status=COMPLETED` by deriving `reservationId` from `payment.reference_id`, `metadata.reservation_id`, or `note` (e.g., `reservation:123`).
 
 ## Email (stub)
 
