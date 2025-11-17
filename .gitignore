@@ -13,9 +13,6 @@ dist/
 build/
 *.tsbuildinfo
 
-# Database
-backend/schema.sql
-
 # IDE
 .vscode/
 .idea/
@@ -47,16 +44,3 @@ coverage/
 .cache/
 
 
-Supabase(edgefunction)/image.png
-Supabase(edgefunction)/image2.png
-Supabase(edgefunction)/index.ts
-Supabase(edgefunction)/README.md
-Supabase(edgefunction)/supabase-url-imports.d.ts
-System Design/Typography.pdf
-System Design/Color/Gradients Title.png
-System Design/Color/Gradients.png
-System Design/Color/Grey Shades.png
-System Design/Color/Index.png
-System Design/Color/Introduction.png
-System Design/Color/Primary Palette.png
-System Design/Color/Secondary Palette.png
