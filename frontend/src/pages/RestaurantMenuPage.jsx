@@ -4,7 +4,7 @@ import MenuItemCard from '../components/MenuItemCard';
 import CategoryTabs from '../components/CategoryTabs';
 import { useCart } from '../context/CartContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5020';
 
 const RestaurantMenuPage = () => {
   const { id } = useParams();
@@ -39,7 +39,11 @@ const RestaurantMenuPage = () => {
     load();
   }, [id]);
 
-  const filtered = activeCategory ? menuItems.filter(m => m.category === activeCategory) : menuItems;
+    const filtered =
+    activeCategory && activeCategory !== 'All Items'
+      ? menuItems.filter((m) => m.category === activeCategory)
+      : menuItems;
+
 
   const handleAdd = async (item) => {
     addToCart(item, 1);

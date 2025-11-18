@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5173';
 
 /**
  * RestaurantListPage Component
@@ -68,16 +68,16 @@ const RestaurantListPage = () => {
   const mockRestaurants = [
     {
       id: 0,
-      name: "OrderEasy Restaurant",
-      description: "Your favorite local spot with fresh, made-to-order dishes",
-      cuisine: "American",
-      rating: 4.8,
+      name: "Crazy Otto's Diner",
+      description: "Local diner favorite with huge portions and all-day breakfast.",
+      cuisine: "American Diner",
+      rating: 4.0,
       deliveryTime: "15-25 min",
       distance: "0.3 mi",
-      image: "🍽️",
+      image: "🚂🍳",
       source: "internal",
       priceRange: "$$",
-      categories: ["American", "Burgers"]
+      categories: ["American", "Breakfast"]
     },
     {
       id: 1,
@@ -187,21 +187,10 @@ const RestaurantListPage = () => {
 
   // Filter restaurants based on search and category
   // Prefer live restaurants if loaded; map to existing shape expected by UI
-  const restaurantsData = useMemo(() => {
-    if (!apiLoaded || restaurantsApi.length === 0) return mockRestaurants;
-    return restaurantsApi.map((r) => ({
-      id: r.id,
-      name: r.name,
-      description: r.description || '',
-      cuisine: r.cuisine_type || 'Cuisine',
-      rating: Number(r.rating || 0).toFixed(1),
-      deliveryTime: '',
-      distance: typeof r.distance_km === 'number' ? `${Number(r.distance_km).toFixed(1)} km` : '',
-      image: '',
-      source: 'external',
-      priceRange: '$$'
-    }));
-  }, [apiLoaded, restaurantsApi]);
+    // For now, keep using the designed mock restaurants (including Crazy Otto).
+  // The backend restaurant API is wired up but not driving this list yet.
+  const restaurantsData = mockRestaurants;
+
 
   const filteredRestaurants = useMemo(() => {
     let filtered = restaurantsData;
@@ -231,7 +220,7 @@ const RestaurantListPage = () => {
    * Handle restaurant card click
    */
   const handleRestaurantClick = (restaurant) => {
-    navigate(`/restaurant/${restaurant.id}`);
+    navigate(`/restaurant/${restaurant.id}/menu`);
   };
 
   /**
@@ -496,7 +485,7 @@ const RestaurantListPage = () => {
                       shadow-lg shadow-brand-lime/20
                     "
                   >
-                    View Details
+                    Menu
                   </button>
                 </div>
               </div>

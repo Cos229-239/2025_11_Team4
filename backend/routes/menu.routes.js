@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const menuController = require('../controllers/menu.controller');
+const {
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories
+} = require('../data/crazyOttosData');
+
 
 // GET /api/menu/categories - Get all categories (must be before /:id route)
 router.get('/categories', menuController.getAllCategories);

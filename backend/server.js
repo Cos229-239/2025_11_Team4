@@ -18,6 +18,14 @@ const io = new Server(server, {
   }
 });
 
+// Import Crazy Otto's data for demo purposes
+const {
+  crazyOttosRestaurant,
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories,
+} = require('./data/crazyOttosData');
+
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
