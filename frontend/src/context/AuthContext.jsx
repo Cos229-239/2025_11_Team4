@@ -1,15 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 /**
  * AuthContext
- * Manages authentication state for Kitchen Dashboard access
- * Uses sessionStorage to persist auth across page refreshes
+ * Manages authentication state for Kitchen Dashboard access using backend verification
  */
 
 const AuthContext = createContext();
-
-// Hardcoded PIN (will be configurable later)
-const KITCHEN_PIN = '1234';
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,21 +44,37 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Login with PIN
+   * Login with PIN via Backend
    * @param {string} pin - 4-digit PIN entered by user
-   * @returns {boolean} - true if login successful, false otherwise
+   * @returns {Promise<boolean>} - true if login successful, false otherwise
    */
-  const login = (pin) => {
-    if (pin === KITCHEN_PIN) {
-      const authData = {
-        authenticated: true,
-        timestamp: new Date().getTime()
-      };
-      sessionStorage.setItem('kitchen_auth', JSON.stringify(authData));
-      setIsAuthenticated(true);
-      return true;
+  const login = async (pin) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/kitchen-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pin }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const authData = {
+          authenticated: true,
+          timestamp: new Date().getTime(),
+          token: data.token // In a real app, store this securely (HttpOnly cookie preferred)
+        };
+        sessionStorage.setItem('kitchen_auth', JSON.stringify(authData));
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   /**
@@ -71,32 +85,11 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  /**
-   * Check if current session is still valid
-   * @returns {boolean}
-   */
-  const isSessionValid = () => {
-    try {
-      const authData = sessionStorage.getItem('kitchen_auth');
-      if (!authData) return false;
-
-      const { authenticated, timestamp } = JSON.parse(authData);
-      const now = new Date().getTime();
-      const sessionDuration = 8 * 60 * 60 * 1000; // 8 hours
-
-      return authenticated && (now - timestamp) < sessionDuration;
-    } catch (error) {
-      return false;
-    }
-  };
-
   const value = {
     isAuthenticated,
     isLoading,
     login,
     logout,
-    isSessionValid,
-    kitchenPin: KITCHEN_PIN // Exposed for testing/development (remove in production)
   };
 
   return (
@@ -106,9 +99,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-/**
- * Custom hook to use auth context
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

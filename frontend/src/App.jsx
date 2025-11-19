@@ -22,6 +22,7 @@ import ConfirmationPage from './pages/ConfirmationPage';
 import KitchenDashboard from './pages/KitchenDashboard';
 import AdminPanel from './pages/AdminPanel';
 import TableManagement from './pages/admin/TableManagement';
+import MenuManagement from './pages/admin/MenuManagement'; 
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 import RestaurantMenuPage from './pages/RestaurantMenuPage';
 import ReservationPage from './pages/ReservationPage';
@@ -48,7 +49,7 @@ function App() {
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/about" element={<AboutPage />} />
 
-                  {/* QR Code Flow - NEW */}
+                  {/* QR Code Flow */}
                   <Route path="/qr-check" element={<QRCheckPage />} />
                   <Route path="/table-select" element={<TableSelectPage />} />
                   <Route path="/scan-qr" element={<QRScannerPage />} />
@@ -64,10 +65,10 @@ function App() {
                   <Route path="/payment" element={<PaymentPage />} />
                   <Route path="/confirmation/:orderId" element={<ConfirmationPage />} />
 
-                  {/* Order Status - NEW */}
+                  {/* Order Status */}
                   <Route path="/order-status/:orderNumber" element={<OrderStatusPage />} />
 
-                  {/* Reservation Confirmation - NEW */}
+                  {/* Reservation Confirmation */}
                   <Route path="/reservation-confirmation" element={<ReservationConfirmationPage />} />
 
                   {/* User Profile */}
@@ -98,6 +99,7 @@ function App() {
                   />
                   <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/admin/tables" element={<TableManagement />} />
+                  <Route path="/admin/menu" element={<MenuManagement />} /> {/* Add route */}
                   <Route path="/admin/settings" element={<AdminSettings />} />
                 </Routes>
               </main>

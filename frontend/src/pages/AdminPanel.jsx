@@ -78,7 +78,11 @@ const AdminPanel = () => {
           <div className="bg-dark-card rounded-lg shadow-md p-6 border border-dark-surface">
             <h2 className="font-['Playfair_Display'] font-bold text-text-primary mb-4" style={{ fontSize: '24px' }}>Menu Management</h2>
             <p className="text-text-secondary font-['Lora'] mb-4" style={{ fontSize: '17px' }}>Manage your restaurant menu items</p>
-            <button className="bg-brand-orange text-white px-6 py-3 rounded-lg font-['Lora'] font-semibold hover:opacity-90 transition" style={{ fontSize: '17px' }}>
+            <button 
+              className="bg-brand-orange text-white px-6 py-3 rounded-lg font-['Lora'] font-semibold hover:opacity-90 transition" 
+              onClick={() => navigate('/admin/menu')}
+              style={{ fontSize: '17px' }}
+            >
               Manage Menu
             </button>
           </div>
