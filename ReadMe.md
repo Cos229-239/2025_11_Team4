@@ -47,7 +47,7 @@ Run the contents of `backend/schema.sql` in your SQL editor (idempotent), or loc
 ```
 cd backend
 npm install
-node setup-database.js
+node scripts/setup-database.js
 ```
 
 3) Start backend

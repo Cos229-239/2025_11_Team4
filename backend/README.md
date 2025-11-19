@@ -86,7 +86,7 @@ JWT_EXPIRES_IN=7d
 Run `schema.sql` in your SQL editor (idempotent), or locally:
 
 ```
-node setup-database.js
+node scripts/setup-database.js
 ```
 
 3) Start server
