@@ -10,6 +10,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { BuildingStorefrontIcon } from '@heroicons/react/24/solid';
 
 /**
  * RestaurantListPage Component
@@ -74,7 +75,10 @@ const RestaurantListPage = () => {
       rating: 4.8,
       deliveryTime: "15-25 min",
       distance: "0.3 mi",
-      image: "🍽️",
+      image: (   <BuildingStorefrontIcon
+    className="w-14 h-14 text-white/80 drop-shadow-[0_0_6px_rgba(255,255,255,0.35)]"
+  />
+),
       source: "internal",
       priceRange: "$$",
       categories: ["American", "Burgers"]
@@ -294,7 +298,16 @@ const RestaurantListPage = () => {
               <ArrowLeftIcon className="w-5 h-5" />
               <span className="hidden sm:inline">Back</span>
             </button>
-            <Logo size="sm" />
+
+
+
+            {/* NEW: CLEAN TEXT LOGO (no copa) */}
+      <div className="text-2xl sm:text-3xl font-bold">
+        <span className="text-brand-orange">Order</span>
+        <span className="text-brand-lime">Easy</span>
+      </div>
+
+
             <div className="w-20"></div> {/* Spacer */}
           </div>
 
@@ -314,25 +327,36 @@ const RestaurantListPage = () => {
         {/* Search Bar */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+
+            <MagnifyingGlassIcon
+            className="
+              absolute left-4 top-1/2 -translate-y-1/2
+              w-6 h-6
+              text-[#B7EC2F]
+              drop-shadow-[0_0_6px_rgba(255,183,146,0.8)]
+              z-20
+            "
+            strokeWidth={2.5}
+          />
+
             <input
               type="text"
-              placeholder="Search restaurants, cuisines..."
+              placeholder="Discover places, menus and cuisines"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="
-                w-full
-                bg-dark-card
-                text-text-primary
-                border-2 border-dark-surface
-                focus:border-brand-lime
-                rounded-2xl
-                pl-12 pr-6 py-4
-                outline-none
-                transition-colors
-                text-lg
-                placeholder:text-text-secondary
-              "
+              w-full
+              bg-white/10 backdrop-blur-md
+              text-white
+              border border-white/20
+              focus:border-brand-lime
+              rounded-2xl
+              pl-12 pr-6 py-4
+              outline-none
+              transition-all
+              text-lg
+              placeholder:text-white/60
+                          "
             />
             {searchQuery && (
               <button
@@ -360,8 +384,9 @@ const RestaurantListPage = () => {
                   whitespace-nowrap
                   ${
                     activeCategory === category
-                      ? 'bg-brand-lime text-dark-bg shadow-lg shadow-brand-lime/30'
-                      : 'bg-dark-card text-text-secondary hover:bg-dark-surface hover:text-text-primary border border-dark-surface'
+                  ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                  : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
+
                   }
                 `}
               >
@@ -372,8 +397,8 @@ const RestaurantListPage = () => {
               onClick={() => setNearbyOnly((v) => !v)}
               className={`px-6 py-3 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${
                 nearbyOnly
-                  ? 'bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/30'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-surface hover:text-text-primary border-dark-surface'
+                  ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                  : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
               }`}
               title={coords ? 'Filter within 25 km' : 'Enable location to filter nearby'}
             >
