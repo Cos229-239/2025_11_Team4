@@ -270,13 +270,21 @@ const RestaurantListPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg relative overflow-hidden pb-8">
+    
+    <div
+  className="min-h-screen relative overflow-hidden pb-8 bg-cover bg-center bg-no-repeat"
+  style={{
+    backgroundImage: "url('/src/assets/backround.png')"
+  }}
+>
+  {/* Overlay so text can look better */}
+  <div className="absolute inset-0 bg-black/40"></div>
       {/* Background glow */}
       <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
 
       {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 shadow-xl relative z-10">
+      <header className="bg-black shadow-lg relative z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <button
@@ -291,7 +299,7 @@ const RestaurantListPage = () => {
           </div>
 
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
               Browse Restaurants
             </h1>
             <p className="text-white/90">
@@ -411,7 +419,7 @@ const RestaurantListPage = () => {
                 key={restaurant.id}
                 onClick={() => handleRestaurantClick(restaurant)}
                 className="
-                  bg-dark-card rounded-3xl overflow-hidden
+                  bg-black/40 backdrop-blur-md rounded-3xl overflow-hidden
                   border border-dark-surface
                   hover:border-brand-lime/50
                   transition-all duration-300
