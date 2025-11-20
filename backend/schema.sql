@@ -32,9 +32,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
 -- Enable RLS
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 
--- Example Policy: Allow public read access to restaurants (since it's a public directory)
+-- Example Policy: Allow public read access to restaurants
 CREATE POLICY "Allow public read access" ON restaurants FOR SELECT USING (true);
-
 
 CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
 CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine_type ON restaurants(cuisine_type);
@@ -48,7 +47,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255),
   phone VARCHAR(50),
   email VARCHAR(150) UNIQUE,
-  role VARCHAR(50) DEFAULT 'customer',
+  role VARCHAR(50) DEFAULT 'customer', -- Kept for backward compatibility
   password_hash TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -56,6 +55,37 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Enable RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- RBAC: ROLES & PERMISSIONS (NEW)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS roles (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL, 
+  description TEXT
+);
+
+-- Seed default roles
+INSERT INTO roles (name, description) VALUES
+('developer', 'Super Admin: Access to everything'),
+('owner', 'Restaurant Owner: Access to specific restaurants'),
+('employee', 'Kitchen Staff: Limited access to specific restaurant orders'),
+('customer', 'Regular end user')
+ON CONFLICT (name) DO NOTHING;
+
+-- User Roles (Many-to-Many)
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, role_id)
+);
+
+-- User Restaurants (Scoping)
+CREATE TABLE IF NOT EXISTS user_restaurants (
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, restaurant_id)
+);
 
 -- ============================================================================
 -- MENU ITEMS TABLE
@@ -103,7 +133,7 @@ CREATE TABLE IF NOT EXISTS tables (
 -- Enable RLS
 ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
 
--- Example Policy: Allow public read access to tables (needed for reservation flow)
+-- Example Policy: Allow public read access to tables
 CREATE POLICY "Allow public read access" ON tables FOR SELECT USING (true);
 
 CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status);
@@ -148,7 +178,6 @@ CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
 CREATE INDEX IF NOT EXISTS idx_reservations_datetime ON reservations(reservation_date, reservation_time);
 CREATE INDEX IF NOT EXISTS idx_reservations_user_id ON reservations(user_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_rest_date_status ON reservations(restaurant_id, reservation_date, status);
-
 
 -- Prevent overlapping active reservations for the same table
 ALTER TABLE reservations
@@ -259,11 +288,12 @@ ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
 -- FUNCTIONS
 -- ============================================================================
 
--- Drop function first to avoid "cannot remove parameter defaults" error (42P13)
+-- Drop functions first to avoid conflicts
 DROP FUNCTION IF EXISTS check_reservation_conflicts(integer, integer, date, time without time zone, integer);
+DROP FUNCTION IF EXISTS cleanup_expired_reservations();
+DROP FUNCTION IF EXISTS seed_developer(varchar);
 
 -- Function to check reservation conflicts
--- SECURITY FIX: Added "SET search_path = public" to prevent search path attacks
 CREATE OR REPLACE FUNCTION check_reservation_conflicts(
   p_reservation_id INT,
   p_table_id INT,
@@ -296,7 +326,6 @@ END;
 $$;
 
 -- Function to cleanup expired reservations
--- SECURITY FIX: Added "SET search_path = public"
 CREATE OR REPLACE FUNCTION cleanup_expired_reservations()
 RETURNS TABLE (expired_count INT, expired_ids INT[]) 
 LANGUAGE plpgsql
@@ -317,6 +346,26 @@ BEGIN
   RETURN QUERY SELECT array_length(_expired_ids, 1), _expired_ids;
 END;
 $$;
+
+-- NEW: Helper Function to Seed Developer Account (RBAC)
+CREATE OR REPLACE FUNCTION seed_developer(dev_email VARCHAR) RETURNS void AS $$
+DECLARE
+  dev_user_id INT;
+  dev_role_id INT;
+BEGIN
+  -- Ensure user exists (you must signup first or insert here)
+  SELECT id INTO dev_user_id FROM users WHERE email = dev_email;
+  
+  IF dev_user_id IS NOT NULL THEN
+    SELECT id INTO dev_role_id FROM roles WHERE name = 'developer';
+    -- Assign role
+    INSERT INTO user_roles (user_id, role_id) VALUES (dev_user_id, dev_role_id)
+    ON CONFLICT DO NOTHING;
+    -- Update legacy role column for backward compatibility
+    UPDATE users SET role = 'developer' WHERE id = dev_user_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- SEED DATA

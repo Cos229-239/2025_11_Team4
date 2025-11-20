@@ -11,7 +11,7 @@ const MenuManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Form state
   const [currentItem, setCurrentItem] = useState({
     name: '',
@@ -48,7 +48,7 @@ const MenuManagement = () => {
   // Fetch menu items when restaurant changes
   useEffect(() => {
     if (!selectedRestaurant) return;
-    
+
     const fetchMenu = async () => {
       try {
         const res = await fetch(`${API_URL}/api/restaurants/${selectedRestaurant}/menu`);
@@ -64,10 +64,10 @@ const MenuManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = isEditing 
+      const url = isEditing
         ? `${API_URL}/api/menu/${currentItem.id}`
         : `${API_URL}/api/menu`;
-      
+
       const method = isEditing ? 'PUT' : 'POST';
       const body = {
         ...currentItem,
@@ -87,7 +87,7 @@ const MenuManagement = () => {
         const menuRes = await fetch(`${API_URL}/api/restaurants/${selectedRestaurant}/menu`);
         const menuData = await menuRes.json();
         setItems(menuData.data);
-        
+
         // Reset form
         setIsEditing(false);
         setCurrentItem({
@@ -112,127 +112,198 @@ const MenuManagement = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary p-6">
-      <h1 className="text-3xl font-bold mb-6">Menu Management</h1>
-      
-      <div className="mb-6">
-        <label className="mr-3">Select Restaurant:</label>
-        <select 
-          className="bg-dark-surface p-2 rounded"
-          value={selectedRestaurant}
-          onChange={(e) => setSelectedRestaurant(e.target.value)}
-        >
-          {restaurants.map(r => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
-        </select>
-      </div>
+    <div className="min-h-screen bg-dark-bg text-text-primary">
+      {/* Header */}
+      <header className="bg-brand-orange text-white shadow-md sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center gap-4 mb-2">
+            <a
+              href="/admin"
+              className="p-2 rounded-full hover:bg-white/20 transition text-white"
+              title="Back to Dashboard"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 className="text-3xl font-bold">Menu Management</h1>
+          </div>
+          <p className="text-sm opacity-90 ml-12">
+            Create and manage menu items
+          </p>
+        </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form */}
-        <div className="bg-dark-card p-6 rounded-xl h-fit">
-          <h2 className="text-xl font-bold mb-4">{isEditing ? 'Edit Item' : 'Add New Item'}</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm mb-1">Name</label>
-              <input 
-                required
-                className="w-full bg-dark-surface p-2 rounded border border-gray-700"
-                value={currentItem.name}
-                onChange={e => setCurrentItem({...currentItem, name: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Description</label>
-              <textarea 
-                className="w-full bg-dark-surface p-2 rounded border border-gray-700"
-                value={currentItem.description}
-                onChange={e => setCurrentItem({...currentItem, description: e.target.value})}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1">Price ($)</label>
-                <input 
-                  type="number" step="0.01" required
-                  className="w-full bg-dark-surface p-2 rounded border border-gray-700"
-                  value={currentItem.price}
-                  onChange={e => setCurrentItem({...currentItem, price: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Category</label>
-                <input 
-                  required
-                  className="w-full bg-dark-surface p-2 rounded border border-gray-700"
-                  value={currentItem.category}
-                  onChange={e => setCurrentItem({...currentItem, category: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input 
-                type="checkbox"
-                checked={currentItem.available}
-                onChange={e => setCurrentItem({...currentItem, available: e.target.checked})}
-              />
-              <label>Available</label>
-            </div>
-            
-            <div className="flex gap-2 pt-2">
-              <button type="submit" className="flex-1 bg-brand-orange py-2 rounded font-bold hover:opacity-90">
-                {isEditing ? 'Update' : 'Create'}
-              </button>
-              {isEditing && (
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setCurrentItem({ name: '', description: '', price: '', category: '', available: true });
-                  }}
-                  className="px-4 bg-gray-600 rounded hover:opacity-90"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
+      <div className="container mx-auto px-6 py-8">
+        {/* Restaurant Selector */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-text-secondary mb-2">Select Restaurant</label>
+          <select
+            className="w-full md:w-1/3 px-4 py-3 bg-dark-card border border-dark-surface rounded-xl focus:ring-2 focus:ring-brand-orange focus:border-transparent text-text-primary shadow-sm"
+            value={selectedRestaurant}
+            onChange={(e) => setSelectedRestaurant(e.target.value)}
+          >
+            {restaurants.map(r => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
         </div>
 
-        {/* List */}
-        <div className="lg:col-span-2 space-y-4">
-          {items.map(item => (
-            <div key={item.id} className="bg-dark-card p-4 rounded-xl flex justify-between items-center border border-dark-surface">
-              <div>
-                <h3 className="font-bold text-lg">{item.name}</h3>
-                <p className="text-text-secondary text-sm">{item.description}</p>
-                <div className="flex gap-3 mt-2 text-sm">
-                  <span className="text-brand-lime">${Number(item.price).toFixed(2)}</span>
-                  <span className="bg-gray-700 px-2 rounded text-xs flex items-center">{item.category}</span>
-                  <span className={`px-2 rounded text-xs flex items-center ${item.available ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
-                    {item.available ? 'Available' : 'Unavailable'}
-                  </span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Form Section */}
+          <div className="lg:col-span-4">
+            <div className="bg-dark-card p-6 rounded-2xl border border-dark-surface shadow-xl sticky top-32">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <span className="text-brand-orange">{isEditing ? '✏️' : '➕'}</span>
+                {isEditing ? 'Edit Item' : 'Add New Item'}
+              </h2>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Item Name</label>
+                  <input
+                    required
+                    placeholder="e.g. Truffle Burger"
+                    className="w-full bg-dark-surface px-4 py-2 rounded-lg border border-dark-surface focus:ring-2 focus:ring-brand-orange outline-none transition"
+                    value={currentItem.name}
+                    onChange={e => setCurrentItem({ ...currentItem, name: e.target.value })}
+                  />
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => {
-                    setIsEditing(true);
-                    setCurrentItem(item);
-                  }}
-                  className="p-2 hover:bg-gray-700 rounded text-blue-400"
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={() => handleDelete(item.id)}
-                  className="p-2 hover:bg-gray-700 rounded text-red-400"
-                >
-                  Delete
-                </button>
-              </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
+                  <textarea
+                    placeholder="Describe the dish..."
+                    rows={3}
+                    className="w-full bg-dark-surface px-4 py-2 rounded-lg border border-dark-surface focus:ring-2 focus:ring-brand-orange outline-none transition"
+                    value={currentItem.description}
+                    onChange={e => setCurrentItem({ ...currentItem, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Price ($)</label>
+                    <input
+                      type="number" step="0.01" required
+                      placeholder="0.00"
+                      className="w-full bg-dark-surface px-4 py-2 rounded-lg border border-dark-surface focus:ring-2 focus:ring-brand-orange outline-none transition"
+                      value={currentItem.price}
+                      onChange={e => setCurrentItem({ ...currentItem, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
+                    <input
+                      required
+                      placeholder="e.g. Mains"
+                      className="w-full bg-dark-surface px-4 py-2 rounded-lg border border-dark-surface focus:ring-2 focus:ring-brand-orange outline-none transition"
+                      value={currentItem.category}
+                      onChange={e => setCurrentItem({ ...currentItem, category: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-dark-surface/50 rounded-lg border border-dark-surface">
+                  <input
+                    type="checkbox"
+                    id="available"
+                    className="w-5 h-5 text-brand-orange rounded focus:ring-brand-orange bg-dark-surface border-gray-600"
+                    checked={currentItem.available}
+                    onChange={e => setCurrentItem({ ...currentItem, available: e.target.checked })}
+                  />
+                  <label htmlFor="available" className="font-medium cursor-pointer">Available for ordering</label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-brand-orange text-white py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition shadow-lg shadow-brand-orange/20"
+                  >
+                    {isEditing ? 'Update Item' : 'Create Item'}
+                  </button>
+
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setCurrentItem({ name: '', description: '', price: '', category: '', available: true });
+                      }}
+                      className="px-4 py-3 bg-dark-surface text-text-secondary rounded-xl font-bold hover:bg-dark-surface/80 transition"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
-          ))}
+          </div>
+
+          {/* List Section */}
+          <div className="lg:col-span-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Menu Items <span className="text-text-secondary text-lg font-normal">({items.length})</span></h2>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="text-center py-12 bg-dark-card rounded-2xl border border-dashed border-dark-surface">
+                <p className="text-4xl mb-4">🍽️</p>
+                <p className="text-text-secondary">No menu items found.</p>
+                <p className="text-sm text-text-secondary mt-1">Add your first item to get started.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {items.map(item => (
+                  <div
+                    key={item.id}
+                    className={`bg-dark-card p-5 rounded-2xl border transition-all hover:shadow-lg group ${!item.available ? 'border-red-900/30 opacity-75' : 'border-dark-surface hover:border-brand-orange/30'
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-lg text-text-primary">{item.name}</h3>
+                          {!item.available && (
+                            <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded-full font-bold border border-red-500/20">
+                              Unavailable
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-brand-lime font-bold font-mono">${Number(item.price).toFixed(2)}</p>
+                      </div>
+                      <span className="px-2 py-1 bg-dark-surface text-text-secondary text-xs rounded-lg font-medium border border-dark-surface">
+                        {item.category}
+                      </span>
+                    </div>
+
+                    <p className="text-text-secondary text-sm mb-4 line-clamp-2 h-10">
+                      {item.description || <span className="italic opacity-50">No description provided</span>}
+                    </p>
+
+                    <div className="flex gap-2 pt-2 border-t border-dark-surface">
+                      <button
+                        onClick={() => {
+                          setIsEditing(true);
+                          setCurrentItem(item);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-dark-surface text-blue-400 font-medium hover:bg-blue-500/10 transition text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="flex-1 py-2 rounded-lg bg-dark-surface text-red-400 font-medium hover:bg-red-500/10 transition text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

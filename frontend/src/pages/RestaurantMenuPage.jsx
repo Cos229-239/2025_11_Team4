@@ -147,14 +147,33 @@ const RestaurantMenuPage = () => {
       </header>
 
       <CategoryTabs categories={categories} activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
-      <div className="container mx-auto px-4">
-        {filtered.length === 0 ? (
+      <div className="container mx-auto px-4 py-6">
+        {loading ? (
+          <div className="text-center text-text-secondary py-12">Loading menu...</div>
+        ) : menuItems.length === 0 ? (
           <div className="text-center text-text-secondary py-12">No items found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((item) => (
-              <MenuItemCard key={item.id} item={item} onAddToCart={handleAdd} />
-            ))}
+          <div className="space-y-12">
+            {categories
+              .filter(cat => !activeCategory || cat === activeCategory)
+              .map(category => {
+                const categoryItems = menuItems.filter(item => item.category === category);
+                if (categoryItems.length === 0) return null;
+
+                return (
+                  <div key={category} id={`category-${category}`} className="scroll-mt-24">
+                    <h2 className="text-2xl font-bold mb-6 text-brand-orange flex items-center gap-3">
+                      <span className="w-8 h-1 bg-brand-orange rounded-full"></span>
+                      {category}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {categoryItems.map((item) => (
+                        <MenuItemCard key={item.id} item={item} onAddToCart={handleAdd} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         )}
 

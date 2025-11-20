@@ -603,7 +603,32 @@ router.get('/me', async (req, res) => {
 
     const query = `
       SELECT
-        r.*, rest.name as restaurant_name, t.table_number
+        r.*, 
+        rest.name as restaurant_name, 
+        t.table_number,
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', o.id,
+              'total_amount', o.total_amount,
+              'status', o.status,
+              'items', (
+                SELECT json_agg(
+                  json_build_object(
+                    'name', oi.menu_item_name,
+                    'quantity', oi.quantity,
+                    'price', oi.menu_item_price,
+                    'subtotal', oi.subtotal
+                  )
+                )
+                FROM order_items oi
+                WHERE oi.order_id = o.id
+              )
+            )
+          )
+          FROM orders o
+          WHERE o.reservation_id = r.id
+        ) as orders
       FROM reservations r
       JOIN restaurants rest ON r.restaurant_id = rest.id
       LEFT JOIN tables t ON r.table_id = t.id
@@ -623,10 +648,10 @@ router.get('/me', async (req, res) => {
  */
 router.patch('/:id/status', async (req, res) => {
   try {
-  const { id } = req.params;
-  const { status } = req.body;
+    const { id } = req.params;
+    const { status } = req.body;
 
-  const validStatuses = ['tentative', 'confirmed', 'seated', 'completed', 'cancelled', 'no-show'];
+    const validStatuses = ['tentative', 'confirmed', 'seated', 'completed', 'cancelled', 'no-show'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -642,7 +667,7 @@ router.patch('/:id/status', async (req, res) => {
         return res.status(404).json({ success: false, code: 'RESERVATION_NOT_FOUND', message: 'Reservation not found' });
       }
       const r = fetch.rows[0];
-      const startTs = new Date(`${r.reservation_date.toISOString().substring(0,10)}T${r.reservation_time}`);
+      const startTs = new Date(`${r.reservation_date.toISOString().substring(0, 10)}T${r.reservation_time}`);
       const now = new Date();
       const hoursUntil = (startTs.getTime() - now.getTime()) / (1000 * 60 * 60);
       const windowHours = await require('../utils/settings.service').getCancellationWindowHours(r.restaurant_id);
@@ -817,7 +842,7 @@ router.delete('/:id', async (req, res) => {
     const r = fetch.rows[0];
 
     // Compute reservation start from date+time
-    const startTs = new Date(`${r.reservation_date.toISOString().substring(0,10)}T${r.reservation_time}`);
+    const startTs = new Date(`${r.reservation_date.toISOString().substring(0, 10)}T${r.reservation_time}`);
     const now = new Date();
     const msUntil = startTs.getTime() - now.getTime();
     const hoursUntil = msUntil / (1000 * 60 * 60);

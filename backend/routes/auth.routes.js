@@ -6,8 +6,6 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-// Kitchen PIN hash (bcrypt hash of '1234') - In production, store this in DB or env
-const KITCHEN_PIN_HASH = '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa'; 
 
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -55,32 +53,6 @@ router.post('/login', async (req, res) => {
     res.json({ success: true, token, user: { id: safeUser.id, name: safeUser.name, phone: safeUser.phone, email: safeUser.email, role: safeUser.role } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to login', error: error.message });
-  }
-});
-
-// POST /api/auth/kitchen-login
-router.post('/kitchen-login', async (req, res) => {
-  try {
-    const { pin } = req.body;
-    if (!pin) {
-      return res.status(400).json({ success: false, message: 'PIN is required' });
-    }
-
-    // Compare provided PIN with stored hash
-    // In a real app, you might query a 'kitchen_settings' table for the hash
-    const match = await bcrypt.compare(pin, KITCHEN_PIN_HASH);
-
-    if (!match) {
-      return res.status(401).json({ success: false, message: 'Invalid PIN' });
-    }
-
-    // Create a specific token for kitchen access
-    const token = jwt.sign({ role: 'kitchen' }, JWT_SECRET, { expiresIn: '8h' });
-
-    res.json({ success: true, token, message: 'Kitchen access granted' });
-  } catch (error) {
-    console.error('Kitchen login error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 

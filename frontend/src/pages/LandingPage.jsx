@@ -108,16 +108,6 @@ const LandingPage = () => {
             </button>
           </div>
         </div>
-
-        {/* Kitchen Dashboard Link - Small footer */}
-        <div className="text-center">
-          <button
-            onClick={() => navigate('/kitchen')}
-            className="text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
-          >
-            Kitchen Dashboard
-          </button>
-        </div>
       </div>
     </div>
   );
