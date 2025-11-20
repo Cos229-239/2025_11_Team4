@@ -419,7 +419,7 @@ const RestaurantListPage = () => {
                 key={restaurant.id}
                 onClick={() => handleRestaurantClick(restaurant)}
                 className="
-                  bg-black/40 backdrop-blur-md rounded-3xl overflow-hidden
+                  bg-white/10 backdrop-blur-xl border border-white/20
                   border border-dark-surface
                   hover:border-brand-lime/50
                   transition-all duration-300
