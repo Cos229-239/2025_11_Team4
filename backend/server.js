@@ -25,6 +25,14 @@ const ioCorsOptions = {
 const paymentWebhookRoutes = require('./routes/payment.webhook.routes');
 app.use('/api/payments', paymentWebhookRoutes);
 
+// Import Crazy Otto's data for demo purposes
+const {
+  crazyOttosRestaurant,
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories,
+} = require('./data/crazyOttosData');
+
+
 // Middleware
 app.disable('x-powered-by');
 app.use(helmet());

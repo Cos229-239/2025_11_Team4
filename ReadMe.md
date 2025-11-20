@@ -1,3 +1,12 @@
+# OrderEasy | Team 4
+
+## This is Sparta ⚔️
+
+Welcome to **OrderEasy**, the dine-in digital ordering project by **Team 4**.
+
+- 📄 **Software Design Document (v.01):** `docs/OrderEasy_SDD_v.01.md`
+- 🧭 Branching model: lanes + short-lived features (`frontend/`, `backend/`, `ui/`)
+- ✅ CI: GitHub Actions on PRs to `dev/main`
 # OrderEasy — Multi-Restaurant Reservations + Dine‑In Ordering
 
 OrderEasy is a full‑stack web app for browsing restaurants, reserving tables, and placing dine‑in orders from the table. It includes a PIN‑protected Kitchen Dashboard for real‑time order management.

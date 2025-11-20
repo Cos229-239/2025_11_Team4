@@ -7,6 +7,13 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
+// 🔸 Import Crazy Otto's static data
+const {
+  crazyOttosRestaurant,
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories,
+} = require('../data/crazyOttosData');
+
 /**
  * GET /api/restaurants
  * Get all active restaurants
@@ -82,6 +89,14 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 🔸 Special case: Crazy Otto's (id = 0) from static data
+    if (id === '0') {
+      return res.json({
+        success: true,
+        data: crazyOttosRestaurant,
+      });
+    }
+
     const result = await pool.query(
       'SELECT * FROM restaurants WHERE id = $1',
       [id]
@@ -120,6 +135,27 @@ router.get('/:id/menu', async (req, res) => {
     const { id } = req.params;
     const { category, available } = req.query;
 
+    // 🔸 Special case: Crazy Otto's static menu
+    if (id === '0') {
+      let items = [...crazyOttosMenuItems];
+
+      if (category) {
+        items = items.filter(item => item.category === category);
+      }
+
+      if (available !== undefined) {
+        const isAvailable = available === 'true';
+        items = items.filter(item => item.available === isAvailable);
+      }
+
+      return res.json({
+        success: true,
+        data: items,
+        count: items.length,
+      });
+    }
+
+    // 🔹 Default DB-backed behavior for all other restaurants
     let query = 'SELECT * FROM menu_items WHERE restaurant_id = $1';
     const params = [id];
 
@@ -159,6 +195,14 @@ router.get('/:id/menu', async (req, res) => {
 router.get('/:id/menu/categories', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // 🔸 Special case: Crazy Otto's static categories
+    if (id === '0') {
+      return res.json({
+        success: true,
+        data: crazyOttosMenuCategories,
+      });
+    }
 
     const result = await pool.query(
       'SELECT DISTINCT category FROM menu_items WHERE restaurant_id = $1 AND available = true ORDER BY category',

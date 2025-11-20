@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5173';
 
 /**
  * RestaurantListPage Component
@@ -65,6 +65,133 @@ const RestaurantListPage = () => {
     fetchRestaurants();
   }, [coords, nearbyOnly]);
 
+  // Mock restaurant data
+  const mockRestaurants = [
+    {
+      id: 0,
+      name: "Crazy Otto's Diner",
+      description: "Local diner favorite with huge portions and all-day breakfast.",
+      cuisine: "American Diner",
+      rating: 4.0,
+      deliveryTime: "15-25 min",
+      distance: "0.3 mi",
+      image: "🚂🍳",
+      source: "internal",
+      priceRange: "$$",
+      categories: ["American", "Breakfast"]
+    },
+    {
+      id: 1,
+      name: "Pizza Paradise",
+      description: "Authentic wood-fired pizza with fresh ingredients",
+      cuisine: "Italian",
+      rating: 4.6,
+      deliveryTime: "25-35 min",
+      distance: "1.2 mi",
+      image: "🍕",
+      source: "external",
+      priceRange: "$$",
+      categories: ["Pizza", "Italian"]
+    },
+    {
+      id: 2,
+      name: "Burger Empire",
+      description: "Gourmet burgers and hand-cut fries",
+      cuisine: "American",
+      rating: 4.7,
+      deliveryTime: "20-30 min",
+      distance: "0.8 mi",
+      image: "🍔",
+      source: "external",
+      priceRange: "$$$",
+      categories: ["Burgers", "American"]
+    },
+    {
+      id: 3,
+      name: "Dragon Wok",
+      description: "Traditional Chinese cuisine with modern twists",
+      cuisine: "Chinese",
+      rating: 4.5,
+      deliveryTime: "30-40 min",
+      distance: "1.5 mi",
+      image: "🥡",
+      source: "external",
+      priceRange: "$$",
+      categories: ["Asian", "Chinese"]
+    },
+    {
+      id: 4,
+      name: "Sushi Supreme",
+      description: "Fresh sushi and Japanese specialties",
+      cuisine: "Japanese",
+      rating: 4.9,
+      deliveryTime: "25-35 min",
+      distance: "1.0 mi",
+      image: "🍣",
+      source: "external",
+      priceRange: "$$$",
+      categories: ["Asian", "Sushi"]
+    },
+    {
+      id: 5,
+      name: "Taco Fiesta",
+      description: "Authentic Mexican street food and tacos",
+      cuisine: "Mexican",
+      rating: 4.4,
+      deliveryTime: "20-30 min",
+      distance: "0.9 mi",
+      image: "🌮",
+      source: "external",
+      priceRange: "$",
+      categories: ["Mexican"]
+    },
+    {
+      id: 6,
+      name: "Mediterranean Grill",
+      description: "Fresh Mediterranean dishes and kebabs",
+      cuisine: "Mediterranean",
+      rating: 4.6,
+      deliveryTime: "25-35 min",
+      distance: "1.3 mi",
+      image: "🥙",
+      source: "external",
+      priceRange: "$$",
+      categories: ["Mediterranean"]
+    },
+    {
+      id: 7,
+      name: "Thai Spice",
+      description: "Spicy and flavorful Thai classics",
+      cuisine: "Thai",
+      rating: 4.7,
+      deliveryTime: "30-40 min",
+      distance: "1.8 mi",
+      image: "🍜",
+      source: "external",
+      priceRange: "$$",
+      categories: ["Asian", "Thai"]
+    }
+  ];
+
+  // Category options
+  const categories = [
+    'All',
+    'American',
+    'Asian',
+    'Burgers',
+    'Pizza',
+    'Italian',
+    'Mexican',
+    'Mediterranean',
+    'Sushi'
+  ];
+
+  // Filter restaurants based on search and category
+  // Prefer live restaurants if loaded; map to existing shape expected by UI
+    // For now, keep using the designed mock restaurants (including Crazy Otto).
+  // The backend restaurant API is wired up but not driving this list yet.
+  const restaurantsData = mockRestaurants;
+
   // Map API data to UI format
   const restaurantsData = useMemo(() => {
     return restaurantsApi.map((r) => ({
@@ -118,7 +245,7 @@ const RestaurantListPage = () => {
    * Handle restaurant card click
    */
   const handleRestaurantClick = (restaurant) => {
-    navigate(`/restaurant/${restaurant.id}`);
+    navigate(`/restaurant/${restaurant.id}/menu`);
   };
 
   /**
@@ -397,7 +524,7 @@ const RestaurantListPage = () => {
                       shadow-lg shadow-brand-lime/20
                     "
                   >
-                    View Details
+                    Menu
                   </button>
                 </div>
               </div>
