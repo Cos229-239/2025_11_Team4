@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import OrderCard from '../components/OrderCard';
 import Logo from '../components/Logo';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
@@ -15,11 +15,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  */
 const KitchenDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout } = useUserAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, pending, preparing, ready
+  const [filter, setFilter] = useState('all');
 
   const { socket, isConnected } = useSocket();
   const emit = useSocketEmit();
@@ -27,7 +27,7 @@ const KitchenDashboard = () => {
   // Handle logout
   const handleLogout = () => {
     logout();
-    navigate('/kitchen-login');
+    navigate('/login');
   };
 
   // Fetch initial active orders on mount
@@ -198,15 +198,13 @@ const KitchenDashboard = () => {
 
             <div className="flex items-center gap-4">
               {/* Connection Status */}
-              <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${
-                isConnected
-                  ? 'bg-status-success/20 border-status-success'
-                  : 'bg-status-danger/20 border-status-danger'
-              }`}>
+              <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${isConnected
+                ? 'bg-status-success/20 border-status-success'
+                : 'bg-status-danger/20 border-status-danger'
+                }`}>
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    isConnected ? 'bg-status-success animate-pulse shadow-lg shadow-status-success/50' : 'bg-status-danger'
-                  }`}
+                  className={`w-3 h-3 rounded-full ${isConnected ? 'bg-status-success animate-pulse shadow-lg shadow-status-success/50' : 'bg-status-danger'
+                    }`}
                 ></div>
                 <span className="text-sm font-bold">
                   {isConnected ? 'Connected' : 'Disconnected'}
@@ -234,6 +232,18 @@ const KitchenDashboard = () => {
                 Refresh
               </button>
 
+              {/* Back to Home Button */}
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white/10 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                title="Back to Home"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="hidden sm:inline">Home</span>
+              </button>
+
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
@@ -250,41 +260,37 @@ const KitchenDashboard = () => {
           <div className="flex gap-3 overflow-x-auto pb-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'all'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'all'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               All Orders <span className="ml-2 inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full bg-dark-surface text-text-secondary border border-dark-surface/60">{orderCounts.all}</span>
             </button>
             <button
               onClick={() => setFilter('pending')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'pending'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'pending'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               🆕 New ({orderCounts.pending})
             </button>
             <button
               onClick={() => setFilter('preparing')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'preparing'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'preparing'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               👨‍🍳 Preparing ({orderCounts.preparing})
             </button>
             <button
               onClick={() => setFilter('ready')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'ready'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'ready'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               ✅ Ready ({orderCounts.ready})
             </button>

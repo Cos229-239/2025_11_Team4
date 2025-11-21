@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -10,9 +11,18 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  */
 const TableManagement = () => {
   const [tables, setTables] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Modal state
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    tableId: null,
+    tableNumber: null
+  });
 
   // Create table form state
   const [newTable, setNewTable] = useState({
@@ -20,17 +30,41 @@ const TableManagement = () => {
     capacity: 4,
   });
 
-  // Fetch all tables
+  // Fetch all restaurants
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/restaurants`);
+      const data = await response.json();
+      if (data.success && data.data.length > 0) {
+        setRestaurants(data.data);
+        setSelectedRestaurant(data.data[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching restaurants:', err);
+      setError('Failed to load restaurants');
+    }
+  };
+
+  // Fetch tables for selected restaurant
   const fetchTables = async () => {
+    if (!selectedRestaurant) return;
+
     try {
       setLoading(true);
       setError(null);
 
+      // Note: ideally the API should support filtering by restaurant_id
+      // For now we fetch all and filter client side, or update API
+      // Assuming API returns all tables for now
       const response = await fetch(`${API_URL}/api/tables`);
       const data = await response.json();
 
       if (data.success) {
-        setTables(data.data);
+        // Filter tables by selected restaurant
+        const restaurantTables = data.data.filter(
+          (table) => table.restaurant_id === selectedRestaurant
+        );
+        setTables(restaurantTables);
       } else {
         setError('Failed to load tables');
       }
@@ -42,14 +76,26 @@ const TableManagement = () => {
     }
   };
 
-  // Fetch tables on mount
+  // Initial fetch
   useEffect(() => {
-    fetchTables();
+    fetchRestaurants();
   }, []);
+
+  // Fetch tables when restaurant changes
+  useEffect(() => {
+    if (selectedRestaurant) {
+      fetchTables();
+    }
+  }, [selectedRestaurant]);
 
   // Handle create table
   const handleCreateTable = async (e) => {
     e.preventDefault();
+
+    if (!selectedRestaurant) {
+      alert('Please select a restaurant first');
+      return;
+    }
 
     // Validate inputs
     if (!newTable.table_number || newTable.table_number < 1) {
@@ -72,6 +118,7 @@ const TableManagement = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          restaurant_id: selectedRestaurant,
           table_number: parseInt(newTable.table_number),
           capacity: parseInt(newTable.capacity),
           status: 'available',
@@ -102,17 +149,22 @@ const TableManagement = () => {
     }
   };
 
-  // Handle delete table
-  const handleDeleteTable = async (tableId, tableNumber) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete Table ${tableNumber}? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+  // Handle delete table click
+  const handleDeleteClick = (tableId, tableNumber) => {
+    setDeleteModal({
+      isOpen: true,
+      tableId,
+      tableNumber
+    });
+  };
+
+  // Confirm delete table
+  const handleConfirmDelete = async () => {
+    const { tableId, tableNumber } = deleteModal;
 
     try {
+      console.log(`Attempting to delete table ${tableNumber} (ID: ${tableId})`);
+
       const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
         method: 'DELETE',
       });
@@ -122,7 +174,10 @@ const TableManagement = () => {
       if (data.success) {
         // Remove table from list
         setTables(tables.filter((table) => table.id !== tableId));
-        alert(data.message);
+        // Close modal
+        setDeleteModal({ isOpen: false, tableId: null, tableNumber: null });
+        // Optional: Show success toast instead of alert if available, keeping alert for now but it's less intrusive after modal
+        // alert(data.message); 
       } else {
         alert(data.error || 'Failed to delete table');
       }
@@ -244,8 +299,19 @@ const TableManagement = () => {
       {/* Header */}
       <header className="bg-brand-orange text-white shadow-md">
         <div className="container mx-auto px-6 py-6">
-          <h1 className="text-3xl font-bold mb-2">Table Management</h1>
-          <p className="text-sm opacity-90">
+          <div className="flex items-center gap-4 mb-2">
+            <a
+              href="/admin"
+              className="p-2 rounded-full hover:bg-white/20 transition text-white"
+              title="Back to Dashboard"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 className="text-3xl font-bold">Table Management</h1>
+          </div>
+          <p className="text-sm opacity-90 ml-12">
             Manage restaurant tables and QR codes
           </p>
         </div>
@@ -257,6 +323,24 @@ const TableManagement = () => {
         {error && (
           <ErrorMessage message={error} onRetry={fetchTables} className="mb-6" />
         )}
+
+        {/* Restaurant Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-text-secondary mb-2">
+            Select Restaurant
+          </label>
+          <select
+            value={selectedRestaurant || ''}
+            onChange={(e) => setSelectedRestaurant(parseInt(e.target.value))}
+            className="w-full md:w-1/3 px-4 py-2 bg-dark-card border border-dark-surface rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent text-text-primary"
+          >
+            {restaurants.map((restaurant) => (
+              <option key={restaurant.id} value={restaurant.id}>
+                {restaurant.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Create Table Form */}
         <div className="bg-dark-card rounded-2xl shadow-xl border border-dark-surface p-6 mb-6">
@@ -299,11 +383,10 @@ const TableManagement = () => {
             <button
               type="submit"
               disabled={isCreating}
-              className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
-                isCreating
-                  ? 'bg-gray-600 cursor-not-allowed'
-                  : 'bg-brand-orange hover:opacity-90 pulse-once-orange'
-              }`}
+              className={`px-6 py-2 rounded-lg font-semibold text-white transition ${isCreating
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-brand-orange hover:opacity-90 pulse-once-orange'
+                }`}
             >
               {isCreating ? 'Creating...' : 'Create Table'}
             </button>
@@ -340,13 +423,12 @@ const TableManagement = () => {
                       </p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        table.status === 'available'
-                          ? 'bg-green-500'
-                          : table.status === 'occupied'
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${table.status === 'available'
+                        ? 'bg-green-500'
+                        : table.status === 'occupied'
                           ? 'bg-red-500'
                           : 'bg-dark-surface0'
-                      }`}
+                        }`}
                     >
                       {table.status}
                     </span>
@@ -377,11 +459,10 @@ const TableManagement = () => {
                     <button
                       onClick={() => handleDownloadQRCode(table)}
                       disabled={!table.qr_code}
-                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-                        table.qr_code
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-gray-600 text-text-secondary cursor-not-allowed'
-                      }`}
+                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${table.qr_code
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-600 text-text-secondary cursor-not-allowed'
+                        }`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -402,11 +483,10 @@ const TableManagement = () => {
                     <button
                       onClick={() => handlePrintQRCode(table)}
                       disabled={!table.qr_code}
-                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-                        table.qr_code
-                          ? 'bg-green-600 text-white hover:bg-green-700'
-                          : 'bg-gray-600 text-text-secondary cursor-not-allowed'
-                      }`}
+                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${table.qr_code
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-600 text-text-secondary cursor-not-allowed'
+                        }`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -426,7 +506,7 @@ const TableManagement = () => {
 
                     <button
                       onClick={() =>
-                        handleDeleteTable(table.id, table.table_number)
+                        handleDeleteClick(table.id, table.table_number)
                       }
                       className="w-full py-2 rounded-lg font-semibold text-red-600 border-2 border-red-600 hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2"
                     >
@@ -492,12 +572,21 @@ const TableManagement = () => {
           </div>
         )}
       </div>
-    </div>
+
+
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Table"
+        message={`Are you sure you want to delete Table ${deleteModal.tableNumber}? This action cannot be undone.`}
+        confirmText="Delete"
+        isDangerous={true}
+      />
+    </div >
   );
 };
 
 export default TableManagement;
-
-
-
-

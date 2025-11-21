@@ -57,7 +57,7 @@ async function sendWebhook(payload, description) {
  * Test Cases
  */
 async function runTests() {
-  console.log('\n🧪 Starting Edge Function Tests\n');
+  console.log('\n?? Starting Edge Function Tests\n');
   console.log('Edge Function URL:', EDGE_FUNCTION_URL);
   console.log('Using Webhook Secret:', WEBHOOK_SECRET ? '***' + WEBHOOK_SECRET.slice(-4) : 'NOT SET');
 
@@ -180,7 +180,7 @@ async function runTests() {
     data: {}
   }, 'Unknown Event Type - Should be ignored');
 
-  console.log('\n✅ All tests completed!\n');
+  console.log('\n? All tests completed!\n');
 }
 
 // Run tests
@@ -188,3 +188,4 @@ runTests().catch(error => {
   console.error('Test suite failed:', error);
   process.exit(1);
 });
+

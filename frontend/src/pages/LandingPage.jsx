@@ -132,42 +132,10 @@ const LandingPage = () => {
               <BuildingStorefrontIcon className="w-20 h-20 text-brand-lime" />
             </div>
           </div>
-
-          <h2 className="text-4xl font-bold text-white text-center mb-3">Browse Restaurants</h2>
-
-          <p className="text-gray-400 text-center mb-8 text-lg">
-            Explore delivery & takeout
-          </p>
-
-          <button
-            onClick={() => navigate('/restaurants')}
-            className="
-              w-full
-              bg-brand-lime text-black
-              px-8 py-4 rounded-full
-              text-lg font-bold uppercase tracking-wide
-              hover:bg-brand-lime/90
-              transform hover:scale-105 active:scale-95
-              transition-all duration-200
-              shadow-xl shadow-brand-lime/30 hover:shadow-brand-lime/50
-            "
-          >
-            View Restaurants
-          </button>
         </div>
       </div>
-
-      {/* KITCHEN LINK */}
-      <div className="relative z-10 text-center">
-        <button
-          onClick={() => navigate('/kitchen')}
-          className="text-gray-500 hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
-        >
-          Kitchen Dashboard
-        </button>
-      </div>
-    </div>
   );
 };
+
 
 export default LandingPage;
