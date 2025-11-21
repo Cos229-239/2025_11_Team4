@@ -180,25 +180,7 @@ const RestaurantListPage = () => {
       categories: ["Asian", "Thai"]
     }
   ];
-
-  // Category options
-  const categories = [
-    'All',
-    'American',
-    'Asian',
-    'Burgers',
-    'Pizza',
-    'Italian',
-    'Mexican',
-    'Mediterranean',
-    'Sushi'
-  ];
-
-  // Filter restaurants based on search and category
-  // Prefer live restaurants if loaded; map to existing shape expected by UI
-    // For now, keep using the designed mock restaurants (including Crazy Otto).
-  // The backend restaurant API is wired up but not driving this list yet.
-  const restaurantsData = mockRestaurants;
+  
 
   // Map API data to UI format
   const restaurantsData = useMemo(() => {
