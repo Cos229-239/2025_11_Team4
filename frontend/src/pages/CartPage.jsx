@@ -187,6 +187,11 @@ const CartPage = () => {
     }
   };
 
+  const handleBrowseMenu = () => {
+  // Safe default: go to the restaurants listing
+  navigate('/restaurants');
+};
+
   // Handle direct quantity input
   const handleQuantityInput = (itemId, value) => {
     const quantity = parseInt(value);
@@ -329,19 +334,7 @@ const CartPage = () => {
             Add some delicious items from our menu to get started!
           </p>
           <button
-            onClick={() => {
-              if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
-                // Navigate to restaurant list if pre-ordering
-                navigate('/restaurants');
-              } else if (orderContext?.restaurantId) {
-                navigate(`/restaurant/${orderContext.restaurantId}/menu`, {
-                  state: orderContext
-                });
-              } else {
-                // Default to restaurant list
-                navigate('/restaurants');
-              }
-            }}
+            onClick={handleBrowseMenu}
             className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30"
           >
             Browse Menu

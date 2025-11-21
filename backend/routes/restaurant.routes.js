@@ -7,6 +7,13 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
+// 🔸 Import Crazy Otto's static data
+const {
+  crazyOttosRestaurant,
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories,
+} = require('../data/crazyOttosData');
+
 /**
  * GET /api/restaurants
  * Get all active restaurants
@@ -82,6 +89,14 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 🔸 Special case: Crazy Otto's (id = 0) from static data
+    if (id === '0') {
+      return res.json({
+        success: true,
+        data: crazyOttosRestaurant,
+      });
+    }
+
     const result = await pool.query(
       'SELECT * FROM restaurants WHERE id = $1',
       [id]
@@ -120,6 +135,27 @@ router.get('/:id/menu', async (req, res) => {
     const { id } = req.params;
     const { category, available } = req.query;
 
+    // 🔸 Special case: Crazy Otto's static menu
+    if (id === '0') {
+      let items = [...crazyOttosMenuItems];
+
+      if (category) {
+        items = items.filter(item => item.category === category);
+      }
+
+      if (available !== undefined) {
+        const isAvailable = available === 'true';
+        items = items.filter(item => item.available === isAvailable);
+      }
+
+      return res.json({
+        success: true,
+        data: items,
+        count: items.length,
+      });
+    }
+
+    // 🔹 Default DB-backed behavior for all other restaurants
     let query = 'SELECT * FROM menu_items WHERE restaurant_id = $1';
     const params = [id];
 
@@ -159,6 +195,14 @@ router.get('/:id/menu', async (req, res) => {
 router.get('/:id/menu/categories', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // 🔸 Special case: Crazy Otto's static categories
+    if (id === '0') {
+      return res.json({
+        success: true,
+        data: crazyOttosMenuCategories,
+      });
+    }
 
     const result = await pool.query(
       'SELECT DISTINCT category FROM menu_items WHERE restaurant_id = $1 AND available = true ORDER BY category',
@@ -330,6 +374,27 @@ router.get('/:id/stats', async (req, res) => {
       });
     }
 
+    // Get today's date string
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get active tables (occupied)
+    const activeTablesResult = await pool.query(
+      "SELECT COUNT(*) as active_tables FROM tables WHERE restaurant_id = $1 AND status = 'occupied'",
+      [id]
+    );
+
+    // Get today's revenue (sum of total_amount for non-cancelled orders created today)
+    const revenueResult = await pool.query(
+      "SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE restaurant_id = $1 AND DATE(created_at) = $2 AND status != 'cancelled'",
+      [id, today]
+    );
+
+    // Get today's total orders
+    const todayOrdersResult = await pool.query(
+      "SELECT COUNT(*) as total_orders FROM orders WHERE restaurant_id = $1 AND DATE(created_at) = $2",
+      [id, today]
+    );
+
     // Get menu item count
     const menuCountResult = await pool.query(
       'SELECT COUNT(*) as menu_count FROM menu_items WHERE restaurant_id = $1 AND available = true',
@@ -343,15 +408,14 @@ router.get('/:id/stats', async (req, res) => {
     );
 
     // Get today's reservation count
-    const today = new Date().toISOString().split('T')[0];
     const todayReservationsResult = await pool.query(
-      'SELECT COUNT(*) as today_reservations FROM reservations WHERE restaurant_id = $1 AND reservation_date = $2 AND status NOT IN (\'cancelled\', \'no-show\')',
+      "SELECT COUNT(*) as today_reservations FROM reservations WHERE restaurant_id = $1 AND reservation_date = $2 AND status NOT IN ('cancelled', 'no-show')",
       [id, today]
     );
 
-    // Get total completed orders
+    // Get total completed orders (all time)
     const completedOrdersResult = await pool.query(
-      'SELECT COUNT(*) as completed_orders FROM orders WHERE restaurant_id = $1 AND status = \'completed\'',
+      "SELECT COUNT(*) as completed_orders FROM orders WHERE restaurant_id = $1 AND status = 'completed'",
       [id]
     );
 
@@ -363,7 +427,10 @@ router.get('/:id/stats', async (req, res) => {
         tableCount: parseInt(tableCountResult.rows[0].table_count),
         totalCapacity: parseInt(tableCountResult.rows[0].total_capacity || 0),
         todayReservations: parseInt(todayReservationsResult.rows[0].today_reservations),
-        completedOrders: parseInt(completedOrdersResult.rows[0].completed_orders)
+        completedOrders: parseInt(completedOrdersResult.rows[0].completed_orders),
+        activeTables: parseInt(activeTablesResult.rows[0].active_tables),
+        revenueToday: parseFloat(revenueResult.rows[0].revenue),
+        totalOrdersToday: parseInt(todayOrdersResult.rows[0].total_orders)
       }
     });
   } catch (error) {

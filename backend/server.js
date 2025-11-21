@@ -6,6 +6,9 @@ const http = require('http');
 const net = require('net');
 const { Server } = require('socket.io');
 require('dotenv').config();
+const { authenticateToken, requireRole } = require('./middleware/auth.middleware');
+
+
 
 // Background jobs
 const cleanupJob = require('./jobs/cleanup-reservations');
@@ -24,6 +27,14 @@ const ioCorsOptions = {
 // Webhook route (must be before JSON parser for raw body verification)
 const paymentWebhookRoutes = require('./routes/payment.webhook.routes');
 app.use('/api/payments', paymentWebhookRoutes);
+
+// Import Crazy Otto's data for demo purposes
+const {
+  crazyOttosRestaurant,
+  crazyOttosMenuItems,
+  crazyOttosMenuCategories,
+} = require('./data/crazyOttosData');
+
 
 // Middleware
 app.disable('x-powered-by');
@@ -88,8 +99,10 @@ const authRoutes = require('./routes/auth.routes');
 app.use('/api/auth', authLimiter, authRoutes); // Apply strict rate limiting to auth routes
 const paymentRoutes = require('./routes/payment.routes');
 app.use('/api/payments', paymentRoutes);
+// Protect Admin Routes
+// Only Developer and Owner can access admin settings
 const settingsRoutes = require('./routes/settings.routes');
-app.use('/api/admin/settings', settingsRoutes);
+app.use('/api/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
 
 // Socket.IO connection handling
 const { setupOrderSocket } = require('./sockets/order.socket');
