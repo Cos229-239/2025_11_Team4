@@ -31,29 +31,28 @@ const LandingPage = () => {
       #000000 100%
     )
   `,
-  filter: "blur(20px)",
+  filter: "blur(40px)",
   backgroundSize: "180% 180%",
-  opacity: 0.9,
+  opacity: 0.55,
 }}
 
       ></div>
 
       {/* LOGO OFICIAL */}
       <div className="relative z-10 mb-10">
-        <img
-          src="/src/assets/logo-copa.png"
-          alt="OrderEasy Logo"
-          className="
-            w-48 h-auto mx-auto 
-            drop-shadow-[0_0_25px_rgba(0,0,0,0.45)]
-            hover:scale-105 transition-transform duration-300
-          "
-        />
-      </div>
+  <img
+    src="/src/assets/order-easy-logo-transparent-2.png"
+    alt="OrderEasy Logo"
+    className="w-64 h-auto mx-auto
+      drop-shadow-[0_0_25px_rgba(0,0,0,0.45)]
+      hover:scale-105 transition-transform duration-300
+    "
+  />
+</div>
 
       {/* TAGLINE */}
       <h1 className="relative z-10 text-center mb-20 leading-tight">
-        <span className="block text-4xl sm:text-5xl lg:text-6xl font-semibold text-white font-['Playfair_Display'] italic">
+        <span className="block text-4xl sm:text-5xl lg:text-6xltext-white font-['Playfair_Display'] italic font-light">
           Let’s
         </span>
 

@@ -68,7 +68,7 @@ const Logo = ({ size = 'md', variant = 'default', className = '' }) => {
       <WineGlassIcon />
       <div className={`${sizeConfig.text} font-bold`}>
         <span className="text-brand-orange">Order</span>
-        <span className="text-brand-lime">Easy</span>
+        <span className="text-brand-lime font-bold">Easy</span>
       </div>
     </div>
   );
