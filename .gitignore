@@ -62,4 +62,4 @@ coverage/
 *.temp
 .cache/
 
-
+backend/.env
