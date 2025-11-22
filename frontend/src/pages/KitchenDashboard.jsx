@@ -20,7 +20,7 @@ const KitchenDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, preparing, ready
-
+  
   const { socket, isConnected } = useSocket();
   const emit = useSocketEmit();
 
@@ -153,6 +153,10 @@ const KitchenDashboard = () => {
     if (filter === 'all') return true;
     return order.status === filter;
   });
+  // If the preparing tab is selected, sort by FIFO
+  if (filter === 'preparing') {
+    filteredOrders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); 
+  }
 
   // Count orders by status
   const orderCounts = {
@@ -161,6 +165,99 @@ const KitchenDashboard = () => {
     preparing: orders.filter((o) => o.status === 'preparing').length,
     ready: orders.filter((o) => o.status === 'ready').length,
   };
+
+// Live analytics calculations
+const totalOrders = orders.length;
+const totalPending = orders.filter(o => o.status === 'pending').length;
+const totalPreparing = orders.filter(o => o.status === 'preparing').length;
+const totalReady = orders.filter(o => o.status === 'ready').length;
+const totalCompleted = orders.filter(o => o.status === 'completed').length;
+
+// Calculate average preparing time for orders with both preparing_at + completed_at/ready_at
+const avgPreparingTime = (() => {
+  const times = orders
+    .filter(o => o.preparing_at && (o.completed_at || o.ready_at))
+    .map(o => {
+      const end = new Date(o.completed_at || o.ready_at);
+      const start = new Date(o.preparing_at);
+      return (end - start) / 1000; // get duration in seconds
+    });
+  if (times.length === 0) return '-';
+  const avgSeconds = times.reduce((a, b) => a + b, 0) / times.length;
+  const m = Math.floor(avgSeconds / 60);
+  const s = Math.floor(avgSeconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+})();
+
+// LIVE OCCUPANCY & RESERVATION ANALYTICS
+const totalOccupancy = orders
+  .filter(order => order.order_type === 'dine-in' && ['pending', 'preparing', 'ready'].includes(order.status))
+  .reduce((sum, order) => sum + (order.number_of_guests || 0), 0);
+
+const totalToGo = orders
+  .filter(order => order.order_type === 'to-go' && ['pending', 'preparing', 'ready'].includes(order.status))
+  .length;
+
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+const todayStr = `${yyyy}-${mm}-${dd}`;
+
+const totalReservationsToday = orders
+  .filter(order =>
+    order.order_type === 'reservation' &&
+    order.reservation_date && 
+    order.reservation_date.startsWith(todayStr)
+  )
+  .length;
+// Replace this with our real fetch later!
+const [employees, setEmployees] = useState([]);
+// Collapsible states for panels
+const [isEmployeePanelOpen, setEmployeePanelOpen] = useState(false);
+const [isAnalyticsPanelOpen, setAnalyticsPanelOpen] = useState(false);
+const [isOccupancyPanelOpen, setOccupancyPanelOpen] = useState(false);
+
+
+// This is our example data, to be replaced with real API data in further production stages
+// Category lists
+// In production we will fetch() from our API, similar to how we did the orders.
+const managerCount = employees.filter(e => e.role === "manager").length;
+const onDutyManagers = employees.filter(e => e.role === "manager" && e.on_duty).length;
+
+const bartenderCount = employees.filter(e => e.role === "bartender").length;
+const onDutyBartenders = employees.filter(e => e.role === "bartender" && e.on_duty).length;
+
+const barBackCount = employees.filter(e => e.role === "bar_back").length;
+const onDutyBarBacks = employees.filter(e => e.role === "bar_back" && e.on_duty).length;
+
+const busboyCount = employees.filter(e => e.role === "busboy").length;
+const onDutyBusboys = employees.filter(e => e.role === "busboy" && e.on_duty).length;
+
+const waiterCount = employees.filter(e => e.role === "waiter").length;
+const onDutyWaiters = employees.filter(e => e.role === "waiter" && e.on_duty).length;
+
+const hostessCount = employees.filter(e => e.role === "hostess").length;
+const onDutyHostess = employees.filter(e => e.role === "hostess" && e.on_duty).length;
+
+// Total
+const totalEmployees = employees.length;
+const totalOnDuty = employees.filter(e => e.on_duty).length;
+ 
+ // Example inventory data
+const [inventory, setInventory] = useState([
+  { category: 'Produce', item: 'Tomatoes', quantity: 18, unit: 'lbs' },
+  { category: 'Produce', item: 'Lettuce', quantity: 6, unit: 'heads' },
+  { category: 'Dairy', item: 'Milk', quantity: 8, unit: 'gallons' },
+  { category: 'Dairy', item: 'Cheese', quantity: 3, unit: 'blocks' },
+  { category: 'To-Go', item: 'To-go Boxes', quantity: 120, unit: 'pcs' },
+  { category: 'To-Go', item: 'Straws', quantity: 350, unit: 'pcs' },
+  // Add more items/categories as needed!
+]);
+const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
+
+
+
 
   // Loading state
   if (loading) {
@@ -180,7 +277,7 @@ const KitchenDashboard = () => {
   return (
     <div className="min-h-screen bg-dark-bg">
       {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-2xl sticky top-0 z-20">
+      <header className="bg-gray-800 text-white shadow-2xl sticky top-0 z-20">
         <div className="container mx-auto px-6 py-5">
           <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-4">
@@ -382,6 +479,159 @@ const KitchenDashboard = () => {
           </div>
         </div>
       )}
+      
+<div className={`fixed bottom-6 left-[27.6rem] z-40 transition-all duration-300 ${isAnalyticsPanelOpen ? 'w-96' : 'w-80'}`}>
+  <div
+    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
+    onClick={() => setAnalyticsPanelOpen(open => !open)}
+  >
+    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
+      📊 Live Analytics
+      <span className={`${isAnalyticsPanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
+    </h3>
+    <ul className="text-sm space-y-2">
+      {/* Core summary here */}
+      {isAnalyticsPanelOpen && (
+   <ul className="text-sm space-y-2">
+      <li>
+        <span className="font-semibold text-brand-orange">Total Orders: </span>
+        {totalOrders}
+      </li>
+      <li>
+        <span className="font-semibold text-brand-orange">Pending: </span>
+        {totalPending}
+      </li>
+      <li>
+        <span className="font-semibold text-yellow-500">Preparing: </span>
+        {totalPreparing}
+      </li>
+      <li>
+        <span className="font-semibold text-green-500">Ready: </span>
+        {totalReady}
+      </li>
+      <li>
+        <span className="font-semibold text-green-400">Completed: </span>
+        {totalCompleted}
+      </li>
+      <li className="pt-2 border-t border-dark-surface">
+        <span className="font-semibold text-brand-lime">Avg Prep Time: </span>
+        {avgPreparingTime === '-' ? 'N/A' : avgPreparingTime + ' min'}
+      </li>
+    </ul>
+      )}
+    </ul>
+  </div>
+</div>
+
+{/* Live Occupancy & Reservations Panel */}
+<div className="fixed bottom-6 left-[53.6rem] z-40">
+  <div className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 w-80">
+    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
+      🪑 Occupancy & Reservations
+    </h3>
+    <ul className="text-sm space-y-2">
+      <li>
+        <span className="font-semibold text-brand-lime">Current Occupancy: </span>
+        {totalOccupancy}
+      </li>
+      <li>
+        <span className="font-semibold text-brand-orange">To-Go Orders: </span>
+        {totalToGo}
+      </li>
+      <li>
+        <span className="font-semibold text-text-secondary">Today's Reservations: </span>
+        {totalReservationsToday}
+      </li>
+    </ul>
+  </div>
+</div>
+
+{/* Employees Panel */}
+<div className={`fixed bottom-6 left-6 z-40 transition-all duration-300 ${isEmployeePanelOpen ? 'w-96' : 'w-80'}`}>
+  <div
+    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
+    onClick={() => setEmployeePanelOpen(open => !open)}
+  >
+    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
+      🧑‍🍳 Employees
+      <span className={`${isEmployeePanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
+    </h3>
+    <ul className="space-y-2 text-sm">
+      <li>
+        <span className="font-bold text-text-primary">Total Employees: </span>
+        {totalEmployees} (<span className="text-green-500">{totalOnDuty} on duty</span>)
+      </li>
+      <hr className="my-2 border-dark-surface"/>
+      {isEmployeePanelOpen && (
+        <>
+          <li>
+            <span className="font-bold text-orange-400">Managers: </span>
+            {managerCount} (<span className="text-green-500">{onDutyManagers} on duty</span>)
+          </li>
+          <li>
+            <span className="font-bold text-brand-orange">Bartenders: </span>
+            {bartenderCount} (<span className="text-green-500">{onDutyBartenders} on duty</span>)
+          </li>
+          <li>
+            <span className="font-bold text-yellow-400">Bar Backs: </span>
+            {barBackCount} (<span className="text-green-500">{onDutyBarBacks} on duty</span>)
+          </li>
+          <li>
+            <span className="font-bold text-blue-400">Busboys: </span>
+            {busboyCount} (<span className="text-green-500">{onDutyBusboys} on duty</span>)
+          </li>
+          <li>
+            <span className="font-bold text-fuchsia-400">Waiters: </span>
+            {waiterCount} (<span className="text-green-500">{onDutyWaiters} on duty</span>)
+          </li>
+          <li>
+            <span className="font-bold text-pink-400">Hostess: </span>
+            {hostessCount} (<span className="text-green-500">{onDutyHostess} on duty</span>)
+          </li>
+        </>
+      )}
+    </ul>
+  </div>
+</div>
+
+{/* Inventory Panel */}
+<div className={`fixed bottom-6 left-[77.5rem] z-40 transition-all duration-300 ${isInventoryPanelOpen ? 'w-96' : 'w-80'}`}>
+  <div
+    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
+    onClick={() => setInventoryPanelOpen(open => !open)}
+  >
+    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
+      🗃️ Inventory
+      <span className={`${isInventoryPanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
+    </h3>
+    <ul className="text-sm space-y-2">
+      <li>
+        <span className="font-semibold text-cyan-400">Categories: </span>
+        {Array.from(new Set(inventory.map(i => i.category))).join(', ')}
+      </li>
+      {isInventoryPanelOpen && (
+        <>
+          <hr className="my-2 border-dark-surface"/>
+          {/* Render inventory by category */}
+          {['Produce', 'Dairy', 'To-Go'].map(cat => (
+            <div key={cat}>
+              <div className="font-bold text-brand-orange mt-2">{cat}</div>
+              <ul>
+                {inventory.filter(i => i.category === cat).map(item => (
+                  <li key={item.item} className="ml-2 flex justify-between">
+                    <span>{item.item}</span>
+                    <span className="font-mono">{item.quantity} {item.unit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </>
+      )}
+    </ul>
+  </div>
+</div>
+
     </div>
   );
 };
@@ -389,4 +639,4 @@ const KitchenDashboard = () => {
 export default KitchenDashboard;
 
 
-
+// want to make sure my changes are saved
