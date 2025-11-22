@@ -85,10 +85,14 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed left-0 right-0 z-50 bg-dark-surface border-b border-dark-card transition-all duration-300 ${isScrolled ? 'shadow-xl shadow-black/20' : ''
-          } ${isVisible ? 'top-0' : '-top-20'
-          }`}
-      >
+  className={`fixed left-0 right-0 z-50 
+    bg-white/10 backdrop-blur-xl 
+    border-b border-white/20 
+    transition-all duration-300
+    ${isScrolled ? 'shadow-xl shadow-black/20' : ''}
+    ${isVisible ? 'top-0' : '-top-20'}
+  `}
+>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}

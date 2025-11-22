@@ -288,7 +288,16 @@ const RestaurantListPage = () => {
       <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
 
       {/* Header */}
-      <header className="bg-black shadow-lg relative z-10">
+      <header
+  className="
+    bg-white/10 
+    backdrop-blur-xl 
+    border-b border-white/20 
+    shadow-lg 
+    relative z-10
+  "
+>
+
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <button
