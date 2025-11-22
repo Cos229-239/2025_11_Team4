@@ -31,7 +31,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-6">
+    <div className="min-h-screen bg-white/5 backdrop-blur-lg flex items-center justify-center p-6">
       <form onSubmit={submit} className="bg-dark-card border border-dark-surface rounded-2xl p-6 w-full max-w-md">
         <h1 className="text-2xl font-bold text-text-primary mb-4">Create Account</h1>
         {error && <div className="text-red-400 mb-3">{error}</div>}

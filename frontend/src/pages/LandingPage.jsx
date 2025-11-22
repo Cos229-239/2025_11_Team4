@@ -60,7 +60,19 @@ const LandingPage = () => {
         {/* Customer Option Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
           {/* Card 1: Dine In */}
-          <div className="bg-dark-card rounded-3xl p-8 sm:p-10 border border-dark-surface hover:border-brand-orange/50 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-orange/20 group">
+          <div className="
+  bg-white/10
+  backdrop-blur-xl
+  border border-white/20
+  shadow-xl
+  rounded-3xl
+  p-8 sm:p-10
+  transition-all duration-300
+  hover:-translate-y-2
+  hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]
+  group
+">
+
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="bg-brand-orange/10 p-6 rounded-2xl group-hover:bg-brand-orange/20 transition-colors duration-300">
@@ -96,7 +108,19 @@ const LandingPage = () => {
           </div>
 
           {/* Card 2: Browse Restaurants */}
-          <div className="bg-dark-card rounded-3xl p-8 sm:p-10 border border-dark-surface hover:border-brand-lime/50 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-lime/20 group">
+          <div className="
+          bg-white/10
+          backdrop-blur-xl
+          border border-white/20
+          shadow-xl
+          rounded-3xl
+          p-8 sm:p-10
+          transition-all duration-300
+          hover:-translate-y-2
+          hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]
+          group
+        ">
+
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="bg-brand-lime/10 p-6 rounded-2xl group-hover:bg-brand-lime/20 transition-colors duration-300">

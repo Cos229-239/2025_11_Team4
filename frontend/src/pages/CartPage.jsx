@@ -50,7 +50,17 @@ const CartPage = () => {
   if (!tableId && !orderingMode && !preOrderContext) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-        <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-lg w-full border border-dark-surface">
+        <div className="
+          bg-brand-lime/10
+          backdrop-blur-xl
+          border border-brand-lime/40
+          rounded-2xl
+          p-8
+          max-w-lg
+          w-full
+          shadow-[0_0_25px_rgba(181,255,0,0.25)]
+        ">
+
           <div className="text-center mb-6">
             <div className="text-5xl mb-4">🍽️</div>
             <h2 className="text-2xl font-bold text-text-primary mb-2">How would you like to order?</h2>
