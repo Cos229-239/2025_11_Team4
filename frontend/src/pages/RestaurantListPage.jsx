@@ -275,27 +275,37 @@ const RestaurantListPage = () => {
 
   return (
 
-      {/* Header */}
-      <header
-  className="
-    bg-white/10 
-    backdrop-blur-xl 
-    border-b border-white/20 
-    shadow-lg 
-    relative z-10
-  "
->
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 pb-28">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
 
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/20 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-4 mb-8 relative z-10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="text-white hover:bg-white/10 transition-colors flex items-center gap-2 px-3 py-2 rounded-full"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">Back</span>
+          </button>
 
 
 
@@ -551,4 +561,4 @@ const RestaurantListPage = () => {
   );
 };
 
-export default RestaurantListPage;
+export default RestaurantListPage; 
