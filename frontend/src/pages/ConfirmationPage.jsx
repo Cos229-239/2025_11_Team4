@@ -158,9 +158,8 @@ const ConfirmationPage = () => {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center py-8 px-4">
         <div
-          className={`bg-dark-card rounded-2xl shadow-2xl p-6 sm:p-10 max-w-2xl w-full border border-dark-surface transform transition-all duration-700 ${
-            showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-          }`}
+          className={`bg-dark-card rounded-2xl shadow-2xl p-6 sm:p-10 max-w-2xl w-full border border-dark-surface transform transition-all duration-700 ${showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+            }`}
         >
           {/* Header - Different for tentative vs confirmed */}
           <div className="text-center mb-8">
@@ -377,11 +376,30 @@ const ConfirmationPage = () => {
   const orderNumber = order.order_number || order.id;
 
   return (
-    <div className="min-h-screen bg-dark-bg flex items-center justify-center py-8 px-4">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] py-8 px-4 flex items-center justify-center">
+      {/* BACKGROUND GRADIENT */}
       <div
-        className={`bg-dark-card rounded-2xl shadow-2xl p-6 sm:p-10 max-w-2xl w-full border border-dark-surface transform transition-all duration-700 ${
-          showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      <div
+        className={`bg-black/20 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-10 max-w-2xl w-full border border-white/10 transform transition-all duration-700 relative z-10 ${showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
       >
         {/* Success Header with Animation */}
         <div className="text-center mb-8">

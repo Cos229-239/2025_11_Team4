@@ -159,7 +159,10 @@ backend/
 ├── scripts/
 │   ├── setup-database.js   # Database initialization
 │   ├── check_tables.js     # Table verification
-│   └── debug_tables.js     # Detailed table inspection
+│   ├── debug_tables.js     # Detailed table inspection
+│   ├── check-restaurants.js # Verify restaurant data
+│   ├── check_users.js      # Verify user data
+│   └── add_timezone_to_restaurants.js # Schema migration utility
 ├── schema.sql              # Database schema + seed data
 ├── server.js               # Main application entry point
 ├── .env.example            # Environment template

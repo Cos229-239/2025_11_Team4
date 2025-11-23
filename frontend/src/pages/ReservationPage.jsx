@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useUserAuth } from '../context/UserAuthContext';
 import { useCart } from '../context/CartContext';
 
@@ -8,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const ReservationPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setPreOrderContext } = useCart();
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -105,17 +106,21 @@ const ReservationPage = () => {
         restaurant_id: Number(id)
       });
 
-      navigate(`/restaurant/${id}/menu`, {
-        state: {
-          orderType: 'reservation',
-          reservationId: null,
-          restaurantId: Number(id),
-          preOrderContext: {
-            reservation_intent: intentToken,
-            scheduled_for: scheduledFor
+      if (location.state?.fromCart) {
+        navigate('/cart');
+      } else {
+        navigate(`/restaurant/${id}/menu`, {
+          state: {
+            orderType: 'reservation',
+            reservationId: null,
+            restaurantId: Number(id),
+            preOrderContext: {
+              reservation_intent: intentToken,
+              scheduled_for: scheduledFor
+            }
           }
-        }
-      });
+        });
+      }
     } catch (e) {
       setError(e.message || 'Failed to create reservation');
     } finally {
@@ -124,29 +129,49 @@ const ReservationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary pb-12">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] text-text-primary pb-12 pt-24">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-brand-lime/90 text-dark-bg px-6 py-3 rounded-full z-50 shadow-lg font-bold backdrop-blur-sm">
           {toast}
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-dark-card border-b border-dark-surface sticky top-0 z-20 shadow-lg">
-        <div className="container mx-auto px-6 py-4 flex items-center gap-4">
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-6 mb-8 relative z-10">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-dark-surface transition text-text-secondary hover:text-white"
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h1 className="font-['Playfair_Display'] font-bold text-xl">Make a Reservation</h1>
+          <h1 className="font-['Playfair_Display'] font-bold text-3xl text-white drop-shadow-lg">Make a Reservation</h1>
         </div>
-      </header>
+      </div>
 
-      <div className="container mx-auto px-6 py-8 max-w-5xl">
+      <div className="container mx-auto px-6 py-8 max-w-5xl relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           {/* Left Column: Date, Time, Party */}
@@ -220,8 +245,8 @@ const ReservationPage = () => {
                       key={t}
                       onClick={() => { setTime(t); checkAvailability(); }}
                       className={`py-2 rounded-lg text-sm font-medium transition border ${time === t
-                          ? 'bg-brand-lime text-brand-black border-brand-lime shadow-lg shadow-brand-lime/20'
-                          : 'bg-dark-surface text-text-secondary border-dark-surface hover:bg-dark-surface/80 hover:text-white'
+                        ? 'bg-brand-lime text-brand-black border-brand-lime shadow-lg shadow-brand-lime/20'
+                        : 'bg-dark-surface text-text-secondary border-dark-surface hover:bg-dark-surface/80 hover:text-white'
                         }`}
                     >
                       {t}
@@ -261,8 +286,8 @@ const ReservationPage = () => {
                       key={t.id}
                       onClick={() => setSelectedTable(t.id)}
                       className={`relative p-4 rounded-xl border text-left transition-all group ${selectedTable === t.id
-                          ? 'border-brand-lime bg-brand-lime/10 ring-2 ring-brand-lime ring-offset-2 ring-offset-dark-card'
-                          : 'border-dark-surface bg-dark-surface hover:bg-dark-surface/80 hover:border-brand-orange/50'
+                        ? 'border-brand-lime bg-brand-lime/10 ring-2 ring-brand-lime ring-offset-2 ring-offset-dark-card'
+                        : 'border-dark-surface bg-dark-surface hover:bg-dark-surface/80 hover:border-brand-orange/50'
                         }`}
                     >
                       <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${selectedTable === t.id ? 'bg-brand-lime' : 'bg-dark-card'}`}></div>

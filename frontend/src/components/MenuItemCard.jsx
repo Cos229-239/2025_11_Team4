@@ -34,7 +34,7 @@ const MenuItemCard = ({ item, onAddToCart }) => {
   const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%233A3A3A" width="400" height="300"/%3E%3Ctext fill="%23736262" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3E' + encodeURIComponent(item.name) + '%3C/text%3E%3C/svg%3E';
 
   return (
-    <div className="bg-dark-card rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:shadow-brand-orange/20 transition-all duration-300 transform hover:-translate-y-1 border border-dark-surface">
+    <div className="glass-card rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:shadow-brand-orange/20 transition-all duration-300 transform hover:-translate-y-1">
       {/* Image Section */}
       <div className="relative h-48 bg-dark-surface overflow-hidden group">
         <img
@@ -82,13 +82,12 @@ const MenuItemCard = ({ item, onAddToCart }) => {
         <button
           onClick={handleAddToCart}
           disabled={!item.available || isAdding}
-          className={`w-full py-3 px-4 rounded-xl font-['Lora'] font-bold transition-all duration-300 ${
-            !item.available
+          className={`w-full py-3 px-4 rounded-xl font-['Lora'] font-bold transition-all duration-300 ${!item.available
               ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
               : isAdding
-              ? 'bg-brand-lime text-dark-bg scale-95'
-              : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-lg hover:shadow-brand-lime/30 active:scale-95'
-          }`}
+                ? 'bg-brand-lime text-dark-bg scale-95'
+                : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-lg hover:shadow-brand-lime/30 active:scale-95'
+            }`}
           style={{ fontSize: '17px' }}
         >
           {isAdding ? (

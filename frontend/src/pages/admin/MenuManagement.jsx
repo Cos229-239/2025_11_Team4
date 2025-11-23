@@ -112,29 +112,47 @@ const MenuManagement = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary">
-      {/* Header */}
-      <header className="bg-brand-orange text-white shadow-md sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center gap-4 mb-2">
-            <a
-              href="/admin"
-              className="p-2 rounded-full hover:bg-white/20 transition text-white"
-              title="Back to Dashboard"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </a>
-            <h1 className="text-3xl font-bold">Menu Management</h1>
-          </div>
-          <p className="text-sm opacity-90 ml-12">
-            Create and manage menu items
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#000000] text-text-primary pt-20 relative overflow-hidden">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
 
-      <div className="container mx-auto px-6 py-8">
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-6 mb-6 relative z-10">
+        <div className="flex items-center gap-4 mb-2">
+          <a
+            href="/admin"
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
+            title="Back to Dashboard"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg">Menu Management</h1>
+        </div>
+        <p className="text-sm opacity-90 ml-12 text-gray-300">
+          Create and manage menu items
+        </p>
+      </div>
+
+      <div className="container mx-auto px-6 py-8 relative z-10">
         {/* Restaurant Selector */}
         <div className="mb-8">
           <label className="block text-sm font-medium text-text-secondary mb-2">Select Restaurant</label>

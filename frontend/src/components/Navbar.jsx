@@ -20,26 +20,22 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Handle scroll to hide/show navbar and add shadow
+  // Track scroll to toggle glass effect and show/hide on direction
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // Add shadow when scrolled
       setIsScrolled(currentScrollY > 10);
 
-      // Hide navbar when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down & past threshold
+      // Hide on scroll down, show on scroll up
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
         setIsVisible(false);
-        setIsMenuOpen(false); // Close menu when hiding
+        setIsMenuOpen(false);
       } else if (currentScrollY < lastScrollY) {
-        // Scrolling up
         setIsVisible(true);
       }
 
-      // Always show at top of page
-      if (currentScrollY < 10) {
+      // Always visible at the very top
+      if (currentScrollY < 8) {
         setIsVisible(true);
       }
 
@@ -85,9 +81,10 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed left-0 right-0 z-50 bg-dark-surface border-b border-dark-card transition-all duration-300 ${isScrolled ? 'shadow-xl shadow-black/20' : ''
-          } ${isVisible ? 'top-0' : '-top-20'
-          }`}
+        className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 transform ${isScrolled
+          ? 'bg-white/5 backdrop-blur-2xl backdrop-saturate-150 shadow-lg border-b border-white/10'
+          : 'bg-transparent border-b border-transparent shadow-none'
+          } ${isVisible || isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -104,8 +101,8 @@ const Navbar = () => {
               <Link
                 to="/"
                 className={`font-medium transition-colors ${location.pathname === '/'
-                    ? 'text-brand-orange'
-                    : 'text-text-secondary hover:text-brand-orange'
+                  ? 'text-brand-orange'
+                  : 'text-text-secondary hover:text-brand-orange'
                   }`}
               >
                 Home
@@ -113,19 +110,12 @@ const Navbar = () => {
               <Link
                 to="/restaurants"
                 className={`font-medium transition-colors ${location.pathname.startsWith('/restaurants') || location.pathname.startsWith('/restaurant/')
-                    ? 'text-brand-orange'
-                    : 'text-text-secondary hover:text-brand-orange'
+                  ? 'text-brand-orange'
+                  : 'text-text-secondary hover:text-brand-orange'
                   }`}
               >
                 Restaurants
               </Link>
-              {/* Future: Orders link for logged in users */}
-              {/* <Link
-                to="/orders"
-                className="font-medium text-gray-700 hover:text-brand-orange transition-colors"
-              >
-                Orders
-              </Link> */}
             </div>
 
             {/* Right Side Actions */}
@@ -226,16 +216,16 @@ const Navbar = () => {
         {/* Mobile Menu Dropdown */}
         <div
           className={`md:hidden bg-dark-card border-t border-dark-surface transition-all duration-300 ease-in-out ${isMenuOpen
-              ? 'max-h-screen opacity-100'
-              : 'max-h-0 opacity-0 overflow-hidden'
+            ? 'max-h-screen opacity-100'
+            : 'max-h-0 opacity-0 overflow-hidden'
             }`}
         >
           <div className="container mx-auto px-4 py-4 space-y-3">
             <Link
               to="/"
               className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/'
-                  ? 'bg-brand-orange text-white'
-                  : 'text-text-secondary hover:bg-dark-surface'
+                ? 'bg-brand-orange text-white'
+                : 'text-text-secondary hover:bg-dark-surface'
                 }`}
             >
               🏠 Home
@@ -244,8 +234,8 @@ const Navbar = () => {
               <Link
                 to={`/menu/${tableId}`}
                 className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('/menu')
-                    ? 'bg-brand-orange text-white'
-                    : 'text-text-secondary hover:bg-dark-surface'
+                  ? 'bg-brand-orange text-white'
+                  : 'text-text-secondary hover:bg-dark-surface'
                   }`}
               >
                 🍽️ Menu
@@ -254,8 +244,8 @@ const Navbar = () => {
             <Link
               to="/restaurants"
               className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/restaurants') || location.pathname.startsWith('/restaurant/')
-                  ? 'bg-brand-orange text-white'
-                  : 'text-text-secondary hover:bg-dark-surface'
+                ? 'bg-brand-orange text-white'
+                : 'text-text-secondary hover:bg-dark-surface'
                 }`}
             >
               Restaurants
@@ -266,8 +256,8 @@ const Navbar = () => {
                 <Link
                   to="/profile"
                   className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/profile')
-                      ? 'bg-brand-orange text-white'
-                      : 'text-text-secondary hover:bg-dark-surface'
+                    ? 'bg-brand-orange text-white'
+                    : 'text-text-secondary hover:bg-dark-surface'
                     }`}
                 >
                   Profile
@@ -275,8 +265,8 @@ const Navbar = () => {
                 <Link
                   to="/my-reservations"
                   className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/my-reservations')
-                      ? 'bg-brand-orange text-white'
-                      : 'text-text-secondary hover:bg-dark-surface'
+                    ? 'bg-brand-orange text-white'
+                    : 'text-text-secondary hover:bg-dark-surface'
                     }`}
                 >
                   My Reservations
@@ -292,29 +282,21 @@ const Navbar = () => {
               <Link
                 to="/login"
                 className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/login')
-                    ? 'bg-brand-orange text-white'
-                    : 'text-text-secondary hover:bg-dark-surface'
+                  ? 'bg-brand-orange text-white'
+                  : 'text-text-secondary hover:bg-dark-surface'
                   }`}
               >
                 Sign In
               </Link>
             )}
 
-            {/* Future: Orders link */}
-            {/* <Link
-              to="/orders"
-              className="block px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              📋 Orders
-            </Link> */}
-
             {/* Mobile Cart Link */}
             {showCartButton && (
               <Link
                 to="/cart"
                 className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('/cart')
-                    ? 'bg-brand-orange text-white'
-                    : 'text-text-secondary hover:bg-dark-surface'
+                  ? 'bg-brand-orange text-white'
+                  : 'text-text-secondary hover:bg-dark-surface'
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -331,8 +313,15 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Spacer to prevent content from going under fixed navbar */}
-      <div className="h-16"></div>
+      {/* Spacer to prevent content from going under fixed navbar - Hidden on pages with transparent header */}
+      <div
+        className="transition-[height] duration-500 ease-out"
+        style={{
+          height: ['/', '/cart', '/profile', '/restaurants', '/reservation', '/my-reservations', '/admin/menu', '/admin/settings', '/restaurant'].some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
+            ? '0px'
+            : '64px'
+        }}
+      ></div>
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (

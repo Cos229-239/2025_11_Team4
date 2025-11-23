@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeScanType, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   QrCodeIcon,
   ArrowLeftIcon,
@@ -76,10 +76,15 @@ const QRScannerPage = () => {
       const scanner = new Html5QrcodeScanner(
         'qr-reader',
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 15,
           aspectRatio: 1.0,
           showTorchButtonIfSupported: true,
+          rememberLastUsedCamera: true,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA, Html5QrcodeScanType.SCAN_TYPE_FILE],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         },
         false
       );
@@ -167,10 +172,26 @@ const QRScannerPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col px-4 py-6 relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] flex flex-col px-4 py-6">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between mb-8">
@@ -279,9 +300,10 @@ const QRScannerPage = () => {
             </div>
           )}
 
-          <p className="text-text-secondary text-xs text-center mt-4">
+          <p className="text-text-secondary text-xs text-center mt-6">
             Note: Camera permissions are required for scanning.
           </p>
+
         </div>
       </div>
     </div>
