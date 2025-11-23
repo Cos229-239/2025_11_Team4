@@ -20,10 +20,10 @@ const STATUS_CONFIG = {
   },
   preparing: {
     label: 'Preparing',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500',
-    textColor: 'text-yellow-500',
-    badgeColor: 'bg-yellow-500',
+    bgColor: 'bg-status-warning/10',
+    borderColor: 'border-status-warning',
+    textColor: 'text-status-warning',
+    badgeColor: 'bg-status-warning',
     nextStatus: 'ready',
     actionLabel: 'Mark as Ready',
     actionColor: 'bg-brand-lime hover:bg-brand-lime/90 text-dark-bg',
@@ -31,13 +31,13 @@ const STATUS_CONFIG = {
   },
   ready: {
     label: 'Ready',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500',
-    textColor: 'text-green-500',
-    badgeColor: 'bg-green-500',
+    bgColor: 'bg-status-success/10',
+    borderColor: 'border-status-success',
+    textColor: 'text-status-success',
+    badgeColor: 'bg-status-success',
     nextStatus: 'completed',
     actionLabel: 'Mark Completed',
-    actionColor: 'bg-green-600 hover:bg-green-700',
+    actionColor: 'bg-status-success hover:bg-status-success/90',
     icon: '✅',
   },
   completed: {
@@ -53,10 +53,10 @@ const STATUS_CONFIG = {
   },
   cancelled: {
     label: 'Cancelled',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500',
-    textColor: 'text-red-500',
-    badgeColor: 'bg-red-500',
+    bgColor: 'bg-status-danger/10',
+    borderColor: 'border-status-danger',
+    textColor: 'text-status-danger',
+    badgeColor: 'bg-status-danger',
     nextStatus: null,
     actionLabel: null,
     actionColor: null,
@@ -264,14 +264,14 @@ const OrderCard = ({ order, onStatusUpdate }) => {
 
         {/* Customer Notes */}
         {order.customer_notes && (
-          <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-            <p className="text-xs font-bold text-yellow-500 mb-1 flex items-center gap-2">
+          <div className="mt-4 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl">
+            <p className="text-xs font-bold text-status-warning mb-1 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
               CUSTOMER NOTES:
             </p>
-            <p className="text-sm text-yellow-400">{order.customer_notes}</p>
+            <p className="text-sm text-status-warning">{order.customer_notes}</p>
           </div>
         )}
 
@@ -286,7 +286,7 @@ const OrderCard = ({ order, onStatusUpdate }) => {
 
       {/* Error Message */}
       {error && (
-        <div className="mx-5 mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm flex items-center gap-2">
+        <div className="mx-5 mb-4 p-3 bg-status-danger/10 border border-status-danger/20 text-status-danger rounded-xl text-sm flex items-center gap-2">
           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -340,10 +340,10 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           <button
             onClick={handleCancel}
             disabled={isUpdating}
-            className={`w-full py-3 rounded-xl font-bold text-red-400 border-2 border-red-500/30 bg-red-500/10 transition-all ${
+            className={`w-full py-3 rounded-xl font-bold text-status-danger border-2 border-status-danger/30 bg-status-danger/10 transition-all ${
               isUpdating
                 ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-red-500/20 hover:border-red-500'
+                : 'hover:bg-status-danger/20 hover:border-status-danger'
             }`}
           >
             Cancel Order

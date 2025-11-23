@@ -5,6 +5,10 @@ const orderController = require('../controllers/order.controller');
 // GET /api/orders/active - Get active orders (must be before /:id route)
 router.get('/active', orderController.getActiveOrders);
 
+// GET /api/orders/by-number/:orderNumber - Lookup order by human-facing number
+// This must be defined before the generic "/:id" route.
+router.get('/by-number/:orderNumber', orderController.getOrderByNumber);
+
 // GET /api/orders/table/:tableId - Get orders by table
 router.get('/table/:tableId', orderController.getOrdersByTable);
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -16,33 +16,139 @@ const CartPage = () => {
     cart,
     updateQuantity,
     removeFromCart,
-    updateSpecialInstructions,
     clearCart,
     cartSubtotal,
     cartTax,
     cartTotal,
     setTableId,
+    preOrderContext,
+    orderContext,
   } = useCart();
 
   const [customerNotes, setCustomerNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectTable, setSelectTable] = useState('');
+  const [orderingMode, setOrderingMode] = useState(null); // null, 'dine-in', or 'reservation'
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState(null);
 
   // Set table ID in context when component mounts
   useEffect(() => {
     if (tableId) {
       setTableId(tableId);
+      setOrderingMode('dine-in'); // If tableId is present, they scanned QR (legacy)
+    } else if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
+      // If we have pre-order context, skip ordering mode selection
+      setOrderingMode('pre-order');
+      console.log('Cart detected pre-order context:', preOrderContext);
+    } else if (orderContext?.orderType === 'dine-in' && orderContext.tableNumber) {
+      // Dine-in context from menu (QR flow)
+      setTableId(orderContext.tableNumber);
+      setOrderingMode('dine-in');
     }
-  }, [tableId, setTableId]);
+  }, [tableId, setTableId, preOrderContext, orderContext]);
 
-  // If no table selected in the URL, prompt user to select table
-  if (!tableId) {
+  // If no table selected in the URL and no pre-order context, ask if they're at restaurant or planning ahead
+  if (!tableId && !orderingMode && !preOrderContext) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+        <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-lg w-full border border-dark-surface">
+          <div className="text-center mb-6">
+            <div className="text-5xl mb-4">🍽️</div>
+            <h2 className="text-2xl font-bold text-text-primary mb-2">How would you like to order?</h2>
+            <p className="text-text-secondary">Choose your dining option to continue</p>
+          </div>
+
+          <div className="space-y-4">
+            {/* Dine-In Option */}
+            <button
+              onClick={() => navigate('/scan-qr')}
+              className="w-full bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white p-6 rounded-xl hover:shadow-xl hover:shadow-brand-orange/30 transition-all text-left"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-1">I'm at the Restaurant</h3>
+                  <p className="text-sm opacity-90">Scan the QR code on your table to start</p>
+                </div>
+                <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Reservation Option */}
+            <button
+              onClick={() => setOrderingMode('reservation')}
+              className="w-full bg-dark-surface border-2 border-dark-surface hover:border-brand-lime text-text-primary p-6 rounded-xl hover:shadow-xl transition-all text-left"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-brand-lime" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-1">Planning Ahead</h3>
+                  <p className="text-sm text-text-secondary">Make a reservation and pre-order your meal</p>
+                </div>
+                <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          </div>
+
+          <button
+            onClick={() => navigate('/restaurants')}
+            className="mt-6 w-full text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
+          >
+            Back to Restaurants
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If they chose reservation but haven't made one yet, redirect them
+  if (orderingMode === 'reservation' && !tableId) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
         <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Select Your Table</h2>
-          <p className="text-text-secondary mb-6">Enter your table number to continue</p>
+          <div className="text-5xl mb-4">📅</div>
+          <h2 className="text-2xl font-bold text-text-primary mb-2">Make a Reservation First</h2>
+          <p className="text-text-secondary mb-6">
+            To pre-order your meal, you'll need to make a reservation first. After reserving, you can browse the menu and place your order.
+          </p>
+
+          <button
+            onClick={() => navigate('/restaurants')}
+            className="w-full bg-brand-lime text-dark-bg px-8 py-4 rounded-xl font-bold hover:bg-brand-lime/90 transition-all mb-3"
+          >
+            Browse Restaurants
+          </button>
+
+          <button
+            onClick={() => setOrderingMode(null)}
+            className="w-full text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If they chose dine-in, show table selection
+  if (orderingMode === 'dine-in' && !tableId) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+        <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
+          <div className="text-5xl mb-4">🍽️</div>
+          <h2 className="text-2xl font-bold text-text-primary mb-2">Enter Your Table Number</h2>
+          <p className="text-text-secondary mb-6">You can find this on the QR code at your table</p>
 
           <input
             type="number"
@@ -54,22 +160,18 @@ const CartPage = () => {
           />
 
           <button
-            onClick={() => {
-              const num = parseInt(selectTable);
-              if (!isNaN(num) && num > 0) {
-                navigate(`/cart/${num}`);
-              }
-            }}
-            className="w-full bg-brand-lime text-dark-bg px-8 py-3 rounded-xl font-bold hover:bg-brand-lime/90 transition-all"
+            onClick={() => setOrderingMode(null)}
+            disabled={!selectTable}
+            className="w-full bg-brand-lime text-dark-bg px-8 py-3 rounded-xl font-bold hover:bg-brand-lime/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
           >
             Continue
           </button>
 
           <button
-            onClick={() => navigate('/')}
-            className="mt-4 text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
+            onClick={() => setOrderingMode(null)}
+            className="w-full text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
           >
-            Back to Home
+            Back
           </button>
         </div>
       </div>
@@ -85,6 +187,11 @@ const CartPage = () => {
     }
   };
 
+  const handleBrowseMenu = () => {
+  // Safe default: go to the restaurants listing
+  navigate('/restaurants');
+};
+
   // Handle direct quantity input
   const handleQuantityInput = (itemId, value) => {
     const quantity = parseInt(value);
@@ -93,50 +200,126 @@ const CartPage = () => {
     }
   };
 
-  // Handle place order
+  // Handle proceed to checkout/payment
   const handlePlaceOrder = async () => {
     if (cart.length === 0) {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setError(null);
+    // Clear any previous errors
+    setVerificationError(null);
 
-      // Prepare order data
-      const orderData = {
-        table_id: parseInt(tableId),
-        customer_notes: customerNotes,
-        items: cart.map((item) => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          special_instructions: item.special_instructions || '',
-        })),
-      };
+    // If we have pre-order context, VERIFY reservation before payment (per flowchart)
+    if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
+      console.log('[CART] Pre-order detected - verifying reservation before payment');
+      setIsVerifying(true);
 
-      // Submit order to API
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      });
+      try {
+        let verifyResponse;
 
-      const data = await response.json();
+        // New intent-based verification
+        if (preOrderContext.reservation_intent) {
+          verifyResponse = await fetch(`${API_URL}/api/reservations/intent/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              intentToken: preOrderContext.reservation_intent
+            })
+          });
+        } else {
+          // Legacy reservation row verification
+          verifyResponse = await fetch(
+            `${API_URL}/api/reservations/${preOrderContext.reservation_id}/verify`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                restaurant_id: preOrderContext.restaurant_id
+              })
+            }
+          );
+        }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to place order');
+        const verifyData = await verifyResponse.json();
+
+        // Step 2: Handle verification errors per flowchart
+        if (!verifyResponse.ok) {
+          console.error('[CART] Verification failed:', verifyData);
+
+          // Map error codes to user-friendly messages
+          const errorMessages = {
+            'RESERVATION_NOT_FOUND': {
+              title: 'Reservation Not Found',
+              message: 'This reservation no longer exists. Please make a new reservation.',
+              action: 'Make New Reservation'
+            },
+            'RESERVATION_EXPIRED': {
+              title: 'Time Slot No Longer Available',
+              message: 'Your reservation has expired while you were shopping. The time slot has been released.',
+              action: 'Make New Reservation'
+            },
+            'RESERVATION_CONFLICT': {
+              title: 'Slot Already Taken',
+              message: 'Another customer has already booked this time slot. Please choose a different time.',
+              action: 'Make New Reservation'
+            },
+            'WRONG_RESTAURANT': {
+              title: 'Restaurant Mismatch',
+              message: 'Your cart items are from a different restaurant than your reservation.',
+              action: 'Clear Cart'
+            }
+          };
+
+          const error = errorMessages[verifyData.code] || {
+            title: 'Verification Failed',
+            message: verifyData.message || 'Please try again or make a new reservation.',
+            action: 'Try Again'
+          };
+
+          setVerificationError(error);
+          setIsVerifying(false);
+          return;
+        }
+
+        // Step 3: Verification succeeded - proceed to payment
+        console.log('[CART] Verification successful - proceeding to payment');
+        setIsVerifying(false);
+
+        const paymentState = {
+          order_type: 'pre-order',
+          scheduled_for: preOrderContext.scheduled_for,
+          customer_notes: customerNotes
+        };
+
+        if (preOrderContext.reservation_intent) {
+          paymentState.reservation_intent = preOrderContext.reservation_intent;
+        } else if (preOrderContext.reservation_id) {
+          paymentState.reservation_id = preOrderContext.reservation_id;
+        }
+
+        navigate('/payment', { state: paymentState });
+
+      } catch (error) {
+        console.error('[CART] Verification request failed:', error);
+        setVerificationError({
+          title: 'Connection Error',
+          message: 'Unable to verify reservation. Please check your internet connection and try again.',
+          action: 'Try Again'
+        });
+        setIsVerifying(false);
       }
 
-      // Order successful - clear cart and navigate to confirmation
-      clearCart();
-      navigate(`/confirmation/${data.data.id}`);
-    } catch (err) {
-      console.error('Error placing order:', err);
-      setError(err.message || 'Failed to place order. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Regular dine-in order - no verification needed
+      console.log('[CART] Dine-in order - proceeding directly to payment');
+      const effectiveTableId = tableId || orderContext?.tableNumber;
+      navigate('/payment', {
+        state: {
+          table_id: effectiveTableId ? parseInt(effectiveTableId, 10) : null,
+          order_type: 'dine-in',
+          customer_notes: customerNotes
+        }
+      });
     }
   };
 
@@ -151,7 +334,7 @@ const CartPage = () => {
             Add some delicious items from our menu to get started!
           </p>
           <button
-            onClick={() => navigate(`/menu/${tableId}`)}
+            onClick={handleBrowseMenu}
             className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30"
           >
             Browse Menu
@@ -169,7 +352,17 @@ const CartPage = () => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate(`/menu/${tableId}`)}
+                onClick={() => {
+                  if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
+                    navigate('/restaurants');
+                  } else if (orderContext?.restaurantId) {
+                    navigate(`/restaurant/${orderContext.restaurantId}/menu`, {
+                      state: orderContext
+                    });
+                  } else {
+                    navigate('/restaurants');
+                  }
+                }}
                 className="hover:bg-dark-bg/10 rounded-xl p-2 transition-all"
                 aria-label="Back to menu"
               >
@@ -205,18 +398,6 @@ const CartPage = () => {
       </header>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          </div>
-        )}
-
         {/* Cart Items */}
         <div className="bg-dark-card rounded-2xl shadow-xl mb-6 border border-dark-surface">
           <div className="p-5 border-b border-dark-surface">
@@ -302,7 +483,7 @@ const CartPage = () => {
                   {/* Remove Button */}
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl p-2 transition-all h-fit"
+                    className="text-[#ef4444] hover:opacity-80 hover:bg-[rgb(239_68_68_/_.1)] rounded-xl p-2 transition-all h-fit"
                     aria-label="Remove item"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,6 +519,64 @@ const CartPage = () => {
           </div>
         </div>
 
+        {/* Verification Error Display */}
+        {verificationError && (
+          <div className="bg-[rgb(239_68_68_/_.1)] border-2 border-[#ef4444] rounded-2xl shadow-xl p-6 mb-6 animate-shake">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-[rgb(239_68_68_/_.2)] rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-[#ef4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-['Playfair_Display'] font-bold text-[#ef4444] mb-2" style={{ fontSize: '20px' }}>{verificationError.title}</h3>
+                <p className="text-text-secondary font-['Lora'] mb-4" style={{ fontSize: '17px' }}>{verificationError.message}</p>
+                <div className="flex gap-3">
+                  {verificationError.action === 'Make New Reservation' && (
+                    <button
+                      onClick={() => {
+                        clearCart();
+                        navigate('/restaurants');
+                      }}
+                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
+                      style={{ fontSize: '17px' }}
+                    >
+                      {verificationError.action}
+                    </button>
+                  )}
+                  {verificationError.action === 'Clear Cart' && (
+                    <button
+                      onClick={() => {
+                        clearCart();
+                        navigate('/restaurants');
+                      }}
+                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
+                      style={{ fontSize: '17px' }}
+                    >
+                      {verificationError.action}
+                    </button>
+                  )}
+                  {verificationError.action === 'Try Again' && (
+                    <button
+                      onClick={() => setVerificationError(null)}
+                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
+                      style={{ fontSize: '17px' }}
+                    >
+                      {verificationError.action}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setVerificationError(null)}
+                    className="text-text-secondary hover:text-text-primary px-4 py-2 rounded-xl hover:bg-dark-surface transition-all"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Order Summary - Desktop */}
         <div className="hidden md:block bg-dark-card rounded-2xl shadow-xl p-6 border border-dark-surface">
           <h2 className="text-lg font-bold text-text-primary mb-4">Order Summary</h2>
@@ -361,35 +600,19 @@ const CartPage = () => {
 
           <button
             onClick={handlePlaceOrder}
-            disabled={isSubmitting}
-            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${
-              isSubmitting
-                ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
-                : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
-            }`}
+            disabled={isVerifying || !!verificationError}
+            className="w-full py-4 rounded-xl font-bold transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime flex items-center justify-center gap-2"
           >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
+            {isVerifying ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Placing Order...
-              </span>
+                Verifying Reservation...
+              </>
             ) : (
-              'Place Order'
+              'Proceed to Checkout'
             )}
           </button>
         </div>
@@ -405,35 +628,19 @@ const CartPage = () => {
 
           <button
             onClick={handlePlaceOrder}
-            disabled={isSubmitting}
-            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${
-              isSubmitting
-                ? 'bg-dark-card text-text-secondary cursor-not-allowed'
-                : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
-            }`}
+            disabled={isVerifying || !!verificationError}
+            className="w-full py-4 rounded-xl font-bold transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime flex items-center justify-center gap-2"
           >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
+            {isVerifying ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Placing Order...
-              </span>
+                Verifying...
+              </>
             ) : (
-              'Place Order'
+              'Proceed to Checkout'
             )}
           </button>
         </div>

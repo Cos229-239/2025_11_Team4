@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import OrderCard from '../components/OrderCard';
 import Logo from '../components/Logo';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
@@ -15,19 +15,19 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  */
 const KitchenDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout } = useUserAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, pending, preparing, ready
-  
+  const [filter, setFilter] = useState('all');
+
   const { socket, isConnected } = useSocket();
   const emit = useSocketEmit();
 
   // Handle logout
   const handleLogout = () => {
     logout();
-    navigate('/kitchen-login');
+    navigate('/login');
   };
 
   // Fetch initial active orders on mount
@@ -277,13 +277,13 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
   return (
     <div className="min-h-screen bg-dark-bg">
       {/* Header */}
-      <header className="bg-gray-800 text-white shadow-2xl sticky top-0 z-20">
-        <div className="container mx-auto px-6 py-5">
-          <div className="flex justify-between items-center mb-5">
+      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-2xl sticky top-0 z-20">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-4">
               <Logo size="sm" />
               <div>
-                <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
+                <h1 className="text-2xl font-bold">Kitchen Dashboard</h1>
                 <p className="text-sm opacity-90 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -295,15 +295,13 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
 
             <div className="flex items-center gap-4">
               {/* Connection Status */}
-              <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${
-                isConnected
-                  ? 'bg-green-500/20 border-green-400'
-                  : 'bg-red-500/20 border-red-400'
-              }`}>
+              <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${isConnected
+                ? 'bg-status-success/20 border-status-success'
+                : 'bg-status-danger/20 border-status-danger'
+                }`}>
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    isConnected ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-red-400'
-                  }`}
+                  className={`w-3 h-3 rounded-full ${isConnected ? 'bg-status-success animate-pulse shadow-lg shadow-status-success/50' : 'bg-status-danger'
+                    }`}
                 ></div>
                 <span className="text-sm font-bold">
                   {isConnected ? 'Connected' : 'Disconnected'}
@@ -331,10 +329,22 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
                 Refresh
               </button>
 
+              {/* Back to Home Button */}
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white/10 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                title="Back to Home"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="hidden sm:inline">Home</span>
+              </button>
+
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-red-600 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-status-danger text-white px-4 py-2 rounded-xl font-bold hover:bg-status-danger/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                 title="Logout"
               >
                 <ArrowRightOnRectangleIcon className="w-5 h-5" />
@@ -347,41 +357,37 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
           <div className="flex gap-3 overflow-x-auto pb-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'all'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'all'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               All Orders <span className="ml-2 inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full bg-dark-surface text-text-secondary border border-dark-surface/60">{orderCounts.all}</span>
             </button>
             <button
               onClick={() => setFilter('pending')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'pending'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'pending'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               🆕 New ({orderCounts.pending})
             </button>
             <button
               onClick={() => setFilter('preparing')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'preparing'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'preparing'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               👨‍🍳 Preparing ({orderCounts.preparing})
             </button>
             <button
               onClick={() => setFilter('ready')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'ready'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${filter === 'ready'
+                ? 'bg-brand-orange text-white shadow-lg scale-105'
+                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
+                }`}
             >
               ✅ Ready ({orderCounts.ready})
             </button>
@@ -393,17 +399,17 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
       <div className="container mx-auto px-6 py-6">
         {/* Error Message */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+          <div className="bg-status-danger/10 border border-status-danger/20 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-status-danger flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-red-400 font-semibold">{error}</p>
+                <p className="text-status-danger font-semibold">{error}</p>
               </div>
               <button
                 onClick={fetchActiveOrders}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all"
+                className="bg-status-danger/20 hover:bg-status-danger/30 text-status-danger px-4 py-2 rounded-lg font-semibold transition-all"
               >
                 Retry
               </button>
@@ -461,11 +467,11 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
                   <span className="text-text-secondary text-sm">New</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-yellow-500">{orderCounts.preparing}</span>
+                  <span className="text-3xl font-bold text-status-warning">{orderCounts.preparing}</span>
                   <span className="text-text-secondary text-sm">Preparing</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-500">{orderCounts.ready}</span>
+                  <span className="text-3xl font-bold text-status-success">{orderCounts.ready}</span>
                   <span className="text-text-secondary text-sm">Ready</span>
                 </div>
               </div>

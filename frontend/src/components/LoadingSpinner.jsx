@@ -12,9 +12,8 @@ const LoadingSpinner = ({ label = 'Loading...', size = 'lg', className = '' }) =
     <div className={`flex flex-col items-center justify-center ${className}`}>
       <div
         className={`animate-spin rounded-full ${sizeClasses} border-solid border-dark-surface border-b-brand-orange`}
-        style={{ borderBottomColor: '#FF6B35' }}
       />
-      {label && <p className="mt-3 text-text-secondary text-lg">{label}</p>}
+      {label && <p className="mt-3 text-text-secondary font-['Lora']" style={{ fontSize: '17px' }}>{label}</p>}
     </div>
   );
 };

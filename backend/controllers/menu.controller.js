@@ -79,13 +79,13 @@ const getAllCategories = async (req, res) => {
 // Create new menu item
 const createMenuItem = async (req, res) => {
   try {
-    const { name, description, price, category, image_url, available } = req.body;
+    const { name, description, price, category, image_url, available, restaurant_id } = req.body;
 
     // Validation
-    if (!name || !price || !category) {
+    if (!name || !price || !category || !restaurant_id) {
       return res.status(400).json({
         success: false,
-        error: 'Name, price, and category are required fields'
+        error: 'Name, price, category, and restaurant_id are required fields'
       });
     }
 
@@ -102,7 +102,8 @@ const createMenuItem = async (req, res) => {
       price,
       category,
       image_url,
-      available
+      available,
+      restaurant_id
     });
 
     res.status(201).json({

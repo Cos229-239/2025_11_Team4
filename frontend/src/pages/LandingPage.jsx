@@ -1,32 +1,56 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo';
 import {
   QrCodeIcon,
   BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
 
-/**
- * LandingPage Component
- * Team Vision Design - Clean, modern landing with two clear customer paths
- */
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Subtle background glow effects */}
-      <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <div
+      className="
+        min-h-screen 
+        flex flex-col items-center justify-center 
+        px-6 py-16 
+        relative overflow-hidden 
+        bg-[#000000]
+      "
+    >
+      {/* BACKGROUND GRADIENT  */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+  background: `
+    radial-gradient(circle at center,
+      #E35504ff 0%,
+      #E35504aa 15%,
+      #000000 35%,
+      #5F2F14aa 55%,
+      #B5FF00ff 80%,
+      #000000 100%
+    )
+  `,
+  filter: "blur(40px)",
+  backgroundSize: "180% 180%",
+  opacity: 0.55,
+}}
 
-      {/* Main Content Container */}
-      <div className="relative z-10 max-w-6xl w-full">
-        {/* Logo */}
-        <div className="flex justify-center mb-8 transform hover:scale-105 transition-transform duration-300">
-          <Logo size="xl" />
-        </div>
+      ></div>
 
-        {/* Tagline */}
+      {/* LOGO OFICIAL */}
+      <div className="relative z-10 mb-10">
+  <img
+    src="/src/assets/order-easy-logo-transparent-2.png"
+    alt="OrderEasy Logo"
+    className="w-64 h-auto mx-auto
+      drop-shadow-[0_0_25px_rgba(0,0,0,0.45)]
+      hover:scale-105 transition-transform duration-300
+    "
+  />
+</div>
+
+      {/* Tagline */}
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-center mb-16 text-text-primary/90 italic leading-relaxed">
           Let's
           <br />
@@ -53,10 +77,9 @@ const LandingPage = () => {
             <p className="text-text-secondary text-center mb-8 text-lg">
               Order from your table
             </p>
-
             {/* CTA Button */}
             <button
-              onClick={() => navigate('/scan-qr')}
+              onClick={() => navigate('/qr-check')}
               className="
                 w-full
                 bg-brand-orange text-white
@@ -68,7 +91,7 @@ const LandingPage = () => {
                 shadow-xl shadow-brand-orange/30 hover:shadow-brand-orange/50
               "
             >
-              Scan QR Code
+              Start Ordering
             </button>
           </div>
 
@@ -109,19 +132,9 @@ const LandingPage = () => {
             </button>
           </div>
         </div>
-
-        {/* Kitchen Dashboard Link - Small footer */}
-        <div className="text-center">
-          <button
-            onClick={() => navigate('/kitchen')}
-            className="text-text-secondary hover:text-brand-orange transition-colors text-sm underline decoration-dotted underline-offset-4"
-          >
-            Kitchen Dashboard
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
+
 
 export default LandingPage;

@@ -1,5 +1,65 @@
+# --- FRONTEND ---
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/.DS_Store
+
+# --- BACKEND ---
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.local
+
+# --- GENERAL ---
+# Dependencies
 node_modules/
+package-lock.json.bak
+
+# Environment variables
 .env
+.env.local
+.env.production
+.env.*.local
+
+# Build outputs
 dist/
+.env
+.env.local
+.vscode/
+.idea/
+.DS_Store
+*.log
 build/
-backend/schema.sql
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+backend/.env

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MenuItemCard from '../components/MenuItemCard';
 import CategoryTabs from '../components/CategoryTabs';
@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5020';
 
 /**
  * MenuPage Component
@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const MenuPage = () => {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { addToCart, cartItemCount, cartTotal, setTableId } = useCart();
+  const { addToCart, cartItemCount, cartTotal, setTableId, } = useCart();
 
   // State management
   const [menuItems, setMenuItems] = useState([]);
@@ -25,47 +25,57 @@ const MenuPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Set table ID in cart context
-  useEffect(() => {
-    if (tableId) {
-      setTableId(tableId);
+  // Set table ID in cart context (always run hooks, branch inside)
+useEffect(() => {
+  const n = Number(tableId);
+  if (!Number.isNaN(n) && n > 0) {
+    setTableId(n);
+  }
+}, [tableId, setTableId]);
+
+// Parse once for reuse
+const parsedTableId = Number(tableId);
+
+// Unified fetcher (used by Retry button too)
+const fetchMenuData = useCallback(async () => {
+  // Don't fetch if tableId isn't valid
+  if (!parsedTableId || Number.isNaN(parsedTableId)) return;
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    // 1) Table → restaurant_id
+    const tableRes = await fetch(`${API_URL}/api/tables/${parsedTableId}`);
+    const tableData = await tableRes.json();
+    if (!tableData.success || !tableData.data?.restaurant_id) {
+      throw new Error('Failed to resolve restaurant for table');
     }
-  }, [tableId, setTableId]);
+    const rid = tableData.data.restaurant_id;
 
-  // Fetch menu items and categories based on table's restaurant
-  useEffect(() => {
-    const fetchMenuData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    // 2) Menu
+    const menuRes = await fetch(`${API_URL}/api/restaurants/${rid}/menu?available=true`);
+    const menuData = await menuRes.json();
+    if (!menuData.success) throw new Error('Failed to load menu items');
+    setMenuItems(menuData.data || []);
 
-        // Fetch table to obtain restaurant_id
-        const tableRes = await fetch(`${API_URL}/api/tables/${tableId}`);
-        const tableData = await tableRes.json();
-        if (!tableData.success || !tableData.data?.restaurant_id) {
-          throw new Error('Failed to resolve restaurant for table');
-        }
-        const rid = tableData.data.restaurant_id;
+    // 3) Categories (non-fatal)
+    const catRes = await fetch(`${API_URL}/api/restaurants/${rid}/menu/categories`);
+    const catData = await catRes.json();
+    if (catData?.success) setCategories(catData.data || []);
+  } catch (err) {
+    console.error('Error fetching menu:', err);
+    setError('Failed to load menu. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+}, [parsedTableId]);
 
-        // Fetch restaurant menu
-        const menuResponse = await fetch(`${API_URL}/api/restaurants/${rid}/menu?available=true`);
-        const menuData = await menuResponse.json();
-        if (!menuData.success) throw new Error('Failed to load menu items');
-        setMenuItems(menuData.data);
+// Kick off the fetch on mount/when table changes
+useEffect(() => {
+  fetchMenuData();
+}, [fetchMenuData]);
 
-        // Fetch restaurant categories
-        const categoriesResponse = await fetch(`${API_URL}/api/restaurants/${rid}/menu/categories`);
-        const categoriesData = await categoriesResponse.json();
-        if (categoriesData.success) setCategories(categoriesData.data);
-      } catch (err) {
-        console.error('Error fetching menu:', err);
-        setError('Failed to load menu. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (tableId) fetchMenuData();
-  }, [tableId]);
 
   // Filter menu items by category
   const filteredMenuItems = activeCategory
@@ -96,18 +106,24 @@ const MenuPage = () => {
   }
 
   // Error state
-  if (error) {
+    if (error) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
         <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
           <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">Oops!</h2>
           <p className="text-text-secondary mb-6">{error}</p>
-          <button onClick={fetchMenuData} className="bg-brand-orange text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition">Try Again</button>
+          <button
+            onClick={fetchMenuData}
+            className="bg-brand-orange text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-dark-bg pb-32">
