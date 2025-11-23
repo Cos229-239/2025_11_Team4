@@ -18,16 +18,21 @@ const createOrder = async (req, res) => {
       items,
       customer_notes,
       order_type = 'dine-in',
+      restaurant_id,
       reservation_id,
       scheduled_for,
       payment_status,
       payment_method,
       payment_intent_id,
-      payment_amount
+      payment_amount,
+      user_id
     } = req.body;
 
+    // Determine user_id: prioritize req.user.id (from auth middleware), then req.body.user_id
+    const userId = req.user ? req.user.id : user_id;
+
     // Validate order_type
-    const validOrderTypes = ['dine-in', 'pre-order', 'walk-in'];
+    const validOrderTypes = ['dine-in', 'pre-order', 'walk-in', 'takeout'];
     if (!validOrderTypes.includes(order_type)) {
       return res.status(400).json({
         success: false,
@@ -175,6 +180,8 @@ const createOrder = async (req, res) => {
     // Create order
     const order = await orderModel.createOrder({
       table_id,
+      restaurant_id,
+      user_id: userId,
       items,
       customer_notes,
       order_type,
@@ -219,7 +226,7 @@ const createOrder = async (req, res) => {
     // Pre-orders will be sent to kitchen when customer checks in or at scheduled time
     const io = req.app.get('io');
     if (io) {
-      if (order_type === 'dine-in' || order_type === 'walk-in') {
+      if (order_type === 'dine-in' || order_type === 'walk-in' || order_type === 'takeout') {
         // Immediate orders go to kitchen right away
         io.to('kitchen').emit('new-order', order);
         io.to('admin').emit('new-order', order);
@@ -274,9 +281,6 @@ const getAllOrders = async (req, res) => {
 };
 
 // Get single order by "order number" (human-facing)
-// For now, order number maps directly to the numeric order ID,
-// but this keeps the API flexible if we later introduce a separate
-// order_number column or formatted values (e.g. "#123").
 const getOrderByNumber = async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -382,6 +386,25 @@ const getActiveOrders = async (req, res) => {
       error: 'Failed to fetch active orders',
       message: error.message
     });
+  }
+};
+
+// Get orders by user ID
+const getUserOrders = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Security check: Ensure the requesting user matches the requested userId or is an admin/staff
+    // Note: This depends on your auth middleware populating req.user
+    if (req.user && req.user.id !== parseInt(userId) && req.user.role === 'customer') {
+      return res.status(403).json({ message: 'Unauthorized to view these orders' });
+    }
+
+    const orders = await orderModel.getOrdersByUser(userId);
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Error fetching user orders', error: error.message });
   }
 };
 
@@ -501,5 +524,6 @@ module.exports = {
   getActiveOrders,
   getOrdersByTable,
   updateOrderStatus,
-  getOrderByNumber
+  getOrderByNumber,
+  getUserOrders
 };

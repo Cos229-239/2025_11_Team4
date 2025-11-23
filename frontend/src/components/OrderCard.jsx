@@ -163,71 +163,94 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     }
   };
 
+  // Determine order type label and icon
+  const getOrderTypeInfo = () => {
+    if (order.order_type === 'takeout') {
+      return { label: 'Takeout', icon: '🛍️', subLabel: `Order #${order.id}` };
+    } else if (order.order_type === 'pre-order') {
+      return { label: 'Pre-order', icon: '📅', subLabel: `Scheduled: ${formatTime(order.scheduled_for)}` };
+    } else {
+      return { label: `Table ${order.table_id || '?'}`, icon: '🍽️', subLabel: `Order #${order.id}` };
+    }
+  };
+
+  const typeInfo = getOrderTypeInfo();
+
   return (
     <div
-      className={`rounded-2xl shadow-xl border-2 ${config.borderColor} ${config.bgColor} overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-102 bg-dark-card`}
+      className={`relative group overflow-hidden rounded-3xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl flex flex-col h-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl`}
     >
+      {/* Status Accent Line (Left) */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${config.badgeColor} shadow-[0_0_15px_rgba(0,0,0,0.5)]`}></div>
+
       {/* Header */}
-      <div className="p-5 border-b border-dark-surface bg-dark-card">
-        <div className="flex justify-between items-start mb-3">
-          {/* Table Number - Large and Prominent */}
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">{config.icon}</span>
+      <div className="p-6 pb-4 border-b border-white/5 relative bg-gradient-to-r from-white/5 to-transparent">
+        <div className="flex justify-between items-start mb-4 pl-3">
+          {/* Order Type & ID */}
+          <div className="flex items-center gap-4">
+            <div className={`w-14 h-14 rounded-2xl ${config.bgColor} flex items-center justify-center text-2xl shadow-inner border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
+              {typeInfo.icon}
+            </div>
             <div>
-              <h2 className="text-4xl font-bold text-text-primary">
-                Table {order.table_id}
+              <h2 className="text-2xl font-bold text-white leading-tight tracking-tight">
+                {typeInfo.label}
               </h2>
-              <span className="text-sm text-text-secondary">Order #{order.id}</span>
+              <span className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                {typeInfo.subLabel}
+              </span>
             </div>
           </div>
 
           {/* Status Badge */}
           <span
-            className={`px-4 py-1.5 rounded-full text-xs font-bold text-white ${config.badgeColor} shadow-lg`}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold text-white ${config.badgeColor} shadow-lg border border-white/20 backdrop-blur-md`}
           >
             {config.label}
           </span>
         </div>
 
         {/* Time Info */}
-        <div className="flex justify-between items-center text-sm mt-3 pt-3 border-t border-dark-surface">
-          <span className="text-text-secondary">
-            ⏰ {formatTime(order.created_at)}
+        <div className="flex justify-between items-center text-sm pt-2 pl-3">
+          <div className="flex items-center gap-2 text-gray-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">{formatTime(order.created_at)}</span>
+          </div>
+          <span className={`font-bold ${config.textColor} bg-black/40 px-3 py-1 rounded-lg text-xs border border-white/5`}>
+            {timeDisplay}
           </span>
-          <span className={`font-semibold ${config.textColor}`}>{timeDisplay}</span>
         </div>
       </div>
 
       {/* Order Items */}
-      <div className="p-5">
-        <h3 className="font-bold text-text-primary text-sm mb-3 flex items-center gap-2">
-          <svg className="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          ORDER ITEMS
+      <div className="p-6 pl-9 flex-1">
+        <h3 className="font-bold text-gray-400 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+          Order Items
+          <span className="h-px flex-1 bg-white/10"></span>
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {order.items && order.items.map((item, index) => (
             <div
               key={item.id}
-              className="flex justify-between items-start bg-dark-surface rounded-xl p-3 shadow-md hover:bg-dark-surface/80 transition-colors"
+              className="group/item flex justify-between items-start"
             >
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xl text-brand-lime bg-brand-lime/10 px-2 py-1 rounded-lg">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-bold text-brand-lime text-lg">
                     {item.quantity}×
                   </span>
-                  <span className="font-semibold text-text-primary">
+                  <span className="font-medium text-gray-200 text-lg leading-snug">
                     {item.menu_item_name}
                   </span>
                 </div>
                 {item.special_instructions && (
-                  <div className="mt-2 text-sm text-brand-orange bg-brand-orange/10 px-3 py-1.5 rounded-lg">
-                    💬 {item.special_instructions}
+                  <div className="mt-1.5 text-sm text-brand-orange/90 italic pl-8 border-l-2 border-brand-orange/30">
+                    "{item.special_instructions}"
                   </div>
                 )}
               </div>
-              <span className="text-sm text-brand-lime font-bold ml-3">
+              <span className="text-sm text-gray-500 font-medium ml-4 mt-1">
                 ${parseFloat(item.subtotal).toFixed(2)}
               </span>
             </div>
@@ -236,74 +259,47 @@ const OrderCard = ({ order, onStatusUpdate }) => {
 
         {/* Customer Notes */}
         {order.customer_notes && (
-          <div className="mt-4 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl">
-            <p className="text-xs font-bold text-status-warning mb-1 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-              CUSTOMER NOTES:
+          <div className="mt-6 p-4 bg-brand-orange/5 border border-brand-orange/20 rounded-xl relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-orange/50"></div>
+            <p className="text-xs font-bold text-brand-orange mb-1 flex items-center gap-2 uppercase tracking-wider">
+              Customer Notes
             </p>
-            <p className="text-sm text-status-warning">{order.customer_notes}</p>
+            <p className="text-sm text-gray-300 italic">"{order.customer_notes}"</p>
           </div>
         )}
+      </div>
 
-        {/* Total */}
-        <div className="mt-4 pt-4 border-t border-dark-surface flex justify-between items-center">
-          <span className="font-bold text-text-primary text-lg">TOTAL:</span>
-          <span className="text-3xl font-bold text-brand-orange">
+      {/* Footer Actions */}
+      <div className="p-4 pl-9 bg-black/20 border-t border-white/5 space-y-3">
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium text-gray-400 text-sm">Total Amount</span>
+          <span className="text-2xl font-bold text-white tracking-tight">
             ${parseFloat(order.total_amount).toFixed(2)}
           </span>
         </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mx-5 mb-4 p-3 bg-status-danger/10 border border-status-danger/20 text-status-danger rounded-xl text-sm flex items-center gap-2">
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="p-5 bg-dark-surface border-t border-dark-card space-y-2">
         {config.nextStatus && (
           <button
             onClick={handleStatusUpdate}
             disabled={isUpdating}
-            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${
-              isUpdating
-                ? 'bg-dark-card text-text-secondary cursor-not-allowed'
-                : `${config.actionColor} text-white hover:shadow-${config.textColor}/30`
-            }`}
+            className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg relative overflow-hidden group/btn ${isUpdating
+                ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+                : `${config.actionColor} text-white shadow-lg shadow-${config.textColor}/20 border border-white/10`
+              }`}
           >
-            {isUpdating ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin h-5 w-5 mr-2"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Updating...
-              </span>
-            ) : (
-              config.actionLabel
-            )}
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              {isUpdating ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Updating...
+                </>
+              ) : (
+                config.actionLabel
+              )}
+            </span>
           </button>
         )}
 
@@ -312,11 +308,10 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           <button
             onClick={handleCancel}
             disabled={isUpdating}
-            className={`w-full py-3 rounded-xl font-bold text-status-danger border-2 border-status-danger/30 bg-status-danger/10 transition-all ${
-              isUpdating
+            className={`w-full py-3 rounded-xl font-bold text-red-400 border border-red-500/20 bg-red-500/5 transition-all ${isUpdating
                 ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-status-danger/20 hover:border-status-danger'
-            }`}
+                : 'hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-300'
+              }`}
           >
             Cancel Order
           </button>

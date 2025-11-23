@@ -18,19 +18,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address TEXT,
   phone VARCHAR(50),
   email VARCHAR(100),
-  opening_hours JSONB DEFAULT '{}',
-  rating DECIMAL(2,1) DEFAULT 0.0 CHECK (rating >= 0 AND rating <= 5),
-  image_url TEXT,
-  status VARCHAR(50) DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  latitude NUMERIC(9,6),
-  longitude NUMERIC(9,6),
-  CONSTRAINT valid_restaurant_status CHECK (status IN ('active', 'inactive', 'closed'))
-);
-
--- Enable RLS
-ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 
 -- Example Policy: Allow public read access to restaurants
 CREATE POLICY "Allow public read access" ON restaurants FOR SELECT USING (true);
@@ -209,17 +196,6 @@ END$$;
 
 -- ============================================================================
 -- ORDERS (WITH FKs TO RESTAURANTS, TABLES, RESERVATIONS)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS orders (
-  id SERIAL PRIMARY KEY,
-  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE SET NULL,
-  table_id INTEGER REFERENCES tables(id) ON DELETE RESTRICT,
-  reservation_id INTEGER REFERENCES reservations(id) ON DELETE SET NULL,
-  order_type VARCHAR(50) DEFAULT 'dine-in',
-  total_amount DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
-  customer_notes TEXT,
-  status VARCHAR(50) DEFAULT 'pending',
-  payment_status VARCHAR(50) DEFAULT 'pending',
   payment_method VARCHAR(50),
   payment_intent_id VARCHAR(255),
   payment_amount DECIMAL(10, 2),
@@ -227,21 +203,9 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   CONSTRAINT valid_status CHECK (status IN ('pending', 'preparing', 'ready', 'completed', 'cancelled')),
-  CONSTRAINT valid_order_type CHECK (order_type IN ('dine-in', 'pre-order', 'walk-in'))
+  CONSTRAINT valid_order_type CHECK (order_type IN ('dine-in', 'pre-order', 'walk-in', 'takeout'))
 );
 
--- Enable RLS
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
-CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_orders_table_id ON orders(table_id);
-CREATE INDEX IF NOT EXISTS idx_orders_reservation_id ON orders(reservation_id);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_order_type ON orders(order_type);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
-
--- Create order_items table
-CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE RESTRICT,

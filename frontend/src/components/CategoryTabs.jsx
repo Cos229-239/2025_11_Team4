@@ -41,7 +41,7 @@ const CategoryTabs = ({ categories, activeCategory, onCategoryChange }) => {
   }, [categories]);
 
   return (
-    <div className="relative bg-dark-surface border-b border-dark-card sticky top-16 z-10 mb-6 shadow-lg">
+    <div className="relative bg-white/5 backdrop-blur-md border-b border-white/10 mb-6 shadow-md">
       <div className="container mx-auto px-4 py-4">
         {/* Scroll Left Button */}
         {showLeftArrow && (
@@ -71,11 +71,10 @@ const CategoryTabs = ({ categories, activeCategory, onCategoryChange }) => {
           {/* All Categories Tab */}
           <button
             onClick={() => onCategoryChange(null)}
-            className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 ${
-              activeCategory === null
-                ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-105'
-                : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 hover:text-brand-orange border border-dark-surface'
-            }`}
+            className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 ${activeCategory === null
+              ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30 scale-105'
+              : 'bg-white/10 text-text-secondary hover:bg-white/20 hover:text-brand-orange border border-white/5'
+              }`}
           >
             All Items
           </button>
@@ -85,11 +84,10 @@ const CategoryTabs = ({ categories, activeCategory, onCategoryChange }) => {
             <button
               key={category}
               onClick={() => onCategoryChange(category)}
-              className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 ${
-                activeCategory === category
-                  ? 'bg-brand-lime text-dark-bg shadow-lg shadow-brand-lime/30 scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 hover:text-brand-lime border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 ${activeCategory === category
+                ? 'bg-brand-lime text-dark-bg shadow-lg shadow-brand-lime/30 scale-105'
+                : 'bg-white/10 text-text-secondary hover:bg-white/20 hover:text-brand-lime border border-white/5'
+                }`}
             >
               {category}
             </button>

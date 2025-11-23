@@ -18,6 +18,7 @@ const PaymentPage = () => {
   const {
     table_id,
     order_type = 'dine-in',
+    restaurant_id,
     reservation_id,
     reservation_intent,
     scheduled_for,
@@ -45,7 +46,7 @@ const PaymentPage = () => {
     // Validate we have proper order context from CartPage
     if (
       !order_type ||
-      (!table_id && !reservation_id && !reservation_intent)
+      (order_type !== 'takeout' && !table_id && !reservation_id && !reservation_intent)
     ) {
       console.warn('Missing order context (no table_id or reservation reference), redirecting to cart');
       navigate('/cart');
@@ -103,6 +104,7 @@ const PaymentPage = () => {
       console.log('Starting payment process...', {
         order_type,
         table_id,
+        restaurant_id,
         reservation_id,
         reservation_intent,
         amount: cartTotal
@@ -172,11 +174,12 @@ const PaymentPage = () => {
       const finalReservationId =
         order_type === 'pre-order'
           ? (confirmedReservation?.id ||
-              (reservation_id ? parseInt(reservation_id, 10) : null))
+            (reservation_id ? parseInt(reservation_id, 10) : null))
           : null;
 
       const orderData = {
         table_id: order_type === 'dine-in' ? parseInt(table_id) : null,
+        restaurant_id: restaurant_id ? parseInt(restaurant_id) : null,
         order_type,
         reservation_id: order_type === 'pre-order' ? finalReservationId : null,
         scheduled_for: order_type === 'pre-order' ? scheduled_for : null,
@@ -190,6 +193,7 @@ const PaymentPage = () => {
         payment_method: paymentMethod,
         payment_intent_id: paymentIntentData.data.id,
         payment_amount: cartTotal,
+        user_id: sessionStorage.getItem('ordereasy_user_id') // Include user_id for history tracking
       };
 
       const orderResponse = await fetch(`${API_URL}/api/orders`, {
@@ -233,7 +237,27 @@ const PaymentPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg pb-32">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pb-32">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {/* Header */}
       <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-xl">
         <div className="container mx-auto px-4 py-6">
@@ -257,14 +281,13 @@ const PaymentPage = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="container mx-auto px-4 py-6 max-w-2xl relative z-10">
         {/* Order Type Badge */}
         <div className="mb-6">
-          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
-            order_type === 'pre-order'
-              ? 'bg-brand-lime/20 text-brand-lime border border-brand-lime/30'
-              : 'bg-brand-orange/20 text-brand-orange border border-brand-orange/30'
-          }`}>
+          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${order_type === 'pre-order'
+            ? 'bg-brand-lime/20 text-brand-lime border border-brand-lime/30'
+            : 'bg-brand-orange/20 text-brand-orange border border-brand-orange/30'
+            }`}>
             {order_type === 'pre-order' ? (
               <>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,11 +370,10 @@ const PaymentPage = () => {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('credit_card')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentMethod === 'credit_card'
-                      ? 'border-brand-orange bg-brand-orange/10 text-brand-orange'
-                      : 'border-dark-surface bg-dark-surface text-text-secondary hover:border-text-secondary'
-                  }`}
+                  className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'credit_card'
+                    ? 'border-brand-orange bg-brand-orange/10 text-brand-orange'
+                    : 'border-dark-surface bg-dark-surface text-text-secondary hover:border-text-secondary'
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2 font-semibold">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,11 +385,10 @@ const PaymentPage = () => {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('debit_card')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentMethod === 'debit_card'
-                      ? 'border-brand-orange bg-brand-orange/10 text-brand-orange'
-                      : 'border-dark-surface bg-dark-surface text-text-secondary hover:border-text-secondary'
-                  }`}
+                  className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'debit_card'
+                    ? 'border-brand-orange bg-brand-orange/10 text-brand-orange'
+                    : 'border-dark-surface bg-dark-surface text-text-secondary hover:border-text-secondary'
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2 font-semibold">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -465,11 +486,10 @@ const PaymentPage = () => {
           <button
             type="submit"
             disabled={isProcessing}
-            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${
-              isProcessing
-                ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
-                : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
-            }`}
+            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${isProcessing
+              ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
+              : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
+              }`}
           >
             {isProcessing ? (
               <span className="flex items-center justify-center">

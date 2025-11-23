@@ -295,30 +295,50 @@ const TableManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] text-white">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {/* Header */}
-      <header className="bg-brand-orange text-white shadow-md">
+      <header className="glass-panel border-b border-white/10 shadow-lg sticky top-0 z-10 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-2">
             <a
               href="/admin"
-              className="p-2 rounded-full hover:bg-white/20 transition text-white"
+              className="p-2 rounded-full hover:bg-white/10 transition text-white border border-transparent hover:border-white/10"
               title="Back to Dashboard"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </a>
-            <h1 className="text-3xl font-bold">Table Management</h1>
+            <h1 className="text-3xl font-bold text-brand-orange drop-shadow-md">Table Management</h1>
           </div>
-          <p className="text-sm opacity-90 ml-12">
+          <p className="text-sm text-gray-300 ml-12 font-medium">
             Manage restaurant tables and QR codes
           </p>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-6 py-6 relative z-10">
         {/* Error Message */}
         {error && (
           <ErrorMessage message={error} onRetry={fetchTables} className="mb-6" />
@@ -326,16 +346,16 @@ const TableManagement = () => {
 
         {/* Restaurant Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-sm font-bold text-white mb-2 drop-shadow-sm">
             Select Restaurant
           </label>
           <select
             value={selectedRestaurant || ''}
             onChange={(e) => setSelectedRestaurant(parseInt(e.target.value))}
-            className="w-full md:w-1/3 px-4 py-2 bg-dark-card border border-dark-surface rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent text-text-primary"
+            className="w-full md:w-1/3 px-4 py-2 bg-black/30 border border-white/10 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent text-white backdrop-blur-sm outline-none"
           >
             {restaurants.map((restaurant) => (
-              <option key={restaurant.id} value={restaurant.id}>
+              <option key={restaurant.id} value={restaurant.id} className="bg-dark-card text-white">
                 {restaurant.name}
               </option>
             ))}
@@ -343,14 +363,14 @@ const TableManagement = () => {
         </div>
 
         {/* Create Table Form */}
-        <div className="bg-dark-card rounded-2xl shadow-xl border border-dark-surface p-6 mb-6">
-          <h2 className="text-xl font-bold text-text-primary mb-4">
+        <div className="glass-panel rounded-2xl shadow-xl border border-white/10 p-6 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4 drop-shadow-sm">
             Create New Table
           </h2>
           <form onSubmit={handleCreateTable} className="flex gap-4 items-end">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Table Number <span className="text-red-500">*</span>
+              <label className="block text-sm font-bold text-white mb-2 drop-shadow-sm">
+                Table Number <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
@@ -360,13 +380,13 @@ const TableManagement = () => {
                   setNewTable({ ...newTable, table_number: e.target.value })
                 }
                 placeholder="Enter table number"
-                className="w-full px-4 py-2 border border-dark-surface rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent"
+                className="w-full px-4 py-2 bg-black/30 border border-white/10 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent text-white placeholder-white/30 backdrop-blur-sm outline-none"
                 required
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Capacity <span className="text-red-500">*</span>
+              <label className="block text-sm font-bold text-white mb-2 drop-shadow-sm">
+                Capacity <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
@@ -376,16 +396,16 @@ const TableManagement = () => {
                   setNewTable({ ...newTable, capacity: e.target.value })
                 }
                 placeholder="Number of seats"
-                className="w-full px-4 py-2 border border-dark-surface rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent"
+                className="w-full px-4 py-2 bg-black/30 border border-white/10 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent text-white placeholder-white/30 backdrop-blur-sm outline-none"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={isCreating}
-              className={`px-6 py-2 rounded-lg font-semibold text-white transition ${isCreating
+              className={`px-6 py-2 rounded-lg font-bold text-white transition shadow-lg ${isCreating
                 ? 'bg-gray-600 cursor-not-allowed'
-                : 'bg-brand-orange hover:opacity-90 pulse-once-orange'
+                : 'bg-brand-orange hover:bg-brand-orange/90 shadow-brand-orange/20 border border-brand-orange/50'
                 }`}
             >
               {isCreating ? 'Creating...' : 'Create Table'}
@@ -395,12 +415,12 @@ const TableManagement = () => {
 
         {/* Tables Grid */}
         {tables.length === 0 ? (
-          <div className="bg-dark-card rounded-2xl shadow-xl border border-dark-surface p-12 text-center">
-            <div className="text-6xl mb-4">🍽️</div>
-            <h2 className="text-2xl font-bold text-text-secondary mb-2">
+          <div className="glass-panel rounded-2xl shadow-xl border border-dashed border-white/10 p-12 text-center">
+            <div className="text-6xl mb-4 drop-shadow-md">🍽️</div>
+            <h2 className="text-2xl font-bold text-gray-300 mb-2">
               No Tables Yet
             </h2>
-            <p className="text-text-secondary mb-6">
+            <p className="text-gray-400 mb-6">
               Create your first table to get started with QR code ordering
             </p>
           </div>
@@ -409,25 +429,25 @@ const TableManagement = () => {
             {tables.map((table) => (
               <div
                 key={table.id}
-                className="bg-dark-card rounded-2xl shadow-xl border border-dark-surface overflow-hidden hover:shadow-xl transition-shadow"
+                className="glass-card rounded-2xl shadow-xl border border-white/5 overflow-hidden hover:shadow-2xl transition-all group"
               >
                 {/* Card Header */}
-                <div className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white p-4">
+                <div className="bg-white/5 p-4 border-b border-white/5 backdrop-blur-sm">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-2xl font-bold">
+                      <h3 className="text-2xl font-bold text-white drop-shadow-sm">
                         Table {table.table_number}
                       </h3>
-                      <p className="text-sm opacity-90">
+                      <p className="text-sm text-gray-300 font-medium">
                         Capacity: {table.capacity} seats
                       </p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${table.status === 'available'
-                        ? 'bg-green-500'
+                      className={`px-3 py-1 rounded-full text-xs font-bold border ${table.status === 'available'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
                         : table.status === 'occupied'
-                          ? 'bg-red-500'
-                          : 'bg-dark-surface0'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                         }`}
                     >
                       {table.status}
@@ -442,15 +462,15 @@ const TableManagement = () => {
                       <img
                         src={table.qr_code}
                         alt={`QR Code for Table ${table.table_number}`}
-                        className="w-48 h-48 object-contain border-2 border-dark-surface/80 rounded-lg mb-4"
+                        className="w-48 h-48 object-contain border-2 border-white/10 rounded-lg mb-4 bg-white p-2 shadow-inner"
                       />
-                      <p className="text-xs text-text-secondary text-center mb-4">
+                      <p className="text-xs text-gray-400 text-center mb-4">
                         Scan to order from Table {table.table_number}
                       </p>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-48 bg-dark-surface rounded-lg mb-4">
-                      <p className="text-text-secondary text-sm">No QR Code</p>
+                    <div className="flex items-center justify-center h-48 bg-black/20 rounded-lg mb-4 border border-white/5">
+                      <p className="text-gray-400 text-sm">No QR Code</p>
                     </div>
                   )}
 
@@ -459,9 +479,9 @@ const TableManagement = () => {
                     <button
                       onClick={() => handleDownloadQRCode(table)}
                       disabled={!table.qr_code}
-                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${table.qr_code
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-600 text-text-secondary cursor-not-allowed'
+                      className={`w-full py-2 rounded-lg font-bold transition flex items-center justify-center gap-2 border ${table.qr_code
+                        ? 'bg-blue-600/20 text-blue-400 border-blue-600/30 hover:bg-blue-600/30 backdrop-blur-sm'
+                        : 'bg-gray-600/20 text-gray-500 border-gray-600/30 cursor-not-allowed'
                         }`}
                     >
                       <svg
@@ -483,9 +503,9 @@ const TableManagement = () => {
                     <button
                       onClick={() => handlePrintQRCode(table)}
                       disabled={!table.qr_code}
-                      className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${table.qr_code
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-gray-600 text-text-secondary cursor-not-allowed'
+                      className={`w-full py-2 rounded-lg font-bold transition flex items-center justify-center gap-2 border ${table.qr_code
+                        ? 'bg-green-600/20 text-green-400 border-green-600/30 hover:bg-green-600/30 backdrop-blur-sm'
+                        : 'bg-gray-600/20 text-gray-500 border-gray-600/30 cursor-not-allowed'
                         }`}
                     >
                       <svg
@@ -508,7 +528,7 @@ const TableManagement = () => {
                       onClick={() =>
                         handleDeleteClick(table.id, table.table_number)
                       }
-                      className="w-full py-2 rounded-lg font-semibold text-red-600 border-2 border-red-600 hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2"
+                      className="w-full py-2 rounded-lg font-bold text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition flex items-center justify-center gap-2 backdrop-blur-sm"
                     >
                       <svg
                         className="w-5 h-5"
@@ -529,8 +549,8 @@ const TableManagement = () => {
                 </div>
 
                 {/* Card Footer */}
-                <div className="bg-dark-surface px-4 py-3 border-t border-dark-surface/80">
-                  <p className="text-xs text-text-secondary">
+                <div className="bg-white/5 px-4 py-3 border-t border-white/5 backdrop-blur-sm">
+                  <p className="text-xs text-gray-400">
                     Created: {new Date(table.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -541,32 +561,32 @@ const TableManagement = () => {
 
         {/* Stats */}
         {tables.length > 0 && (
-          <div className="mt-6 bg-dark-card rounded-2xl shadow-xl border border-dark-surface p-6">
-            <h3 className="text-lg font-bold text-text-primary mb-4">Statistics</h3>
+          <div className="mt-6 glass-panel rounded-2xl shadow-xl border border-white/10 p-6">
+            <h3 className="text-lg font-bold text-white mb-4 drop-shadow-sm">Statistics</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-brand-orange">
+                <p className="text-3xl font-bold text-brand-orange drop-shadow-md">
                   {tables.length}
                 </p>
-                <p className="text-sm text-text-secondary">Total Tables</p>
+                <p className="text-sm text-gray-300">Total Tables</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-green-600">
+                <p className="text-3xl font-bold text-green-400 drop-shadow-md">
                   {tables.filter((t) => t.status === 'available').length}
                 </p>
-                <p className="text-sm text-text-secondary">Available</p>
+                <p className="text-sm text-gray-300">Available</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-red-600">
+                <p className="text-3xl font-bold text-red-400 drop-shadow-md">
                   {tables.filter((t) => t.status === 'occupied').length}
                 </p>
-                <p className="text-sm text-text-secondary">Occupied</p>
+                <p className="text-sm text-gray-300">Occupied</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-blue-600">
+                <p className="text-3xl font-bold text-blue-400 drop-shadow-md">
                   {tables.reduce((sum, t) => sum + t.capacity, 0)}
                 </p>
-                <p className="text-sm text-text-secondary">Total Capacity</p>
+                <p className="text-sm text-gray-300">Total Capacity</p>
               </div>
             </div>
           </div>
