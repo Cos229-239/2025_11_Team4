@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useUserAuth } from '../context/UserAuthContext'; // 1. Import Auth Context
+import { useUserAuth } from '../context/UserAuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -12,12 +12,11 @@ const AdminSettings = () => {
   const [toast, setToast] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 2. Get the token from context
   const { token } = useUserAuth();
 
   const loadRestaurants = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/restaurants`);
+      const res = await fetch(`${API_URL} /api/restaurants`);
       const data = await res.json();
       if (data.success) setRestaurants(data.data || []);
     } catch { }
@@ -26,13 +25,12 @@ const AdminSettings = () => {
   const loadSettings = async (rid) => {
     try {
       setLoading(true);
-      const url = new URL(`${API_URL}/api/admin/settings`);
+      const url = new URL(`${API_URL} /api/admin / settings`);
       if (rid) url.searchParams.set('restaurant_id', rid);
 
-      // 3. Add Authorization header to fetch
       const res = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token} `
         }
       });
 
@@ -51,12 +49,11 @@ const AdminSettings = () => {
     try {
       setLoading(true);
 
-      // 4. Add Authorization header to the PUT request
-      const res = await fetch(`${API_URL}/api/admin/settings`, {
+      const res = await fetch(`${API_URL} /api/admin / settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // <--- THIS WAS MISSING
+          'Authorization': `Bearer ${token} `
         },
         body: JSON.stringify({
           restaurant_id: restaurantId,
@@ -76,32 +73,53 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary">
+    <div className="min-h-screen bg-[#000000] text-text-primary pt-20 relative overflow-hidden">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+radial - gradient(circle at center,
+  #E35504ff 0 %,
+  #E35504aa 15 %,
+              #000000 35 %,
+              #5F2F14aa 55 %,
+  #B5FF00ff 80 %,
+              #000000 100 %
+            )
+  `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-brand-lime text-dark-bg px-6 py-3 rounded-xl font-bold shadow-lg z-50 animate-bounce">
           {toast}
         </div>
       )}
 
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white p-6 shadow-xl">
-        <div className="container mx-auto">
-          <div className="flex items-center gap-4 mb-2">
-            <a
-              href="/admin"
-              className="p-2 rounded-full hover:bg-white/20 transition text-white"
-              title="Back to Dashboard"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </a>
-            <h1 className="text-3xl font-bold font-['Playfair_Display']">Admin Settings</h1>
-          </div>
-          <p className="text-white/90 font-['Lora'] ml-12">Configure reservation policies and windows</p>
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-6 mb-6 relative z-10">
+        <div className="flex items-center gap-4 mb-2">
+          <a
+            href="/admin"
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
+            title="Back to Dashboard"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg font-['Playfair_Display']">Admin Settings</h1>
         </div>
-      </header>
+        <p className="text-sm opacity-90 ml-12 text-gray-300 font-['Lora']">
+          Configure reservation policies and windows
+        </p>
+      </div>
 
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto px-6 pb-8 relative z-10">
         <div className="bg-dark-card border border-dark-surface rounded-2xl shadow-xl p-8 max-w-2xl mx-auto">
 
           {/* Restaurant Selector */}

@@ -12,6 +12,9 @@ router.get('/by-number/:orderNumber', orderController.getOrderByNumber);
 // GET /api/orders/table/:tableId - Get orders by table
 router.get('/table/:tableId', orderController.getOrdersByTable);
 
+// GET /api/orders/user/:userId - Get orders by user
+router.get('/user/:userId', orderController.getUserOrders);
+
 // POST /api/orders - Create new order
 router.post('/', orderController.createOrder);
 

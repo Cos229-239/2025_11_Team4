@@ -79,10 +79,10 @@ const RestaurantListPage = () => {
       deliveryTime: "15-25 min",
       distance: "0.3 mi",
 
-      image: (   <BuildingStorefrontIcon
-    className="w-14 h-14 text-white/80 drop-shadow-[0_0_6px_rgba(255,255,255,0.35)]"
-  />
-),
+      image: (<BuildingStorefrontIcon
+        className="w-14 h-14 text-white/80 drop-shadow-[0_0_6px_rgba(255,255,255,0.35)]"
+      />
+      ),
 
       source: "internal",
       priceRange: "$$",
@@ -180,7 +180,7 @@ const RestaurantListPage = () => {
       categories: ["Asian", "Thai"]
     }
   ];
-  
+
 
   // Map API data to UI format
   const restaurantsData = useMemo(() => {
@@ -235,7 +235,7 @@ const RestaurantListPage = () => {
    * Handle restaurant card click
    */
   const handleRestaurantClick = (restaurant) => {
-    navigate(`/restaurant/${restaurant.id}/menu`);
+    navigate(`/restaurant/${restaurant.id}`);
   };
 
   /**
@@ -274,53 +274,61 @@ const RestaurantListPage = () => {
   };
 
   return (
-    
-    <div
-  className="min-h-screen relative overflow-hidden pb-8 bg-cover bg-center bg-no-repeat"
-  style={{
-    backgroundImage: "url('/src/assets/backround.png')"
-  }}
->
-  {/* Overlay so text can look better */}
-  <div className="absolute inset-0 bg-black/40"></div>
-      {/* Background glow */}
-      <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-      {/* Header */}
-      <header className="bg-black shadow-lg relative z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/20 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 pb-28">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-4 mb-8 relative z-10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="text-white hover:bg-white/10 transition-colors flex items-center gap-2 px-3 py-2 rounded-full"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">Back</span>
+          </button>
 
 
 
-            {/* NEW: CLEAN TEXT LOGO (no copa) */}
-      <div className="text-2xl sm:text-3xl font-bold">
-        <span className="text-brand-orange">Order</span>
-        <span className="text-brand-lime">Easy</span>
+          {/* NEW: CLEAN TEXT LOGO (no copa) */}
+          <div className="text-2xl sm:text-3xl font-bold">
+            <span className="text-brand-orange">Order</span>
+            <span className="text-brand-lime">Easy</span>
+          </div>
+
+
+          <div className="w-20"></div> {/* Spacer */}
+        </div>
+
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+            Browse Restaurants
+          </h1>
+          <p className="text-white/90">
+            {filteredRestaurants.length} restaurant{filteredRestaurants.length !== 1 ? 's' : ''} available
+          </p>
+        </div>
       </div>
 
-
-            <div className="w-20"></div> {/* Spacer */}
-          </div>
-
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
-              Browse Restaurants
-            </h1>
-            <p className="text-white/90">
-              {filteredRestaurants.length} restaurant{filteredRestaurants.length !== 1 ? 's' : ''} available
-            </p>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -329,15 +337,15 @@ const RestaurantListPage = () => {
           <div className="relative">
 
             <MagnifyingGlassIcon
-            className="
+              className="
               absolute left-4 top-1/2 -translate-y-1/2
               w-6 h-6
               text-[#B7EC2F]
               drop-shadow-[0_0_6px_rgba(255,183,146,0.8)]
               z-20
             "
-            strokeWidth={2.5}
-          />
+              strokeWidth={2.5}
+            />
 
             <input
               type="text"
@@ -382,10 +390,9 @@ const RestaurantListPage = () => {
                   px-6 py-3 rounded-full font-semibold text-sm
                   transition-all duration-200
                   whitespace-nowrap
-                  ${
-                    activeCategory === category
-                  ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
-                  : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
+                  ${activeCategory === category
+                    ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                    : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
 
                   }
                 `}
@@ -395,11 +402,10 @@ const RestaurantListPage = () => {
             ))}
             <button
               onClick={() => setNearbyOnly((v) => !v)}
-              className={`px-6 py-3 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${
-                nearbyOnly
-                  ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
-                  : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
-              }`}
+              className={`px-6 py-3 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${nearbyOnly
+                ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
+                }`}
               title={coords ? 'Filter within 25 km' : 'Enable location to filter nearby'}
             >
               Near Me
@@ -522,7 +528,6 @@ const RestaurantListPage = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPinIcon className="w-4 h-4" />
-                      <span>{restaurant.distance}</span>
                     </div>
                   </div>
 
@@ -530,7 +535,7 @@ const RestaurantListPage = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRestaurantClick(restaurant);
+                      navigate(`/restaurant/${restaurant.id}`);
                     }}
                     className="
                       w-full
@@ -543,7 +548,7 @@ const RestaurantListPage = () => {
                       shadow-lg shadow-brand-lime/20
                     "
                   >
-                    Menu
+                    View Details
                   </button>
                 </div>
               </div>
@@ -552,7 +557,7 @@ const RestaurantListPage = () => {
         )}
 
       </div>
-    </div>
+    </div >
   );
 };
 

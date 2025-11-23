@@ -99,15 +99,21 @@ export const CartProvider = ({ children }) => {
   const addToCart = (item, quantity = 1, specialInstructions = '', context = null) => {
     // If context provided and different restaurant, warn user
     if (context && context.restaurantId && orderContext.restaurantId &&
-        context.restaurantId !== orderContext.restaurantId) {
+      context.restaurantId !== orderContext.restaurantId) {
       if (!window.confirm('This will clear your current cart from another restaurant. Continue?')) {
         return;
       }
       clearCart();
       setOrderContext(context);
-    } else if (context && !orderContext.restaurantId) {
-      // First item being added, set context
-      setOrderContext(context);
+    } else if (context) {
+      // If context is provided, update it.
+      // This handles two cases:
+      // 1. First item being added (orderContext.restaurantId is null)
+      // 2. Adding more items from same restaurant but with updated context (e.g. switching from browse to takeout)
+      setOrderContext(prev => ({
+        ...prev,
+        ...context
+      }));
     }
 
     setCart((prevCart) => {

@@ -455,6 +455,73 @@ router.post('/intent', async (req, res) => {
 });
 
 /**
+ * GET /api/reservations/me
+ * Returns reservations for the authenticated user (expects Bearer token)
+ */
+router.get('/me', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+    const jwt = require('jsonwebtoken');
+    const secret = process.env.JWT_SECRET || 'dev-secret-change-me';
+    let payload;
+    try { payload = jwt.verify(token, secret); } catch { return res.status(401).json({ success: false, message: 'Invalid token' }); }
+    const uid = payload.sub;
+    if (!uid) return res.status(401).json({ success: false, message: 'Invalid token payload' });
+
+    console.log('Fetching reservations for user:', uid);
+    const query = `
+      SELECT
+        r.*, 
+        rest.name as restaurant_name,
+        rest.timezone as restaurant_timezone,
+        t.table_number,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', o.id,
+                'total_amount', o.total_amount,
+                'status', o.status,
+                'items', COALESCE(
+                  (
+                    SELECT json_agg(
+                      json_build_object(
+                        'name', oi.menu_item_name,
+                        'quantity', oi.quantity,
+                        'price', oi.menu_item_price,
+                        'subtotal', oi.subtotal
+                      )
+                    )
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                  ),
+                  '[]'::json
+                )
+              )
+            )
+            FROM orders o
+            WHERE o.reservation_id = r.id
+          ),
+          '[]'::json
+        ) as orders
+      FROM reservations r
+      JOIN restaurants rest ON r.restaurant_id = rest.id
+      LEFT JOIN tables t ON r.table_id = t.id
+      WHERE r.user_id = $1
+      ORDER BY r.reservation_date DESC, r.reservation_time DESC`;
+
+    // Use db.query for better logging
+    const result = await require('../config/database').query(query, [uid]);
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error in /me endpoint:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch reservations', error: error.message });
+  }
+});
+
+/**
  * GET /api/reservations/:id
  * Get a specific reservation by ID
  */
@@ -601,42 +668,53 @@ router.get('/me', async (req, res) => {
     const uid = payload.sub;
     if (!uid) return res.status(401).json({ success: false, message: 'Invalid token payload' });
 
+    console.log('Fetching reservations for user:', uid);
     const query = `
       SELECT
         r.*, 
-        rest.name as restaurant_name, 
+        rest.name as restaurant_name,
+        rest.timezone as restaurant_timezone,
         t.table_number,
-        (
-          SELECT json_agg(
-            json_build_object(
-              'id', o.id,
-              'total_amount', o.total_amount,
-              'status', o.status,
-              'items', (
-                SELECT json_agg(
-                  json_build_object(
-                    'name', oi.menu_item_name,
-                    'quantity', oi.quantity,
-                    'price', oi.menu_item_price,
-                    'subtotal', oi.subtotal
-                  )
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', o.id,
+                'total_amount', o.total_amount,
+                'status', o.status,
+                'items', COALESCE(
+                  (
+                    SELECT json_agg(
+                      json_build_object(
+                        'name', oi.menu_item_name,
+                        'quantity', oi.quantity,
+                        'price', oi.menu_item_price,
+                        'subtotal', oi.subtotal
+                      )
+                    )
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                  ),
+                  '[]'::json
                 )
-                FROM order_items oi
-                WHERE oi.order_id = o.id
               )
             )
-          )
-          FROM orders o
-          WHERE o.reservation_id = r.id
+            FROM orders o
+            WHERE o.reservation_id = r.id
+          ),
+          '[]'::json
         ) as orders
       FROM reservations r
       JOIN restaurants rest ON r.restaurant_id = rest.id
       LEFT JOIN tables t ON r.table_id = t.id
       WHERE r.user_id = $1
       ORDER BY r.reservation_date DESC, r.reservation_time DESC`;
-    const result = await pool.query(query, [uid]);
+
+    // Use db.query for better logging
+    const result = await require('../config/database').query(query, [uid]);
     res.json({ success: true, data: result.rows, count: result.rows.length });
   } catch (error) {
+    console.error('Error in /me endpoint:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch reservations', error: error.message });
   }
 });
@@ -1307,5 +1385,7 @@ router.post('/:id/checkin', async (req, res) => {
     client.release();
   }
 });
+
+
 
 module.exports = router;
