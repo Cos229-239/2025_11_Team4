@@ -84,6 +84,7 @@ const BottomNav = () => {
   };
 
   return (
+
     <nav
   className="
     fixed bottom-0 left-0 right-0 
@@ -95,6 +96,7 @@ const BottomNav = () => {
     safe-area-bottom
   "
 >
+
 
       <div className="flex items-center justify-around h-20 max-w-screen-xl mx-auto px-4">
         {navItems.map((item) => {

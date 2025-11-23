@@ -43,12 +43,16 @@ const CartPage = () => {
       // Dine-in context from menu (QR flow)
       setTableId(orderContext.tableNumber);
       setOrderingMode('dine-in');
+    } else if (orderContext?.orderType === 'takeout') {
+      // Takeout context
+      setOrderingMode('takeout');
     }
   }, [tableId, setTableId, preOrderContext, orderContext]);
 
   // If no table selected in the URL and no pre-order context, ask if they're at restaurant or planning ahead
   if (!tableId && !orderingMode && !preOrderContext) {
     return (
+
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
         <div className="
           bg-brand-lime/10
@@ -61,6 +65,7 @@ const CartPage = () => {
           shadow-[0_0_25px_rgba(181,255,0,0.25)]
         ">
 
+
           <div className="text-center mb-6">
             <div className="text-5xl mb-4">🍽️</div>
             <h2 className="text-2xl font-bold text-text-primary mb-2">How would you like to order?</h2>
@@ -68,20 +73,20 @@ const CartPage = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Dine-In Option */}
+            {/* Option 1: Scan QR (Dine-In) */}
             <button
               onClick={() => navigate('/scan-qr')}
-              className="w-full bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white p-6 rounded-xl hover:shadow-xl hover:shadow-brand-orange/30 transition-all text-left"
+              className="w-full glass-card p-6 rounded-xl hover:shadow-xl hover:shadow-brand-orange/30 transition-all text-left group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg mb-1">I'm at the Restaurant</h3>
-                  <p className="text-sm opacity-90">Scan the QR code on your table to start</p>
+                  <h3 className="font-bold text-lg mb-1">Scan QR Code</h3>
+                  <p className="text-sm opacity-90">I'm at the restaurant and ready to order</p>
                 </div>
                 <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -89,20 +94,49 @@ const CartPage = () => {
               </div>
             </button>
 
-            {/* Reservation Option */}
+            {/* Option 2: Make Reservation (Pre-Order) */}
             <button
-              onClick={() => setOrderingMode('reservation')}
-              className="w-full bg-dark-surface border-2 border-dark-surface hover:border-brand-lime text-text-primary p-6 rounded-xl hover:shadow-xl transition-all text-left"
+              onClick={() => {
+                if (orderContext?.restaurantId) {
+                  navigate(`/restaurant/${orderContext.restaurantId}/reserve`, {
+                    state: { fromCart: true }
+                  });
+                } else {
+                  navigate('/restaurants');
+                }
+              }}
+              className="w-full glass-card text-text-primary p-6 rounded-xl hover:shadow-xl transition-all text-left group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-brand-lime/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                   <svg className="w-6 h-6 text-brand-lime" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg mb-1">Planning Ahead</h3>
-                  <p className="text-sm text-text-secondary">Make a reservation and pre-order your meal</p>
+                  <h3 className="font-bold text-lg mb-1">Make a Reservation</h3>
+                  <p className="text-sm text-text-secondary">Book a table and pre-order your meal</p>
+                </div>
+                <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Option 3: Takeout */}
+            <button
+              onClick={() => setOrderingMode('takeout')}
+              className="w-full glass-card text-text-primary p-6 rounded-xl hover:shadow-xl transition-all text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-brand-orange/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-1">Order Takeout</h3>
+                  <p className="text-sm text-text-secondary">Pick up your food and go</p>
                 </div>
                 <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -198,9 +232,9 @@ const CartPage = () => {
   };
 
   const handleBrowseMenu = () => {
-  // Safe default: go to the restaurants listing
-  navigate('/restaurants');
-};
+    // Safe default: go to the restaurants listing
+    navigate('/restaurants');
+  };
 
   // Handle direct quantity input
   const handleQuantityInput = (itemId, value) => {
@@ -312,13 +346,22 @@ const CartPage = () => {
       } catch (error) {
         console.error('[CART] Verification request failed:', error);
         setVerificationError({
-          title: 'Connection Error',
           message: 'Unable to verify reservation. Please check your internet connection and try again.',
           action: 'Try Again'
         });
         setIsVerifying(false);
       }
 
+    } else if (orderContext?.orderType === 'takeout' || orderingMode === 'takeout') {
+      // Takeout order
+      console.log('[CART] Takeout order - proceeding to payment');
+      navigate('/payment', {
+        state: {
+          order_type: 'takeout',
+          restaurant_id: orderContext?.restaurantId,
+          customer_notes: customerNotes
+        }
+      });
     } else {
       // Regular dine-in order - no verification needed
       console.log('[CART] Dine-in order - proceeding directly to payment');
@@ -336,8 +379,28 @@ const CartPage = () => {
   // Empty cart state
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-        <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
+      <div className="min-h-screen relative overflow-hidden bg-[#000000] flex items-center justify-center p-4">
+        {/* BACKGROUND GRADIENT */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at center,
+                #E35504ff 0%,
+                #E35504aa 15%,
+                #000000 35%,
+                #5F2F14aa 55%,
+                #B5FF00ff 80%,
+                #000000 100%
+              )
+            `,
+            filter: "blur(40px)",
+            backgroundSize: "180% 180%",
+            opacity: 0.55,
+          }}
+        ></div>
+
+        <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface relative z-10">
           <div className="text-7xl mb-4">🛒</div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">Your Cart is Empty</h2>
           <p className="text-text-secondary mb-6">
@@ -355,82 +418,91 @@ const CartPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg pb-32">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-brand-lime to-brand-lime/80 text-dark-bg shadow-xl sticky top-16 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
-                    navigate('/restaurants');
-                  } else if (orderContext?.restaurantId) {
-                    navigate(`/restaurant/${orderContext.restaurantId}/menu`, {
-                      state: orderContext
-                    });
-                  } else {
-                    navigate('/restaurants');
-                  }
-                }}
-                className="hover:bg-dark-bg/10 rounded-xl p-2 transition-all"
-                aria-label="Back to menu"
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 px-4 pb-32">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      <div className="container mx-auto max-w-6xl relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full hover:bg-white/10 transition text-white"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold">Your Cart</h1>
-                <p className="text-sm opacity-80">Table #{tableId}</p>
-              </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Cart</h1>
+              <p className="text-sm text-white/70">Table #{tableId}</p>
             </div>
-            {cart.length > 0 && (
+          </div >
+          {
+            cart.length > 0 && (
               <button
                 onClick={clearCart}
-                className="text-sm hover:bg-dark-bg/10 rounded-xl px-3 py-2 transition-all font-semibold"
+                className="text-sm hover:bg-white/10 rounded-xl px-4 py-2 transition-all font-semibold text-white/80 hover:text-white border border-white/10"
               >
                 Clear All
               </button>
-            )}
-          </div>
-        </div>
-      </header>
+            )
+          }
+        </div >
 
-      <div className="container mx-auto px-4 py-6">
         {/* Cart Items */}
-        <div className="bg-dark-card rounded-2xl shadow-xl mb-6 border border-dark-surface">
-          <div className="p-5 border-b border-dark-surface">
-            <h2 className="text-lg font-bold text-text-primary">
-              Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-6 shadow-2xl" >
+          <div className="p-2 border-b border-white/10 mb-4">
+            <h2 className="text-xl font-bold text-white drop-shadow-md">
+              Cart Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
             </h2>
           </div>
 
-          <div className="divide-y divide-dark-surface">
+          <div className="space-y-4">
             {cart.map((item) => (
-              <div key={item.id} className="p-5 hover:bg-dark-surface/50 transition-colors">
+              <div key={item.id} className="glass-card rounded-2xl p-5 transition-all shadow-lg group relative overflow-hidden">
+                {/* Decorative accent - using hex to ensure visibility */}
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FA6C01] z-20"></div>
                 {/* Item Details */}
                 <div className="flex gap-4">
                   {/* Image */}
-                  <div className="w-24 h-24 flex-shrink-0 bg-dark-surface rounded-xl overflow-hidden">
+                  <div className="w-24 h-24 flex-shrink-0 bg-black/30 rounded-xl overflow-hidden border border-white/10 shadow-inner">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-secondary">
+                      <div className="w-full h-full flex items-center justify-center text-white/30">
                         <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M3 3h14a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2zm0 2v10h14V5H3z" />
                         </svg>
@@ -440,17 +512,17 @@ const CartPage = () => {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-text-primary text-lg mb-1">{item.name}</h3>
-                    <p className="text-sm text-brand-lime font-semibold mb-3">
+                    <h3 className="font-bold text-white text-lg mb-1 drop-shadow-sm">{item.name}</h3>
+                    <p className="text-sm text-brand-lime font-bold mb-3 drop-shadow-sm">
                       ${item.price.toFixed(2)} each
                     </p>
 
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center border border-dark-surface rounded-xl bg-dark-surface overflow-hidden">
+                      <div className="flex items-center border border-white/20 rounded-xl bg-black/40 overflow-hidden shadow-inner">
                         <button
                           onClick={() => handleQuantityChange(item.id, -1)}
-                          className="px-4 py-2 hover:bg-brand-orange hover:text-white transition-all"
+                          className="px-4 py-2 text-white hover:bg-brand-orange hover:text-white transition-all active:scale-95"
                           aria-label="Decrease quantity"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,12 +535,12 @@ const CartPage = () => {
                           min="0"
                           value={item.quantity}
                           onChange={(e) => handleQuantityInput(item.id, e.target.value)}
-                          className="w-14 text-center bg-dark-surface text-text-primary border-x border-dark-card py-2 focus:outline-none font-bold"
+                          className="w-14 text-center bg-transparent text-white border-x border-white/10 py-2 focus:outline-none font-bold"
                         />
 
                         <button
                           onClick={() => handleQuantityChange(item.id, 1)}
-                          className="px-4 py-2 hover:bg-brand-lime hover:text-dark-bg transition-all"
+                          className="px-4 py-2 text-white hover:bg-brand-lime hover:text-dark-bg transition-all active:scale-95"
                           aria-label="Increase quantity"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -477,14 +549,14 @@ const CartPage = () => {
                         </button>
                       </div>
 
-                      <span className="text-sm text-text-secondary">
-                        = <span className="font-bold text-brand-orange">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="text-sm text-gray-300 font-medium">
+                        = <span className="font-bold text-brand-orange text-lg drop-shadow-sm">${(item.price * item.quantity).toFixed(2)}</span>
                       </span>
                     </div>
 
                     {/* Special Instructions */}
                     {item.special_instructions && (
-                      <div className="mt-2 text-sm text-text-secondary italic bg-dark-surface/50 px-3 py-2 rounded-lg">
+                      <div className="mt-2 text-sm text-gray-300 italic bg-white/5 px-3 py-2 rounded-lg border border-white/5">
                         Note: {item.special_instructions}
                       </div>
                     )}
@@ -493,7 +565,7 @@ const CartPage = () => {
                   {/* Remove Button */}
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="text-[#ef4444] hover:opacity-80 hover:bg-[rgb(239_68_68_/_.1)] rounded-xl p-2 transition-all h-fit"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-xl p-2 transition-all h-fit backdrop-blur-sm"
                     aria-label="Remove item"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,11 +581,11 @@ const CartPage = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div >
 
         {/* Special Instructions for Order */}
-        <div className="bg-dark-card rounded-2xl shadow-xl p-5 mb-6 border border-dark-surface">
-          <label className="block text-sm font-bold text-text-primary mb-3">
+        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 mb-6" >
+          <label className="block text-sm font-bold text-white mb-3 drop-shadow-sm">
             Special Instructions (Optional)
           </label>
           <textarea
@@ -521,97 +593,99 @@ const CartPage = () => {
             onChange={(e) => setCustomerNotes(e.target.value)}
             placeholder="Any special requests for your order? (e.g., 'No onions', 'Extra spicy', etc.)"
             rows="3"
-            className="w-full bg-dark-surface border border-dark-surface rounded-xl p-4 text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-orange focus:border-transparent resize-none"
+            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-brand-orange focus:border-transparent resize-none shadow-inner backdrop-blur-sm"
             maxLength={500}
           />
-          <div className="text-xs text-text-secondary mt-2 text-right">
+          <div className="text-xs text-gray-400 mt-2 text-right">
             {customerNotes.length}/500 characters
           </div>
-        </div>
+        </div >
 
         {/* Verification Error Display */}
-        {verificationError && (
-          <div className="bg-[rgb(239_68_68_/_.1)] border-2 border-[#ef4444] rounded-2xl shadow-xl p-6 mb-6 animate-shake">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-[rgb(239_68_68_/_.2)] rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#ef4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-['Playfair_Display'] font-bold text-[#ef4444] mb-2" style={{ fontSize: '20px' }}>{verificationError.title}</h3>
-                <p className="text-text-secondary font-['Lora'] mb-4" style={{ fontSize: '17px' }}>{verificationError.message}</p>
-                <div className="flex gap-3">
-                  {verificationError.action === 'Make New Reservation' && (
-                    <button
-                      onClick={() => {
-                        clearCart();
-                        navigate('/restaurants');
-                      }}
-                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
-                      style={{ fontSize: '17px' }}
-                    >
-                      {verificationError.action}
-                    </button>
-                  )}
-                  {verificationError.action === 'Clear Cart' && (
-                    <button
-                      onClick={() => {
-                        clearCart();
-                        navigate('/restaurants');
-                      }}
-                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
-                      style={{ fontSize: '17px' }}
-                    >
-                      {verificationError.action}
-                    </button>
-                  )}
-                  {verificationError.action === 'Try Again' && (
+        {
+          verificationError && (
+            <div className="bg-red-500/10 border-2 border-red-500/50 rounded-2xl shadow-xl p-6 mb-6 animate-shake backdrop-blur-md">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/30">
+                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v1m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-['Playfair_Display'] font-bold text-red-400 mb-2" style={{ fontSize: '20px' }}>{verificationError.title}</h3>
+                  <p className="text-gray-200 font-['Lora'] mb-4" style={{ fontSize: '17px' }}>{verificationError.message}</p>
+                  <div className="flex gap-3 flex-wrap">
+                    {verificationError.action === 'Make New Reservation' && (
+                      <button
+                        onClick={() => {
+                          clearCart();
+                          navigate('/restaurants');
+                        }}
+                        className="bg-red-500 text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:bg-red-600 transition-all shadow-lg"
+                        style={{ fontSize: '17px' }}
+                      >
+                        {verificationError.action}
+                      </button>
+                    )}
+                    {verificationError.action === 'Clear Cart' && (
+                      <button
+                        onClick={() => {
+                          clearCart();
+                          navigate('/restaurants');
+                        }}
+                        className="bg-red-500 text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:bg-red-600 transition-all shadow-lg"
+                        style={{ fontSize: '17px' }}
+                      >
+                        {verificationError.action}
+                      </button>
+                    )}
+                    {verificationError.action === 'Try Again' && (
+                      <button
+                        onClick={() => setVerificationError(null)}
+                        className="bg-red-500 text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:bg-red-600 transition-all shadow-lg"
+                        style={{ fontSize: '17px' }}
+                      >
+                        {verificationError.action}
+                      </button>
+                    )}
                     <button
                       onClick={() => setVerificationError(null)}
-                      className="bg-[#ef4444] text-white px-6 py-3 rounded-xl font-['Lora'] font-semibold hover:opacity-90 transition-all"
-                      style={{ fontSize: '17px' }}
+                      className="text-gray-300 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all"
                     >
-                      {verificationError.action}
+                      Dismiss
                     </button>
-                  )}
-                  <button
-                    onClick={() => setVerificationError(null)}
-                    className="text-text-secondary hover:text-text-primary px-4 py-2 rounded-xl hover:bg-dark-surface transition-all"
-                  >
-                    Dismiss
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Order Summary - Desktop */}
-        <div className="hidden md:block bg-dark-card rounded-2xl shadow-xl p-6 border border-dark-surface">
-          <h2 className="text-lg font-bold text-text-primary mb-4">Order Summary</h2>
+        <div className="hidden md:block bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8">
+          <h2 className="text-xl font-bold text-white mb-6 drop-shadow-md">Order Summary</h2>
 
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between text-text-secondary">
+          <div className="space-y-4 mb-8">
+            <div className="flex justify-between text-gray-300 text-lg">
               <span>Subtotal</span>
-              <span className="font-semibold">${cartSubtotal.toFixed(2)}</span>
+              <span className="font-semibold text-white">${cartSubtotal.toFixed(2)}</span>
             </div>
             {cartTax > 0 && (
-              <div className="flex justify-between text-text-secondary">
+              <div className="flex justify-between text-gray-300 text-lg">
                 <span>Tax</span>
-                <span className="font-semibold">${cartTax.toFixed(2)}</span>
+                <span className="font-semibold text-white">${cartTax.toFixed(2)}</span>
               </div>
             )}
-            <div className="border-t border-dark-surface pt-3 flex justify-between text-xl font-bold">
-              <span className="text-text-primary">Total</span>
-              <span className="text-brand-lime">${cartTotal.toFixed(2)}</span>
+            <div className="border-t border-white/10 pt-4 flex justify-between text-2xl font-bold">
+              <span className="text-white">Total</span>
+              <span className="text-brand-lime drop-shadow-lg">${cartTotal.toFixed(2)}</span>
             </div>
           </div>
 
           <button
             onClick={handlePlaceOrder}
             disabled={isVerifying || !!verificationError}
-            className="w-full py-4 rounded-xl font-bold transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 hover:-translate-y-1 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime disabled:hover:translate-y-0 flex items-center justify-center gap-2 border border-brand-lime"
           >
             {isVerifying ? (
               <>
@@ -626,20 +700,20 @@ const CartPage = () => {
             )}
           </button>
         </div>
-      </div>
+      </div >
 
       {/* Fixed Bottom Bar - Mobile */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-dark-surface/95 backdrop-blur-lg shadow-2xl border-t border-dark-card z-20">
+      < div className="md:hidden fixed bottom-20 left-0 right-0 glass-panel backdrop-blur-xl shadow-2xl border-t border-white/10 z-20 rounded-t-3xl" >
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-text-secondary font-semibold">Total</span>
-            <span className="text-2xl font-bold text-brand-lime">${cartTotal.toFixed(2)}</span>
+            <span className="text-gray-300 font-semibold">Total</span>
+            <span className="text-2xl font-bold text-brand-lime drop-shadow-md">${cartTotal.toFixed(2)}</span>
           </div>
 
           <button
             onClick={handlePlaceOrder}
             disabled={isVerifying || !!verificationError}
-            className="w-full py-4 rounded-xl font-bold transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-lime flex items-center justify-center gap-2 border border-brand-lime"
           >
             {isVerifying ? (
               <>
@@ -654,8 +728,8 @@ const CartPage = () => {
             )}
           </button>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

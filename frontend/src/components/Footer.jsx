@@ -16,7 +16,7 @@ const Footer = () => {
   }
 
   return (
-    <footer className="bg-dark-surface text-text-secondary mt-auto border-t border-dark-card">
+    <footer className="bg-gradient-to-t from-white/10 to-white/5 backdrop-blur-2xl text-text-primary border-t border-white/10 mt-auto shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]">
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About Section */}
@@ -24,7 +24,7 @@ const Footer = () => {
             <div className="mb-4">
               <Logo size="sm" />
             </div>
-            <p className="text-sm text-text-secondary leading-relaxed">
+            <p className="text-sm text-text-primary/80 leading-relaxed">
               Multi restaurant reservation and dine in ordering platform.
               Browse restaurants, reserve tables, and order seamlessly.
             </p>
@@ -32,7 +32,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-text-primary font-semibold mb-4 text-lg">Quick Links</h3>
+            <h3 className="text-text-primary font-bold mb-4 text-lg">Quick Links</h3>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -72,7 +72,7 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-text-primary font-semibold mb-4 text-lg">Contact Us</h3>
+            <h3 className="text-text-primary font-bold mb-4 text-lg">Contact Us</h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3">
                 <svg
@@ -109,7 +109,7 @@ const Footer = () => {
                     d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span className="text-sm text-text-secondary">
+                <span className="text-sm text-text-primary/80">
                   Available 24/7
                 </span>
               </li>
@@ -118,7 +118,7 @@ const Footer = () => {
 
           {/* Social */}
           <div>
-            <h3 className="text-text-primary font-semibold mb-4 text-lg">Follow Us</h3>
+            <h3 className="text-text-primary font-bold mb-4 text-lg">Follow Us</h3>
             <div className="flex gap-3">
               <a
                 href="https://facebook.com"
