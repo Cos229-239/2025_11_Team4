@@ -20,6 +20,7 @@ const KitchenDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [openSidebarPanel, setOpenSidebarPanel] = useState(null);
 
   const { socket, isConnected } = useSocket();
   const emit = useSocketEmit();
@@ -255,6 +256,7 @@ const [inventory, setInventory] = useState([
   // Add more items/categories as needed!
 ]);
 const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
+const [sidebarOpen, setSidebarOpen] = useState(true);
 
 
 
@@ -415,254 +417,303 @@ const [isInventoryPanelOpen, setInventoryPanelOpen] = useState(false);
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 pt-6 pb-32 relative z-10">
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 backdrop-blur-md shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-red-400 font-semibold drop-shadow-sm">{error}</p>
-              </div>
-              <button
-                onClick={fetchActiveOrders}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all border border-red-500/30"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
+    {/* SIDEBAR WITH TOGGLE */}
+    <div
+      className={`fixed right-6 bottom-24 z-40 transition-all duration-300
+        ${sidebarOpen ? 'w-80 opacity-100' : 'w-12 opacity-80'}
+      `}
+    >
+      {/* Toggle button */}
+      <button
+        onClick={() => setSidebarOpen(open => !open)}
+        className="mb-3 w-full flex items-center justify-center bg-black/60 rounded-2xl text-white py-2 shadow hover:bg-black/80"
+      >
+        {sidebarOpen ? '◀ Close' : '▶ Open'}
+      </button>
 
-        {/* Empty State */}
-        {filteredOrders.length === 0 ? (
-          <div className="glass-panel rounded-3xl shadow-2xl p-12 text-center border border-white/10">
-            <div className="text-8xl mb-6 drop-shadow-lg">
-              {filter === 'all' ? '🍽️' : filter === 'pending' ? '🆕' : filter === 'preparing' ? '👨‍🍳' : '✅'}
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3 drop-shadow-md">
-              {filter === 'all'
-                ? 'No Active Orders'
-                : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Orders`}
-            </h2>
-            <p className="text-gray-300 mb-8 text-lg font-medium">
-              {filter === 'all'
-                ? 'New orders will appear here automatically'
-                : `Orders in "${filter}" status will appear here`}
-            </p>
-            {filter !== 'all' && (
-              <button
-                onClick={() => setFilter('all')}
-                className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 pulse-once-orange border border-brand-orange/50"
-              >
-                View All Orders
-              </button>
+      {/* Sidebar content only when open */}
+      {sidebarOpen && (
+        <div className="flex flex-col gap-3">
+          {/* Employees */}
+          <div>
+            <button
+              className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-brand-orange/90 transition"
+              onClick={() =>
+                setOpenSidebarPanel(
+                  openSidebarPanel === 'employees' ? null : 'employees'
+                )
+              }
+            >
+              🧑‍🍳 Employees
+            </button>
+            {openSidebarPanel === 'employees' && (
+              <div className="bg-dark-card/90 border-l-4 border-orange-400 rounded-xl mt-2 px-5 py-4 shadow-xl">
+                <ul className="text-sm space-y-2">
+                  <li>
+                    <span className="font-bold">Total Employees:</span>{' '}
+                    {totalEmployees}{' '}
+                    (<span className="text-green-500">{totalOnDuty} on duty</span>)
+                  </li>
+                  <hr className="my-2 border-dark-surface" />
+                  <li>
+                    <span className="font-bold text-orange-400">Managers:</span>{' '}
+                    {managerCount}{' '}
+                    (<span className="text-green-500">{onDutyManagers} on duty</span>)
+                  </li>
+                  <li>
+                    <span className="font-bold text-brand-orange">Bartenders:</span>{' '}
+                    {bartenderCount}{' '}
+                    (<span className="text-green-500">{onDutyBartenders} on duty</span>)
+                  </li>
+                  <li>
+                    <span className="font-bold text-yellow-400">Bar Backs:</span>{' '}
+                    {barBackCount}{' '}
+                    (<span className="text-green-500">{onDutyBarBacks} on duty</span>)
+                  </li>
+                  <li>
+                    <span className="font-bold text-blue-400">Busboys:</span>{' '}
+                    {busboyCount}{' '}
+                    (<span className="text-green-500">{onDutyBusboys} on duty</span>)
+                  </li>
+                  <li>
+                    <span className="font-bold text-fuchsia-400">Waiters:</span>{' '}
+                    {waiterCount}{' '}
+                    (<span className="text-green-500">{onDutyWaiters} on duty</span>)
+                  </li>
+                  <li>
+                    <span className="font-bold text-pink-400">Hostess:</span>{' '}
+                    {hostessCount}{' '}
+                    (<span className="text-green-500">{onDutyHostess} on duty</span>)
+                  </li>
+                </ul>
+              </div>
             )}
           </div>
-        ) : (
-          /* Orders Grid */
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onStatusUpdate={handleStatusUpdate}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Stats Footer */}
-      {orders.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-10 backdrop-blur-xl">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex gap-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-brand-orange drop-shadow-sm">{orderCounts.pending}</span>
-                  <span className="text-gray-300 text-sm font-medium">New</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-yellow-400 drop-shadow-sm">{orderCounts.preparing}</span>
-                  <span className="text-gray-300 text-sm font-medium">Preparing</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-400 drop-shadow-sm">{orderCounts.ready}</span>
-                  <span className="text-gray-300 text-sm font-medium">Ready</span>
-                </div>
+          {/* Analytics */}
+          <div>
+            <button
+              className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-yellow-500/90 transition"
+              onClick={() =>
+                setOpenSidebarPanel(
+                  openSidebarPanel === 'analytics' ? null : 'analytics'
+                )
+              }
+            >
+              📊 Analytics
+            </button>
+            {openSidebarPanel === 'analytics' && (
+              <div className="bg-dark-card/90 border-l-4 border-yellow-400 rounded-xl mt-2 px-5 py-4 shadow-xl">
+                <ul className="text-sm space-y-2">
+                  <li>
+                    <span className="font-semibold text-brand-orange">Total Orders:</span>{' '}
+                    {totalOrders}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-brand-orange">Pending:</span>{' '}
+                    {totalPending}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-yellow-500">Preparing:</span>{' '}
+                    {totalPreparing}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-green-500">Ready:</span>{' '}
+                    {totalReady}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-green-400">Completed:</span>{' '}
+                    {totalCompleted}
+                  </li>
+                  <li className="pt-2 border-t border-dark-surface">
+                    <span className="font-semibold text-brand-lime">Avg Prep Time:</span>{' '}
+                    {avgPreparingTime === '-' ? 'N/A' : avgPreparingTime + ' min'}
+                  </li>
+                </ul>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-300 font-medium">Total Active:</span>
-                <span className="text-3xl font-bold text-brand-lime drop-shadow-sm">
-                  {orderCounts.all}
-                </span>
+            )}
+          </div>
+
+          {/* Occupancy & Reservations */}
+          <div>
+            <button
+              className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-lime-500/90 transition"
+              onClick={() =>
+                setOpenSidebarPanel(
+                  openSidebarPanel === 'occupancy' ? null : 'occupancy'
+                )
+              }
+            >
+              🪑 Occupancy & Reservations
+            </button>
+            {openSidebarPanel === 'occupancy' && (
+              <div className="bg-dark-card/90 border-l-4 border-lime-400 rounded-xl mt-2 px-5 py-4 shadow-xl">
+                <ul className="text-sm space-y-2">
+                  <li>
+                    <span className="font-semibold text-brand-lime">
+                      Current Occupancy:
+                    </span>{' '}
+                    {totalOccupancy}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-brand-orange">
+                      To-Go Orders:
+                    </span>{' '}
+                    {totalToGo}
+                  </li>
+                  <li>
+                    <span className="font-semibold text-text-secondary">
+                      Today's Reservations:
+                    </span>{' '}
+                    {totalReservationsToday}
+                  </li>
+                </ul>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Inventory */}
+          <div>
+            <button
+              className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-cyan-500/90 transition"
+              onClick={() =>
+                setOpenSidebarPanel(
+                  openSidebarPanel === 'inventory' ? null : 'inventory'
+                )
+              }
+            >
+              🗃️ Inventory
+            </button>
+            {openSidebarPanel === 'inventory' && (
+              <div className="bg-dark-card/90 border-l-4 border-cyan-400 rounded-xl mt-2 px-5 py-4 shadow-xl">
+                <ul className="text-sm space-y-2">
+                  <li>
+                    <span className="font-semibold text-cyan-400">Categories:</span>{' '}
+                    {Array.from(new Set(inventory.map(i => i.category))).join(', ')}
+                  </li>
+                  <hr className="my-2 border-t-2 border-orange-400" />
+                  {['Produce', 'Dairy', 'To-Go'].map(cat => (
+                    <div key={cat}>
+                      <div className="font-bold text-brand-orange mt-2">{cat}</div>
+                      <ul>
+                        {inventory
+                          .filter(i => i.category === cat)
+                          .map(item => (
+                            <li key={item.item} className="ml-2 flex justify-between">
+                              <span>{item.item}</span>
+                              <span className="font-mono">
+                                {item.quantity} {item.unit}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
-      
-<div className={`fixed bottom-6 left-[27.6rem] z-40 transition-all duration-300 ${isAnalyticsPanelOpen ? 'w-96' : 'w-80'}`}>
-  <div
-    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
-    onClick={() => setAnalyticsPanelOpen(open => !open)}
-  >
-    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
-      📊 Live Analytics
-      <span className={`${isAnalyticsPanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
-    </h3>
-    <ul className="text-sm space-y-2">
-      {/* Core summary here */}
-      {isAnalyticsPanelOpen && (
-   <ul className="text-sm space-y-2">
-      <li>
-        <span className="font-semibold text-brand-orange">Total Orders: </span>
-        {totalOrders}
-      </li>
-      <li>
-        <span className="font-semibold text-brand-orange">Pending: </span>
-        {totalPending}
-      </li>
-      <li>
-        <span className="font-semibold text-yellow-500">Preparing: </span>
-        {totalPreparing}
-      </li>
-      <li>
-        <span className="font-semibold text-green-500">Ready: </span>
-        {totalReady}
-      </li>
-      <li>
-        <span className="font-semibold text-green-400">Completed: </span>
-        {totalCompleted}
-      </li>
-      <li className="pt-2 border-t border-dark-surface">
-        <span className="font-semibold text-brand-lime">Avg Prep Time: </span>
-        {avgPreparingTime === '-' ? 'N/A' : avgPreparingTime + ' min'}
-      </li>
-    </ul>
-      )}
-    </ul>
-  </div>
-</div>
-
-{/* Live Occupancy & Reservations Panel */}
-<div className="fixed bottom-6 left-[53.6rem] z-40">
-  <div className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 w-80">
-    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
-      🪑 Occupancy & Reservations
-    </h3>
-    <ul className="text-sm space-y-2">
-      <li>
-        <span className="font-semibold text-brand-lime">Current Occupancy: </span>
-        {totalOccupancy}
-      </li>
-      <li>
-        <span className="font-semibold text-brand-orange">To-Go Orders: </span>
-        {totalToGo}
-      </li>
-      <li>
-        <span className="font-semibold text-text-secondary">Today's Reservations: </span>
-        {totalReservationsToday}
-      </li>
-    </ul>
-  </div>
-</div>
-
-{/* Employees Panel */}
-<div className={`fixed bottom-6 left-6 z-40 transition-all duration-300 ${isEmployeePanelOpen ? 'w-96' : 'w-80'}`}>
-  <div
-    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
-    onClick={() => setEmployeePanelOpen(open => !open)}
-  >
-    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
-      🧑‍🍳 Employees
-      <span className={`${isEmployeePanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
-    </h3>
-    <ul className="space-y-2 text-sm">
-      <li>
-        <span className="font-bold text-text-primary">Total Employees: </span>
-        {totalEmployees} (<span className="text-green-500">{totalOnDuty} on duty</span>)
-      </li>
-      <hr className="my-2 border-dark-surface"/>
-      {isEmployeePanelOpen && (
-        <>
-          <li>
-            <span className="font-bold text-orange-400">Managers: </span>
-            {managerCount} (<span className="text-green-500">{onDutyManagers} on duty</span>)
-          </li>
-          <li>
-            <span className="font-bold text-brand-orange">Bartenders: </span>
-            {bartenderCount} (<span className="text-green-500">{onDutyBartenders} on duty</span>)
-          </li>
-          <li>
-            <span className="font-bold text-yellow-400">Bar Backs: </span>
-            {barBackCount} (<span className="text-green-500">{onDutyBarBacks} on duty</span>)
-          </li>
-          <li>
-            <span className="font-bold text-blue-400">Busboys: </span>
-            {busboyCount} (<span className="text-green-500">{onDutyBusboys} on duty</span>)
-          </li>
-          <li>
-            <span className="font-bold text-fuchsia-400">Waiters: </span>
-            {waiterCount} (<span className="text-green-500">{onDutyWaiters} on duty</span>)
-          </li>
-          <li>
-            <span className="font-bold text-pink-400">Hostess: </span>
-            {hostessCount} (<span className="text-green-500">{onDutyHostess} on duty</span>)
-          </li>
-        </>
-      )}
-    </ul>
-  </div>
-</div>
-
-{/* Inventory Panel */}
-<div className={`fixed bottom-6 left-[77.5rem] z-40 transition-all duration-300 ${isInventoryPanelOpen ? 'w-96' : 'w-80'}`}>
-  <div
-    className="bg-dark-card/90 rounded-2xl shadow-2xl border border-dark-surface p-5 h-fit cursor-pointer"
-    onClick={() => setInventoryPanelOpen(open => !open)}
-  >
-    <h3 className="mb-3 text-lg font-bold text-text-primary flex items-center gap-2">
-      🗃️ Inventory
-      <span className={`${isInventoryPanelOpen ? 'rotate-90' : ''} transition-transform`}>▼</span>
-    </h3>
-    <ul className="text-sm space-y-2">
-      <li>
-        <span className="font-semibold text-cyan-400">Categories: </span>
-        {Array.from(new Set(inventory.map(i => i.category))).join(', ')}
-      </li>
-      {isInventoryPanelOpen && (
-        <>
-          <hr className="my-2 border-dark-surface"/>
-          {/* Render inventory by category */}
-          {['Produce', 'Dairy', 'To-Go'].map(cat => (
-            <div key={cat}>
-              <div className="font-bold text-brand-orange mt-2">{cat}</div>
-              <ul>
-                {inventory.filter(i => i.category === cat).map(item => (
-                  <li key={item.item} className="ml-2 flex justify-between">
-                    <span>{item.item}</span>
-                    <span className="font-mono">{item.quantity} {item.unit}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </>
-      )}
-    </ul>
-  </div>
-</div>
-
     </div>
-  );
+     {/* == END SIDEBAR == */}
+
+    {/* Main Content */}
+    <div className="container mx-auto px-6 pt-6 pb-32 relative z-10">
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 backdrop-blur-md shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-red-400 font-semibold drop-shadow-sm">{error}</p>
+            </div>
+            <button
+              onClick={fetchActiveOrders}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all border border-red-500/30"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State / Orders Grid */}
+      {filteredOrders.length === 0 ? (
+        <div className="glass-panel rounded-3xl shadow-2xl p-12 text-center border border-white/10">
+          <div className="text-8xl mb-6 drop-shadow-lg">
+            {filter === 'all' ? '🍽️' : filter === 'pending' ? '🆕' : filter === 'preparing' ? '👨‍🍳' : '✅'}
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-3 drop-shadow-md">
+            {filter === 'all'
+              ? 'No Active Orders'
+              : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Orders`}
+          </h2>
+          <p className="text-gray-300 mb-8 text-lg font-medium">
+            {filter === 'all'
+              ? 'New orders will appear here automatically'
+              : `Orders in "${filter}" status will appear here`}
+          </p>
+          {filter !== 'all' && (
+            <button
+              onClick={() => setFilter('all')}
+              className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 pulse-once-orange border border-brand-orange/50"
+            >
+              View All Orders
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+
+    {/* Stats Footer */}
+    {orders.length > 0 && (
+      <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-10 backdrop-blur-xl">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-brand-orange drop-shadow-sm">{orderCounts.pending}</span>
+                <span className="text-gray-300 text-sm font-medium">New</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-yellow-400 drop-shadow-sm">{orderCounts.preparing}</span>
+                <span className="text-gray-300 text-sm font-medium">Preparing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-green-400 drop-shadow-sm">{orderCounts.ready}</span>
+                <span className="text-gray-300 text-sm font-medium">Ready</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-300 font-medium">Total Active:</span>
+              <span className="text-3xl font-bold text-brand-lime drop-shadow-sm">
+                {orderCounts.all}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 };
 
 export default KitchenDashboard;
+
+
 
 
 // want to make sure my changes are saved
