@@ -31,7 +31,7 @@ const KitchenDashboard = () => {
   };
 
   // Fetch initial active orders on mount
-  const fetchActiveOrders = async () => {
+  const fetchActiveOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -50,7 +50,7 @@ const KitchenDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Join kitchen room when socket connects
   useEffect(() => {
@@ -68,7 +68,7 @@ const KitchenDashboard = () => {
   // Fetch orders on mount
   useEffect(() => {
     fetchActiveOrders();
-  }, []);
+  }, [fetchActiveOrders]);
 
   // Handle new order event - adds order to state
   const handleNewOrder = useCallback((newOrder) => {

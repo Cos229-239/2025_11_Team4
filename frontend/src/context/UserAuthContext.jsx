@@ -22,6 +22,20 @@ export const UserAuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('ordereasy_token');
+      localStorage.removeItem('ordereasy_user');
+      alert('Your session has expired. Please log in again.');
+      window.location.href = '/login';
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   const value = { token, setToken, user, setUser, logout: () => { setToken(null); setUser(null); localStorage.removeItem('ordereasy_token'); localStorage.removeItem('ordereasy_user'); } };
   return <UserAuthContext.Provider value={value}>{children}</UserAuthContext.Provider>;
 };

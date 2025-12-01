@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // Create Cart Context
 const CartContext = createContext(null);
@@ -18,6 +19,15 @@ export const CartProvider = ({ children }) => {
     restaurantId: null,
     tableNumber: null,
     reservationId: null
+  });
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+    onClose: () => { }
   });
 
   // Load cart from sessionStorage on mount
@@ -100,11 +110,24 @@ export const CartProvider = ({ children }) => {
     // If context provided and different restaurant, warn user
     if (context && context.restaurantId && orderContext.restaurantId &&
       context.restaurantId !== orderContext.restaurantId) {
-      if (!window.confirm('This will clear your current cart from another restaurant. Continue?')) {
-        return;
-      }
-      clearCart();
-      setOrderContext(context);
+
+      setModalConfig({
+        isOpen: true,
+        title: 'Different Restaurant',
+        message: 'This will clear your current cart from another restaurant. Continue?',
+        confirmText: 'Clear & Add',
+        onConfirm: () => {
+          clearCart();
+          setOrderContext(context);
+          // Recursively add the item after clearing
+          // We need to pass null as context here to avoid infinite loop, 
+          // as we've already set the context above
+          addToCart(item, quantity, specialInstructions, null);
+          setModalConfig(prev => ({ ...prev, isOpen: false }));
+        },
+        onClose: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
     } else if (context) {
       // If context is provided, update it.
       // This handles two cases:
@@ -270,7 +293,19 @@ export const CartProvider = ({ children }) => {
     cartTotal,
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+      <ConfirmationModal
+        isOpen={modalConfig.isOpen}
+        onClose={modalConfig.onClose}
+        onConfirm={modalConfig.onConfirm}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+      />
+    </CartContext.Provider>
+  );
 };
 
 /**
