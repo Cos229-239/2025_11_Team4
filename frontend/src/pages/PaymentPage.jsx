@@ -175,23 +175,6 @@ const PaymentPage = () => {
             )
           `,
           filter: "blur(40px)",
-          backgroundSize: "180% 180%",
-          opacity: 0.55,
-        }}
-      ></div>
-
-      {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-xl">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/cart', { state: location.state })}
-              className="hover:bg-white/10 rounded-xl p-2 transition-all"
-              aria-label="Go back"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
             </button>
             <div>
               <h1 className="text-2xl font-bold">Checkout</h1>
@@ -199,103 +182,103 @@ const PaymentPage = () => {
                 {order_type === 'pre-order' ? 'Pre-Order Payment' : 'Dine-In Payment'}
               </p>
             </div>
-          </div>
-        </div>
-      </header>
+          </div >
+        </div >
+      </header >
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl relative z-10">
-        {/* Order Type Badge */}
-        <div className="mb-6">
-          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${order_type === 'pre-order'
-            ? 'bg-brand-lime/20 text-brand-lime border border-brand-lime/30'
-            : 'bg-brand-orange/20 text-brand-orange border border-brand-orange/30'
-            }`}>
-            {order_type === 'pre-order' ? 'Pre-Order' : 'Dine-In'}
-          </span>
-        </div>
+  <div className="container mx-auto px-4 py-6 max-w-2xl relative z-10">
+    {/* Order Type Badge */}
+    <div className="mb-6">
+      <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${order_type === 'pre-order'
+        ? 'bg-brand-lime/20 text-brand-lime border border-brand-lime/30'
+        : 'bg-brand-orange/20 text-brand-orange border border-brand-orange/30'
+        }`}>
+        {order_type === 'pre-order' ? 'Pre-Order' : 'Dine-In'}
+      </span>
+    </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-red-400 text-sm">{error}</p>
+    {/* Error Message */}
+    {error && (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+        <div className="flex items-center gap-3">
+          <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      </div>
+    )}
+
+    {/* Order Summary */}
+    <div className="bg-dark-card rounded-2xl shadow-xl p-6 mb-6 border border-dark-surface">
+      <h2 className="text-lg font-bold text-text-primary mb-4">Order Summary</h2>
+      <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+        {cart.map((item) => (
+          <div key={item.id} className="flex justify-between text-sm">
+            <div className="flex-1">
+              <span className="text-text-primary font-medium">{item.name}</span>
+              <span className="text-text-secondary ml-2">x{item.quantity}</span>
             </div>
+            <span className="text-text-primary font-semibold">
+              ${(item.price * item.quantity).toFixed(2)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-dark-surface pt-4 space-y-2">
+        <div className="flex justify-between text-text-secondary">
+          <span>Subtotal</span>
+          <span className="font-semibold">${cartSubtotal.toFixed(2)}</span>
+        </div>
+        {cartTax > 0 && (
+          <div className="flex justify-between text-text-secondary">
+            <span>Tax</span>
+            <span className="font-semibold">${cartTax.toFixed(2)}</span>
           </div>
         )}
-
-        {/* Order Summary */}
-        <div className="bg-dark-card rounded-2xl shadow-xl p-6 mb-6 border border-dark-surface">
-          <h2 className="text-lg font-bold text-text-primary mb-4">Order Summary</h2>
-          <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-            {cart.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <div className="flex-1">
-                  <span className="text-text-primary font-medium">{item.name}</span>
-                  <span className="text-text-secondary ml-2">x{item.quantity}</span>
-                </div>
-                <span className="text-text-primary font-semibold">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-dark-surface pt-4 space-y-2">
-            <div className="flex justify-between text-text-secondary">
-              <span>Subtotal</span>
-              <span className="font-semibold">${cartSubtotal.toFixed(2)}</span>
-            </div>
-            {cartTax > 0 && (
-              <div className="flex justify-between text-text-secondary">
-                <span>Tax</span>
-                <span className="font-semibold">${cartTax.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="border-t border-dark-surface pt-2 flex justify-between text-xl font-bold">
-              <span className="text-text-primary">Total</span>
-              <span className="text-brand-lime">${cartTotal.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Stripe Payment Form */}
-        <div className="bg-dark-card rounded-2xl shadow-xl p-6 mb-6 border border-dark-surface">
-          <h2 className="text-lg font-bold text-text-primary mb-4">Payment Details</h2>
-
-          {isLoadingSecret ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
-            </div>
-          ) : clientSecret ? (
-            <Elements stripe={stripePromise} options={{
-              clientSecret,
-              appearance: {
-                theme: 'night',
-                variables: {
-                  colorPrimary: '#FA6C01',
-                  colorBackground: '#1a1a1a',
-                  colorText: '#ffffff',
-                  colorDanger: '#ef4444',
-                  fontFamily: 'Lora, serif',
-                }
-              }
-            }}>
-              <CheckoutForm
-                amount={cartTotal}
-                onSuccess={handlePaymentSuccess}
-                onError={(msg) => setError(msg)}
-              />
-            </Elements>
-          ) : (
-            <div className="text-center py-4 text-text-secondary">
-              Unable to load payment form. Please try refreshing.
-            </div>
-          )}
+        <div className="border-t border-dark-surface pt-2 flex justify-between text-xl font-bold">
+          <span className="text-text-primary">Total</span>
+          <span className="text-brand-lime">${cartTotal.toFixed(2)}</span>
         </div>
       </div>
     </div>
+
+    {/* Stripe Payment Form */}
+    <div className="bg-dark-card rounded-2xl shadow-xl p-6 mb-6 border border-dark-surface">
+      <h2 className="text-lg font-bold text-text-primary mb-4">Payment Details</h2>
+
+      {isLoadingSecret ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
+        </div>
+      ) : clientSecret ? (
+        <Elements stripe={stripePromise} options={{
+          clientSecret,
+          appearance: {
+            theme: 'night',
+            variables: {
+              colorPrimary: '#FA6C01',
+              colorBackground: '#1a1a1a',
+              colorText: '#ffffff',
+              colorDanger: '#ef4444',
+              fontFamily: 'Lora, serif',
+            }
+          }
+        }}>
+          <CheckoutForm
+            amount={cartTotal}
+            onSuccess={handlePaymentSuccess}
+            onError={(msg) => setError(msg)}
+          />
+        </Elements>
+      ) : (
+        <div className="text-center py-4 text-text-secondary">
+          Unable to load payment form. Please try refreshing.
+        </div>
+      )}
+    </div>
+  </div>
+    </div >
   );
 };
 
