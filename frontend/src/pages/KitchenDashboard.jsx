@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext';
+import { useUserAuth } from '../context/UserAuthContext';
 import OrderCard from '../components/OrderCard';
 import Logo from '../components/Logo';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
@@ -15,11 +15,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  */
 const KitchenDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout } = useUserAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, pending, preparing, ready
+  const [filter, setFilter] = useState('all');
 
   const { socket, isConnected } = useSocket();
   const emit = useSocketEmit();
@@ -27,7 +27,7 @@ const KitchenDashboard = () => {
   // Handle logout
   const handleLogout = () => {
     logout();
-    navigate('/kitchen-login');
+    navigate('/login');
   };
 
   // Fetch initial active orders on mount
@@ -178,16 +178,36 @@ const KitchenDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000]">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-2xl sticky top-0 z-20">
+      <header className="glass-panel sticky top-0 z-20 border-b border-white/10 shadow-2xl backdrop-blur-xl">
         <div className="container mx-auto px-6 py-3">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-4">
               <Logo size="sm" />
               <div>
-                <h1 className="text-2xl font-bold">Kitchen Dashboard</h1>
-                <p className="text-sm opacity-90 flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white drop-shadow-md">Kitchen Dashboard</h1>
+                <p className="text-sm text-gray-300 flex items-center gap-2 font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -198,17 +218,15 @@ const KitchenDashboard = () => {
 
             <div className="flex items-center gap-4">
               {/* Connection Status */}
-              <div className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-4 py-2 border-2 ${
-                isConnected
-                  ? 'bg-status-success/20 border-status-success'
-                  : 'bg-status-danger/20 border-status-danger'
-              }`}>
+              <div className={`flex items-center gap-2 backdrop-blur-md rounded-xl px-4 py-2 border ${isConnected
+                ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                : 'bg-red-500/20 border-red-500/50 text-red-400'
+                }`}>
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    isConnected ? 'bg-status-success animate-pulse shadow-lg shadow-status-success/50' : 'bg-status-danger'
-                  }`}
+                  className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'
+                    }`}
                 ></div>
-                <span className="text-sm font-bold">
+                <span className="text-sm font-bold drop-shadow-sm">
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </div>
@@ -216,7 +234,7 @@ const KitchenDashboard = () => {
               {/* Refresh Button */}
               <button
                 onClick={fetchActiveOrders}
-                className="bg-brand-orange text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-brand-orange text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 flex items-center gap-2 border border-brand-orange/50"
               >
                 <svg
                   className="w-5 h-5"
@@ -234,10 +252,22 @@ const KitchenDashboard = () => {
                 Refresh
               </button>
 
+              {/* Back to Home Button */}
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white/10 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition-all shadow-lg hover:shadow-white/10 flex items-center gap-2 border border-white/10 backdrop-blur-sm"
+                title="Back to Home"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="hidden sm:inline">Home</span>
+              </button>
+
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="bg-status-danger text-white px-4 py-2 rounded-xl font-bold hover:bg-status-danger/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="bg-red-500/20 text-red-400 px-4 py-2 rounded-xl font-bold hover:bg-red-500/30 transition-all shadow-lg hover:shadow-red-500/20 flex items-center gap-2 border border-red-500/30 backdrop-blur-sm"
                 title="Logout"
               >
                 <ArrowRightOnRectangleIcon className="w-5 h-5" />
@@ -250,41 +280,37 @@ const KitchenDashboard = () => {
           <div className="flex gap-3 overflow-x-auto pb-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'all'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all border ${filter === 'all'
+                ? 'bg-brand-orange text-white shadow-lg scale-105 border-brand-orange'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/10 hover:border-white/20 backdrop-blur-sm'
+                }`}
             >
-              All Orders <span className="ml-2 inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full bg-dark-surface text-text-secondary border border-dark-surface/60">{orderCounts.all}</span>
+              All Orders <span className={`ml-2 inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full border ${filter === 'all' ? 'bg-white/20 text-white border-white/20' : 'bg-black/30 text-gray-400 border-white/5'}`}>{orderCounts.all}</span>
             </button>
             <button
               onClick={() => setFilter('pending')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'pending'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all border ${filter === 'pending'
+                ? 'bg-brand-orange text-white shadow-lg scale-105 border-brand-orange'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/10 hover:border-white/20 backdrop-blur-sm'
+                }`}
             >
               🆕 New ({orderCounts.pending})
             </button>
             <button
               onClick={() => setFilter('preparing')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'preparing'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all border ${filter === 'preparing'
+                ? 'bg-brand-orange text-white shadow-lg scale-105 border-brand-orange'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/10 hover:border-white/20 backdrop-blur-sm'
+                }`}
             >
               👨‍🍳 Preparing ({orderCounts.preparing})
             </button>
             <button
               onClick={() => setFilter('ready')}
-              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                filter === 'ready'
-                  ? 'bg-brand-orange text-white shadow-lg scale-105'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-card/60 border border-dark-surface'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all border ${filter === 'ready'
+                ? 'bg-brand-orange text-white shadow-lg scale-105 border-brand-orange'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/10 hover:border-white/20 backdrop-blur-sm'
+                }`}
             >
               ✅ Ready ({orderCounts.ready})
             </button>
@@ -293,20 +319,20 @@ const KitchenDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-6 pt-6 pb-32 relative z-10">
         {/* Error Message */}
         {error && (
-          <div className="bg-status-danger/10 border border-status-danger/20 rounded-xl p-4 mb-6">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 backdrop-blur-md shadow-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-status-danger flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-status-danger font-semibold">{error}</p>
+                <p className="text-red-400 font-semibold drop-shadow-sm">{error}</p>
               </div>
               <button
                 onClick={fetchActiveOrders}
-                className="bg-status-danger/20 hover:bg-status-danger/30 text-status-danger px-4 py-2 rounded-lg font-semibold transition-all"
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all border border-red-500/30"
               >
                 Retry
               </button>
@@ -316,16 +342,16 @@ const KitchenDashboard = () => {
 
         {/* Empty State */}
         {filteredOrders.length === 0 ? (
-          <div className="bg-dark-card rounded-2xl shadow-xl p-12 text-center border border-dark-surface">
-            <div className="text-8xl mb-6">
+          <div className="glass-panel rounded-3xl shadow-2xl p-12 text-center border border-white/10">
+            <div className="text-8xl mb-6 drop-shadow-lg">
               {filter === 'all' ? '🍽️' : filter === 'pending' ? '🆕' : filter === 'preparing' ? '👨‍🍳' : '✅'}
             </div>
-            <h2 className="text-3xl font-bold text-text-primary mb-3">
+            <h2 className="text-3xl font-bold text-white mb-3 drop-shadow-md">
               {filter === 'all'
                 ? 'No Active Orders'
                 : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Orders`}
             </h2>
-            <p className="text-text-secondary mb-8 text-lg">
+            <p className="text-gray-300 mb-8 text-lg font-medium">
               {filter === 'all'
                 ? 'New orders will appear here automatically'
                 : `Orders in "${filter}" status will appear here`}
@@ -333,7 +359,7 @@ const KitchenDashboard = () => {
             {filter !== 'all' && (
               <button
                 onClick={() => setFilter('all')}
-                className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 pulse-once-orange"
+                className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 pulse-once-orange border border-brand-orange/50"
               >
                 View All Orders
               </button>
@@ -355,26 +381,26 @@ const KitchenDashboard = () => {
 
       {/* Stats Footer */}
       {orders.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-dark-surface/95 backdrop-blur-lg border-t border-dark-card shadow-2xl z-10">
+        <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-10 backdrop-blur-xl">
           <div className="container mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex gap-8">
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-brand-orange">{orderCounts.pending}</span>
-                  <span className="text-text-secondary text-sm">New</span>
+                  <span className="text-3xl font-bold text-brand-orange drop-shadow-sm">{orderCounts.pending}</span>
+                  <span className="text-gray-300 text-sm font-medium">New</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-status-warning">{orderCounts.preparing}</span>
-                  <span className="text-text-secondary text-sm">Preparing</span>
+                  <span className="text-3xl font-bold text-yellow-400 drop-shadow-sm">{orderCounts.preparing}</span>
+                  <span className="text-gray-300 text-sm font-medium">Preparing</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-status-success">{orderCounts.ready}</span>
-                  <span className="text-text-secondary text-sm">Ready</span>
+                  <span className="text-3xl font-bold text-green-400 drop-shadow-sm">{orderCounts.ready}</span>
+                  <span className="text-gray-300 text-sm font-medium">Ready</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-text-secondary">Total Active:</span>
-                <span className="text-3xl font-bold text-brand-lime">
+                <span className="text-gray-300 font-medium">Total Active:</span>
+                <span className="text-3xl font-bold text-brand-lime drop-shadow-sm">
                   {orderCounts.all}
                 </span>
               </div>

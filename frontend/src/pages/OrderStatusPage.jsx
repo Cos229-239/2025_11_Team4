@@ -11,7 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  * URL: /order-status/:orderNumber
  */
 const OrderStatusPage = () => {
- const { orderNumber: rawOrderNumber } = useParams();
+  const { orderNumber: rawOrderNumber } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { socket, isConnected } = useSocket();
@@ -237,7 +237,27 @@ const OrderStatusPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg pb-24">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pb-24">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
       {/* Header */}
       <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-xl">
         <div className="container mx-auto px-4 py-6">
@@ -260,7 +280,7 @@ const OrderStatusPage = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto px-4 py-8 max-w-3xl relative z-10">
         {/* Status Tracker */}
         <div className={`${statusInfo.bgColor} border-2 border-${statusInfo.color.replace('text-', '')} rounded-2xl p-6 sm:p-8 mb-6`}>
           <div className="text-center">

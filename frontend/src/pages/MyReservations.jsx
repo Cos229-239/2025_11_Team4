@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useUserAuth } from '../context/UserAuthContext';
+import ReservationDetailsModal from '../components/ReservationDetailsModal';
+import DateTimeDisplay from '../components/DateTimeDisplay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const StatusBadge = ({ status }) => {
   const normalized =
     status === 'tentative' ? 'pending payment'
-    : status === 'expired' ? 'completed'
-    : status;
+      : status === 'expired' ? 'completed'
+        : status;
 
   const color =
     status === 'confirmed'
@@ -30,22 +33,26 @@ const StatusBadge = ({ status }) => {
 };
 
 const MyReservations = () => {
-  const [userId] = useState(() => sessionStorage.getItem('ordereasy_user_id'));
+  const { user, token } = useUserAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [selectedReservation, setSelectedReservation] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         setError('');
-        if (!userId) {
+        if (!token) {
           setItems([]);
           return;
         }
-        const res = await fetch(`${API_URL}/api/reservations?user_id=${userId}`);
+
+        const res = await fetch(`${API_URL}/api/reservations/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Failed to load reservations');
         setItems(data.data || []);
@@ -56,7 +63,7 @@ const MyReservations = () => {
       }
     };
     load();
-  }, [userId]);
+  }, [token]);
 
   const grouped = useMemo(() => {
     const upcomingGroups = {};
@@ -68,7 +75,7 @@ const MyReservations = () => {
       if (!dateStr) return;
 
       const timeStr = (r.reservation_time || '00:00').toString().slice(0, 5);
-      const startTs = new Date(`${dateStr}T${timeStr}:00`);
+      const startTs = new Date(`${dateStr.split('T')[0]}T${timeStr}:00`);
 
       const status = r.status;
       const isPastStatus = ['completed', 'expired', 'no-show', 'cancelled'].includes(status);
@@ -76,8 +83,10 @@ const MyReservations = () => {
 
       const bucket = isPastStatus || isPastTime ? pastGroups : upcomingGroups;
 
-      bucket[dateStr] = bucket[dateStr] || [];
-      bucket[dateStr].push(r);
+      // Use just the date part for grouping key
+      const dateKey = dateStr.split('T')[0];
+      bucket[dateKey] = bucket[dateKey] || [];
+      bucket[dateKey].push(r);
     });
 
     const toSortedArray = (groups) =>
@@ -89,16 +98,24 @@ const MyReservations = () => {
     };
   }, [items]);
 
-  const cancelReservation = async (id) => {
+  const cancelReservation = async (id, e) => {
+    e.stopPropagation(); // Prevent opening modal
     try {
-      const res = await fetch(`${API_URL}/api/reservations/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/reservations/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
       const data = await res.json();
       if (!res.ok || !data?.success) {
         const code = data?.code;
         if (code === 'CANCELLATION_WINDOW_PASSED') {
           setToast(
             data?.message ||
-              'Cancellations are only allowed more than 12 hours before your reservation time.'
+            'Cancellations are only allowed more than 12 hours before your reservation time.'
           );
         } else if (code === 'INVALID_RESERVATION_STATUS') {
           setToast('This reservation cannot be cancelled.');
@@ -119,11 +136,15 @@ const MyReservations = () => {
     }
   };
 
-  const checkIn = async (id) => {
+  const checkIn = async (id, e) => {
+    e.stopPropagation(); // Prevent opening modal
     try {
       const res = await fetch(`${API_URL}/api/reservations/${id}/checkin`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
       if (!data.success) {
@@ -140,212 +161,230 @@ const MyReservations = () => {
     }
   };
 
-  const isToday = (reservationDate) => {
-    const today = new Date().toISOString().split('T')[0];
-    return reservationDate === today;
+  // Helper to format date to readable string
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateStr;
+    }
   };
 
-  if (!userId) {
+  // Helper to check if a date is today
+  const isToday = (dateStr) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    const date = new Date(dateStr);
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  };
+
+  if (!user) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-6 text-center">
-        <div className="bg-dark-card border border-dark-surface rounded-2xl p-8 max-w-md">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">No Profile Found</h1>
-          <p className="text-text-secondary mb-6">
-            Create a profile to track your reservations.
-          </p>
-          <a
-            href="/profile"
-            className="bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-bold hover:bg-brand-lime/90 inline-block"
-          >
-            Create Profile
-          </a>
+      <div className="min-h-screen bg-dark-bg flex flex-col">
+        <header className="bg-brand-orange text-white shadow-md">
+          <div className="container mx-auto px-6 py-4 flex items-center gap-4">
+            <a href="/profile" className="p-2 rounded-full hover:bg-white/20 transition text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+            <h1 className="text-2xl font-bold">My Reservations</h1>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <div className="bg-dark-card border border-dark-surface rounded-2xl p-10 max-w-md shadow-2xl">
+            <div className="w-20 h-20 bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+              👤
+            </div>
+            <h2 className="text-2xl font-bold text-text-primary mb-2">Guest Profile Required</h2>
+            <p className="text-text-secondary mb-8">
+              Please create a profile or log in to view and manage your reservations.
+            </p>
+            <a
+              href="/profile"
+              className="bg-brand-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-orange/90 transition shadow-lg shadow-brand-orange/20 inline-block w-full"
+            >
+              Create Profile / Login
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] text-text-primary pt-24">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      {selectedReservation && (
+        <ReservationDetailsModal
+          reservation={selectedReservation}
+          onClose={() => setSelectedReservation(null)}
+        />
+      )}
+
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-dark-card border border-brand-lime text-text-primary px-4 py-2 rounded-xl z-50 shadow-lg">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-brand-lime text-dark-bg px-6 py-3 rounded-xl font-bold shadow-lg z-50 animate-bounce">
           {toast}
         </div>
       )}
-      <div className="container mx-auto px-4 py-8">
-        <h1
-          className="font-['Playfair_Display'] font-bold text-text-primary mb-4"
-          style={{ fontSize: '36px' }}
-        >
-          My Reservations
-        </h1>
-        {error && (
-          <div
-            className="text-[#ef4444] mb-4 font-['Lora']"
-            style={{ fontSize: '17px' }}
+
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-6 mb-8 relative z-10">
+        <div className="flex items-center gap-4">
+          <a
+            href="/profile"
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
+            title="Back to Profile"
           >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg">My Reservations</h1>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-3xl relative z-10">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-center">
             {error}
           </div>
         )}
+
         {loading ? (
-          <div className="text-text-secondary font-['Lora']" style={{ fontSize: '17px' }}>
-            Loading...
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-orange mx-auto mb-4"></div>
+            <p className="text-text-secondary">Loading your reservations...</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="text-text-secondary font-['Lora']" style={{ fontSize: '17px' }}>
-            You have no reservations.
+          <div className="text-center py-16 bg-dark-card rounded-2xl border border-dashed border-dark-surface">
+            <div className="text-6xl mb-4">📅</div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">No Reservations Yet</h3>
+            <p className="text-text-secondary mb-6">You haven't made any reservations yet.</p>
+            <a href="/restaurants" className="text-brand-orange hover:underline font-bold">Browse Restaurants</a>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-12">
             {grouped.upcoming.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2
-                    className="font-['Playfair_Display'] font-bold text-text-primary"
-                    style={{ fontSize: '24px' }}
-                  >
-                    Upcoming reservations
-                  </h2>
-                  <span
-                    className="text-text-secondary font-['Lora']"
-                    style={{ fontSize: '14px' }}
-                  >
-                    {grouped.upcoming.reduce((sum, [, list]) => sum + list.length, 0)} active
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold text-text-primary">Upcoming</h2>
+                  <div className="h-px bg-dark-surface flex-1"></div>
+                  <span className="bg-brand-orange text-white text-xs font-bold px-2 py-1 rounded-full">
+                    {grouped.upcoming.reduce((sum, [, list]) => sum + list.length, 0)}
                   </span>
                 </div>
+
                 <div className="space-y-6">
                   {grouped.upcoming.map(([date, list]) => (
-                    <div
-                      key={date}
-                      className="bg-dark-card border border-dark-surface rounded-2xl p-5"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3
-                          className="font-['Playfair_Display'] font-bold text-text-primary"
-                          style={{ fontSize: '20px' }}
-                        >
-                          {date}
-                        </h3>
-                        <span
-                          className="text-text-secondary font-['Lora']"
-                          style={{ fontSize: '14px' }}
-                        >
-                          {list.length} reservation{list.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="divide-y divide-dark-surface">
-                        {list
-                          .sort((a, b) =>
-                            a.reservation_time < b.reservation_time ? 1 : -1
-                          )
-                          .map((r) => (
-                            <div key={r.id} className="py-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <div
-                                    className="text-text-primary font-['Lora'] font-semibold mb-1"
-                                    style={{ fontSize: '17px' }}
-                                  >
-                                    {String(r.reservation_time).slice(0, 5)} · Table{' '}
-                                    {r.table_number ?? '-'}
-                                  </div>
-                                  <div
-                                    className="text-text-secondary font-['Lora'] mb-2"
-                                    style={{ fontSize: '14px' }}
-                                  >
-                                    Party {r.party_size} at{' '}
-                                    {r.restaurant_name || 'Restaurant'}
-                                  </div>
-                                  {r.has_pre_order && (
-                                    <div
-                                      className="inline-flex items-center gap-1.5 bg-brand-orange/20 text-brand-orange px-2 py-1 rounded-full border border-brand-orange/30 font-['Lora'] font-semibold"
-                                      style={{ fontSize: '12px' }}
-                                    >
-                                      <svg
-                                        className="w-3 h-3"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                      </svg>
-                                      Pre-Order Placed
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
+                    <div key={date} className="space-y-4">
+                      <h3 className="text-brand-lime font-bold uppercase tracking-wider text-sm ml-1">
+                        {formatDate(date)}
+                      </h3>
+
+                      {list
+                        .sort((a, b) => a.reservation_time < b.reservation_time ? -1 : 1)
+                        .map((r) => (
+                          <div
+                            key={r.id}
+                            onClick={() => setSelectedReservation(r)}
+                            className="glass-card rounded-2xl p-6 shadow-lg transition-all group relative overflow-hidden cursor-pointer"
+                          >
+                            {/* Decorative accent */}
+                            <div className="absolute top-0 left-0 w-1 h-full bg-brand-orange"></div>
+
+                            <div className="flex flex-col md:flex-row justify-between gap-6">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <DateTimeDisplay
+                                    timestamp={new Date(`${r.reservation_date.split('T')[0]}T${r.reservation_time}`).toISOString()}
+                                    restaurantTimezone={r.restaurant_timezone || 'UTC'}
+                                    className="scale-100 origin-left"
+                                  />
                                   <StatusBadge status={r.status} />
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {isToday(r.reservation_date) &&
-                                  (r.status === 'confirmed' || r.status === 'seated') &&
-                                  !r.customer_arrived && (
-                                    <button
-                                      onClick={() => checkIn(r.id)}
-                                      className="bg-brand-lime text-dark-bg px-6 py-3 rounded-lg font-['Lora'] font-bold hover:bg-brand-lime/90 transition-all flex items-center gap-2 shadow-lg hover:shadow-brand-lime/30"
-                                      style={{ fontSize: '14px' }}
-                                    >
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                        />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                      </svg>
-                                      I'm Here
-                                    </button>
-                                  )}
-                                {r.customer_arrived && (
-                                  <span
-                                    className="text-[#22c55e] font-['Lora'] font-semibold flex items-center gap-1.5"
-                                    style={{ fontSize: '14px' }}
-                                  >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="currentColor"
-                                      viewBox="0 0 20 20"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                        clipRule="evenodd"
-                                      />
+
+                                <div className="flex items-center gap-2 text-lg font-bold text-text-primary mb-1">
+                                  <span>{r.restaurant_name || 'Restaurant'}</span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-4 text-text-secondary text-sm mt-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
-                                    Checked In
-                                  </span>
+                                    Party of {r.party_size}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    Table {r.table_number ?? 'TBD'}
+                                  </div>
+                                </div>
+
+                                {r.orders && r.orders.length > 0 && (
+                                  <div className="mt-3">
+                                    <span className="text-xs bg-brand-orange/10 text-brand-orange px-2 py-1 rounded border border-brand-orange/20">
+                                      {r.orders.length} Pre-order(s) included
+                                    </span>
+                                  </div>
                                 )}
-                                {(r.status === 'tentative' ||
-                                  r.status === 'confirmed') &&
-                                  !r.customer_arrived && (
-                                    <button
-                                      onClick={() => cancelReservation(r.id)}
-                                      className="text-[#ef4444] hover:opacity-80 font-['Lora'] font-bold px-3 py-2 hover:bg-[rgb(239_68_68_/_.1)] rounded-lg transition-all"
-                                      style={{ fontSize: '14px' }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  )}
+                              </div>
+
+                              <div className="flex flex-col justify-center gap-3 min-w-[140px]">
+                                {isToday(r.reservation_date) && (r.status === 'confirmed' || r.status === 'seated') && !r.customer_arrived && (
+                                  <button
+                                    onClick={(e) => checkIn(r.id, e)}
+                                    className="w-full bg-brand-lime text-dark-bg py-2.5 rounded-xl font-bold hover:bg-brand-lime/90 transition shadow-lg shadow-brand-lime/20 flex items-center justify-center gap-2"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    I'm Here
+                                  </button>
+                                )}
+
+                                {(r.status === 'tentative' || r.status === 'confirmed') && !r.customer_arrived && (
+                                  <button
+                                    onClick={(e) => cancelReservation(r.id, e)}
+                                    className="w-full py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
                               </div>
                             </div>
-                          ))}
-                      </div>
+                          </div>
+                        ))}
                     </div>
                   ))}
                 </div>
@@ -353,94 +392,39 @@ const MyReservations = () => {
             )}
 
             {grouped.past.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2
-                    className="font-['Playfair_Display'] font-bold text-text-primary"
-                    style={{ fontSize: '24px' }}
-                  >
-                    Past reservations
-                  </h2>
-                  <span
-                    className="text-text-secondary font-['Lora']"
-                    style={{ fontSize: '14px' }}
-                  >
-                    {grouped.past.reduce((sum, [, list]) => sum + list.length, 0)} total
-                  </span>
-                </div>
-                <div className="space-y-6">
+              <div className="space-y-6 pt-8 border-t border-dark-surface">
+                <h2 className="text-2xl font-bold text-text-secondary">Past Reservations</h2>
+
+                <div className="space-y-6 opacity-60 hover:opacity-100 transition-opacity duration-300">
                   {grouped.past.map(([date, list]) => (
-                    <div
-                      key={date}
-                      className="bg-dark-card border border-dark-surface/70 rounded-2xl p-5 opacity-80"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3
-                          className="font-['Playfair_Display'] font-semibold text-text-secondary"
-                          style={{ fontSize: '20px' }}
-                        >
-                          {date}
-                        </h3>
-                        <span
-                          className="text-text-secondary font-['Lora']"
-                          style={{ fontSize: '14px' }}
-                        >
-                          {list.length} reservation{list.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="divide-y divide-dark-surface/80">
-                        {list
-                          .sort((a, b) =>
-                            a.reservation_time < b.reservation_time ? 1 : -1
-                          )
-                          .map((r) => (
-                            <div key={r.id} className="py-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <div
-                                    className="text-text-primary/80 font-['Lora'] font-semibold mb-1"
-                                    style={{ fontSize: '17px' }}
-                                  >
-                                    {String(r.reservation_time).slice(0, 5)} · Table{' '}
-                                    {r.table_number ?? '-'}
-                                  </div>
-                                  <div
-                                    className="text-text-secondary font-['Lora'] mb-2"
-                                    style={{ fontSize: '14px' }}
-                                  >
-                                    Party {r.party_size} at{' '}
-                                    {r.restaurant_name || 'Restaurant'}
-                                  </div>
-                                  {r.has_pre_order && (
-                                    <div
-                                      className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange/80 px-2 py-1 rounded-full border border-brand-orange/30 font-['Lora'] font-semibold"
-                                      style={{ fontSize: '12px' }}
-                                    >
-                                      <svg
-                                        className="w-3 h-3"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                      </svg>
-                                      Pre-Order
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  <StatusBadge status={r.status} />
-                                </div>
+                    <div key={date} className="space-y-4">
+                      <h3 className="text-text-secondary font-bold uppercase tracking-wider text-sm ml-1">
+                        {formatDate(date)}
+                      </h3>
+
+                      {list
+                        .sort((a, b) => a.reservation_time < b.reservation_time ? -1 : 1)
+                        .map((r) => (
+                          <div
+                            key={r.id}
+                            onClick={() => setSelectedReservation(r)}
+                            className="glass-card rounded-xl p-5 flex justify-between items-center cursor-pointer transition"
+                          >
+                            <div>
+                              <div className="flex items-center gap-3 mb-1">
+                                <DateTimeDisplay
+                                  timestamp={new Date(`${r.reservation_date.split('T')[0]}T${r.reservation_time}`).toISOString()}
+                                  restaurantTimezone={r.restaurant_timezone || 'UTC'}
+                                  className="scale-90 origin-left"
+                                />
+                                <StatusBadge status={r.status} />
                               </div>
-                              {/* Past reservations are read-only */}
+                              <div className="text-text-secondary text-sm">
+                                {r.restaurant_name} · Party of {r.party_size}
+                              </div>
                             </div>
-                          ))}
-                      </div>
+                          </div>
+                        ))}
                     </div>
                   ))}
                 </div>
@@ -454,4 +438,3 @@ const MyReservations = () => {
 };
 
 export default MyReservations;
-

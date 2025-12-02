@@ -3,7 +3,9 @@ const db = require('../config/database');
 // Create new order with items (using transaction)
 const createOrder = async (orderData) => {
   const {
-    table_id,
+    table_id = null,
+    restaurant_id = null,
+    user_id = null,
     items,
     customer_notes,
     order_type = 'dine-in',
@@ -45,6 +47,8 @@ const createOrder = async (orderData) => {
     const orderResult = await client.query(
       `INSERT INTO orders (
         table_id,
+        restaurant_id,
+        user_id,
         total_amount,
         customer_notes,
         status,
@@ -58,10 +62,12 @@ const createOrder = async (orderData) => {
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
       RETURNING *`,
       [
         table_id,
+        restaurant_id,
+        user_id,
         0, // Will update total_amount after calculating
         customer_notes || '',
         'pending',
@@ -309,6 +315,43 @@ const orderExists = async (id) => {
   }
 };
 
+// Get orders by user ID
+const getOrdersByUser = async (userId) => {
+  try {
+    const ordersResult = await db.query(
+      `SELECT 
+         o.*,
+         r.name AS restaurant_name,
+         r.image_url AS restaurant_image,
+         r.timezone AS restaurant_timezone
+       FROM orders o
+       LEFT JOIN restaurants r ON o.restaurant_id = r.id
+       WHERE o.user_id = $1
+       ORDER BY o.created_at DESC`,
+      [userId]
+    );
+
+    // For each order, get its items
+    const ordersWithItems = await Promise.all(
+      ordersResult.rows.map(async (order) => {
+        const itemsResult = await db.query(
+          'SELECT * FROM order_items WHERE order_id = $1 ORDER BY id',
+          [order.id]
+        );
+
+        return {
+          ...order,
+          items: itemsResult.rows
+        };
+      })
+    );
+
+    return ordersWithItems;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   createOrder,
   getAllOrders,
@@ -316,5 +359,6 @@ module.exports = {
   getActiveOrders,
   getOrdersByTable,
   updateOrderStatus,
-  orderExists
+  orderExists,
+  getOrdersByUser
 };

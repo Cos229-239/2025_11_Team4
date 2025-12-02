@@ -9,7 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5173';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { BuildingStorefrontIcon } from '@heroicons/react/24/solid';
+
 
 /**
  * RestaurantListPage Component
@@ -75,7 +78,12 @@ const RestaurantListPage = () => {
       rating: 4.0,
       deliveryTime: "15-25 min",
       distance: "0.3 mi",
-      image: "🚂🍳",
+
+      image: (<BuildingStorefrontIcon
+        className="w-14 h-14 text-white/80 drop-shadow-[0_0_6px_rgba(255,255,255,0.35)]"
+      />
+      ),
+
       source: "internal",
       priceRange: "$$",
       categories: ["American", "Breakfast"]
@@ -173,24 +181,6 @@ const RestaurantListPage = () => {
     }
   ];
 
-  // Category options
-  const categories = [
-    'All',
-    'American',
-    'Asian',
-    'Burgers',
-    'Pizza',
-    'Italian',
-    'Mexican',
-    'Mediterranean',
-    'Sushi'
-  ];
-
-  // Filter restaurants based on search and category
-  // Prefer live restaurants if loaded; map to existing shape expected by UI
-    // For now, keep using the designed mock restaurants (including Crazy Otto).
-  // The backend restaurant API is wired up but not driving this list yet.
-  const restaurantsData = mockRestaurants;
 
   // Map API data to UI format
   const restaurantsData = useMemo(() => {
@@ -245,7 +235,7 @@ const RestaurantListPage = () => {
    * Handle restaurant card click
    */
   const handleRestaurantClick = (restaurant) => {
-    navigate(`/restaurant/${restaurant.id}/menu`);
+    navigate(`/restaurant/${restaurant.id}`);
   };
 
   /**
@@ -284,61 +274,97 @@ const RestaurantListPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg relative overflow-hidden pb-8">
-      {/* Background glow */}
-      <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-      {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 shadow-xl relative z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/20 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-            <Logo size="sm" />
-            <div className="w-20"></div> {/* Spacer */}
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 pb-28">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      {/* Header integrated into page flow */}
+      <div className="container mx-auto px-4 mb-8 relative z-10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="text-white hover:bg-white/10 transition-colors flex items-center gap-2 px-3 py-2 rounded-full"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">Back</span>
+          </button>
+
+
+
+          {/* NEW: CLEAN TEXT LOGO (no copa) */}
+          <div className="text-2xl sm:text-3xl font-bold">
+            <span className="text-brand-orange">Order</span>
+            <span className="text-brand-lime">Easy</span>
           </div>
 
-          <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-              Browse Restaurants
-            </h1>
-            <p className="text-white/90">
-              {filteredRestaurants.length} restaurant{filteredRestaurants.length !== 1 ? 's' : ''} available
-            </p>
-          </div>
+
+          <div className="w-20"></div> {/* Spacer */}
         </div>
-      </header>
+
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+            Browse Restaurants
+          </h1>
+          <p className="text-white/90">
+            {filteredRestaurants.length} restaurant{filteredRestaurants.length !== 1 ? 's' : ''} available
+          </p>
+        </div>
+      </div>
+
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Search Bar */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+
+            <MagnifyingGlassIcon
+              className="
+              absolute left-4 top-1/2 -translate-y-1/2
+              w-6 h-6
+              text-[#B7EC2F]
+              drop-shadow-[0_0_6px_rgba(255,183,146,0.8)]
+              z-20
+            "
+              strokeWidth={2.5}
+            />
+
             <input
               type="text"
-              placeholder="Search restaurants, cuisines..."
+              placeholder="Discover places, menus and cuisines"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="
-                w-full
-                bg-dark-card
-                text-text-primary
-                border-2 border-dark-surface
-                focus:border-brand-lime
-                rounded-2xl
-                pl-12 pr-6 py-4
-                outline-none
-                transition-colors
-                text-lg
-                placeholder:text-text-secondary
-              "
+              w-full
+              bg-white/10 backdrop-blur-md
+              text-white
+              border border-white/20
+              focus:border-brand-lime
+              rounded-2xl
+              pl-12 pr-6 py-4
+              outline-none
+              transition-all
+              text-lg
+              placeholder:text-white/60
+                          "
             />
             {searchQuery && (
               <button
@@ -364,10 +390,10 @@ const RestaurantListPage = () => {
                   px-6 py-3 rounded-full font-semibold text-sm
                   transition-all duration-200
                   whitespace-nowrap
-                  ${
-                    activeCategory === category
-                      ? 'bg-brand-lime text-dark-bg shadow-lg shadow-brand-lime/30'
-                      : 'bg-dark-card text-text-secondary hover:bg-dark-surface hover:text-text-primary border border-dark-surface'
+                  ${activeCategory === category
+                    ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                    : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
+
                   }
                 `}
               >
@@ -376,11 +402,10 @@ const RestaurantListPage = () => {
             ))}
             <button
               onClick={() => setNearbyOnly((v) => !v)}
-              className={`px-6 py-3 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${
-                nearbyOnly
-                  ? 'bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/30'
-                  : 'bg-dark-card text-text-secondary hover:bg-dark-surface hover:text-text-primary border-dark-surface'
-              }`}
+              className={`px-6 py-3 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${nearbyOnly
+                ? 'bg-brand-lime text-black font-bold shadow-[0_0_20px_#B5FF0088] border border-brand-lime/80'
+                : 'bg-white/10 backdrop-blur-md text-white/80 border border-white/20 hover:bg-white/20 hover:text-white'
+                }`}
               title={coords ? 'Filter within 25 km' : 'Enable location to filter nearby'}
             >
               Near Me
@@ -439,7 +464,7 @@ const RestaurantListPage = () => {
                 key={restaurant.id}
                 onClick={() => handleRestaurantClick(restaurant)}
                 className="
-                  bg-dark-card rounded-3xl overflow-hidden
+                  bg-white/10 backdrop-blur-xl border border-white/20
                   border border-dark-surface
                   hover:border-brand-lime/50
                   transition-all duration-300
@@ -503,7 +528,6 @@ const RestaurantListPage = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPinIcon className="w-4 h-4" />
-                      <span>{restaurant.distance}</span>
                     </div>
                   </div>
 
@@ -511,7 +535,7 @@ const RestaurantListPage = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRestaurantClick(restaurant);
+                      navigate(`/restaurant/${restaurant.id}`);
                     }}
                     className="
                       w-full
@@ -524,7 +548,7 @@ const RestaurantListPage = () => {
                       shadow-lg shadow-brand-lime/20
                     "
                   >
-                    Menu
+                    View Details
                   </button>
                 </div>
               </div>
@@ -533,7 +557,7 @@ const RestaurantListPage = () => {
         )}
 
       </div>
-    </div>
+    </div >
   );
 };
 

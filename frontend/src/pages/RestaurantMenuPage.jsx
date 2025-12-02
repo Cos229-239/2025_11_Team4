@@ -96,7 +96,7 @@ const RestaurantMenuPage = () => {
     load();
   }, [id]);
 
-    const filtered =
+  const filtered =
     activeCategory && activeCategory !== 'All Items'
       ? menuItems.filter((m) => m.category === activeCategory)
       : menuItems;
@@ -139,26 +139,72 @@ const RestaurantMenuPage = () => {
   if (error) return <div className="min-h-screen bg-dark-bg flex items-center justify-center text-red-400">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-dark-bg pb-24">
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold">Menu</h1>
-            <button onClick={handleBack} className="hover:bg-white/20 px-3 py-2 rounded-lg">Back</button>
-          </div>
-          <p className="text-sm opacity-90">{getContextDisplay()}</p>
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-20 pb-24">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      {/* Integrated Header */}
+      <div className="container mx-auto px-4 mb-4 relative z-10">
+        <div className="flex items-center gap-4 mb-2">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
+            title="Back"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold text-white drop-shadow-lg">Menu</h1>
         </div>
-      </header>
+        <p className="text-sm opacity-90 ml-12 text-gray-300">{getContextDisplay()}</p>
+      </div>
 
       <CategoryTabs categories={categories} activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
-      <div className="container mx-auto px-4">
-        {filtered.length === 0 ? (
+      <div className="container mx-auto px-4 py-6 relative z-10">
+        {loading ? (
+          <div className="text-center text-text-secondary py-12">Loading menu...</div>
+        ) : menuItems.length === 0 ? (
           <div className="text-center text-text-secondary py-12">No items found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((item) => (
-              <MenuItemCard key={item.id} item={item} onAddToCart={handleAdd} />
-            ))}
+          <div className="space-y-12">
+            {categories
+              .filter(cat => !activeCategory || cat === activeCategory)
+              .map(category => {
+                const categoryItems = menuItems.filter(item => item.category === category);
+                if (categoryItems.length === 0) return null;
+
+                return (
+                  <div key={category} id={`category-${category}`} className="scroll-mt-24">
+                    <h2 className="text-2xl font-bold mb-6 text-brand-orange flex items-center gap-3">
+                      <span className="w-8 h-1 bg-brand-orange rounded-full"></span>
+                      {category}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {categoryItems.map((item) => (
+                        <MenuItemCard key={item.id} item={item} onAddToCart={handleAdd} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         )}
 

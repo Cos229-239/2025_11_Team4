@@ -1,6 +1,6 @@
 // Database setup script
 // This script will create all necessary tables and seed data
-// Run with: node setup-database.js
+// Run with: node scripts/setup-database.js
 
 const pg = require('pg');
 const { Pool } = pg;
@@ -25,7 +25,7 @@ if (wantsSSL) {
 }
 
 async function setupDatabase() {
-  console.log('🗄️  Setting up OrderEasy Database...\n');
+  console.log('???  Setting up OrderEasy Database...\n');
   console.log('='.repeat(50));
 
   // Create connection pool
@@ -46,21 +46,21 @@ async function setupDatabase() {
   const pool = new Pool(poolConfig);
 
   try {
-    console.log('\n✅ Connecting to database...');
+    console.log('\n? Connecting to database...');
     await pool.query('SELECT NOW()');
-    console.log('✅ Connected successfully!');
+    console.log('? Connected successfully!');
 
     // Read and execute schema.sql
-    console.log('\n✅ Reading schema.sql...');
-    const schemaPath = path.join(__dirname, 'schema.sql');
+    console.log('\n? Reading schema.sql...');
+    const schemaPath = path.join(__dirname, '..', 'schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 
-    console.log('✅ Executing schema...');
+    console.log('? Executing schema...');
     await pool.query(schemaSql);
-    console.log('✅ Database schema created successfully!');
+    console.log('? Database schema created successfully!');
 
     // Verify tables were created
-    console.log('\n✅ Verifying tables...');
+    console.log('\n? Verifying tables...');
     const tablesResult = await pool.query(`
       SELECT table_name
       FROM information_schema.tables
@@ -68,14 +68,14 @@ async function setupDatabase() {
       ORDER BY table_name;
     `);
 
-    console.log('📋 Tables created:');
+    console.log('?? Tables created:');
     tablesResult.rows.forEach(row => {
       console.log(`   - ${row.table_name}`);
     });
 
     // Count menu items
     const menuCountResult = await pool.query('SELECT COUNT(*) as count FROM menu_items');
-    console.log(`\n✅ Menu items loaded: ${menuCountResult.rows[0].count}`);
+    console.log(`\n? Menu items loaded: ${menuCountResult.rows[0].count}`);
 
     // Show sample menu items
     const menuItemsResult = await pool.query(`
@@ -85,23 +85,23 @@ async function setupDatabase() {
       LIMIT 5
     `);
 
-    console.log('\n📋 Sample menu items:');
+    console.log('\n?? Sample menu items:');
     menuItemsResult.rows.forEach(item => {
       console.log(`   - ${item.name} ($${item.price}) - ${item.category}`);
     });
 
     console.log('\n' + '='.repeat(50));
-    console.log('✅ Database setup completed successfully!');
+    console.log('? Database setup completed successfully!');
     console.log('\nYou can now start the server with: npm run dev\n');
 
   } catch (error) {
-    console.error('\n❌ Error setting up database:');
+    console.error('\n? Error setting up database:');
     console.error(error.message);
 
     if (error.code === 'ECONNREFUSED') {
-      console.error('\n💡 Make sure PostgreSQL is running and the connection details in .env are correct.');
+      console.error('\n?? Make sure PostgreSQL is running and the connection details in .env are correct.');
     } else if (error.code === '3D000') {
-      console.error('\n💡 The database does not exist. Create it first with:');
+      console.error('\n?? The database does not exist. Create it first with:');
       console.error('   CREATE DATABASE ordereasy;');
     }
 
@@ -112,3 +112,4 @@ async function setupDatabase() {
 }
 
 setupDatabase();
+
