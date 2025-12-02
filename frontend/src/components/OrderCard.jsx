@@ -75,8 +75,29 @@ const OrderCard = ({ order, onStatusUpdate }) => {
   const [error, setError] = useState(null);
 
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+// Preparing timer hooks  
+  const startTime = order.preparing_at || order.status_updated_at || order.created_at;
+  const [preparingElapsed, setPreparingElapsed] = useState(() =>
+    Math.floor((Date.now() - new Date(startTime)) / 1000)
+  );
 
-  // Update time display every minute
+  useEffect(() => {
+    if (order.status !== 'preparing') return;
+    const interval = setInterval(() => {
+      setPreparingElapsed(Math.floor((Date.now() - new Date(startTime)) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [order.status, startTime]);
+
+  function formatElapsed(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+// Update time display every minute
   useEffect(() => {
     const updateTime = () => {
       setTimeDisplay(timeAgo(order.created_at));
@@ -221,6 +242,13 @@ const OrderCard = ({ order, onStatusUpdate }) => {
             {timeDisplay}
           </span>
         </div>
+            {/* Preparing Timer */}
+    {order.status === 'preparing' && (
+      <div className="text-xs text-yellow-400 mt-1 pl-5 pb-2">
+        Preparing for: {formatElapsed(preparingElapsed)}
+      </div>
+    )}
+    
       </div>
 
       {/* Order Items */}
