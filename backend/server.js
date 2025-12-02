@@ -3,7 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const http = require('http');
-const net = require('net');
+
 const { Server } = require('socket.io');
 require('dotenv').config();
 const { authenticateToken, requireRole } = require('./middleware/auth.middleware');
@@ -25,8 +25,9 @@ const ioCorsOptions = {
 };
 
 // Webhook route (must be before JSON parser for raw body verification)
-const paymentWebhookRoutes = require('./routes/payment.webhook.routes');
-app.use('/api/payments', paymentWebhookRoutes);
+// Webhook route (must be before JSON parser for raw body verification)
+const webhookRoutes = require('./routes/webhook.routes');
+app.use('/api/webhook', express.raw({ type: 'application/json' }), webhookRoutes);
 
 // Import Crazy Otto's data for demo purposes
 const {
@@ -88,20 +89,37 @@ const tableRoutes = require('./routes/table.routes');
 const restaurantRoutes = require('./routes/restaurant.routes');
 const reservationRoutes = require('./routes/reservation.routes');
 
+app.use('/api/v1/menu', menuRoutes);
 app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderLimiter, orderRoutes); // Apply order-specific rate limiting
+
+app.use('/api/v1/orders', orderLimiter, orderRoutes);
+app.use('/api/orders', orderLimiter, orderRoutes);
+
+app.use('/api/v1/tables', tableRoutes);
 app.use('/api/tables', tableRoutes);
+
+app.use('/api/v1/restaurants', restaurantRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+
+app.use('/api/v1/reservations', reservationRoutes);
 app.use('/api/reservations', reservationRoutes);
+
 const userRoutes = require('./routes/user.routes');
+app.use('/api/v1/users', userRoutes);
 app.use('/api/users', userRoutes);
+
 const authRoutes = require('./routes/auth.routes');
-app.use('/api/auth', authLimiter, authRoutes); // Apply strict rate limiting to auth routes
+app.use('/api/v1/auth', authLimiter, authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+
 const paymentRoutes = require('./routes/payment.routes');
+app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/payments', paymentRoutes);
+
 // Protect Admin Routes
 // Only Developer and Owner can access admin settings
 const settingsRoutes = require('./routes/settings.routes');
+app.use('/api/v1/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
 app.use('/api/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
 
 // Socket.IO connection handling
@@ -128,7 +146,7 @@ let currentPort = parseInt(PORT);
 const startServer = (port) => {
   // If previous io instance exists (from a failed attempt), close it
   if (io && typeof io.close === 'function') {
-    try { io.close(); } catch (_) {}
+    try { io.close(); } catch (_) { }
   }
 
   // Create a fresh HTTP server and Socket.IO for this attempt
@@ -137,7 +155,7 @@ const startServer = (port) => {
 
   // Expose io to routes and jobs
   app.set('io', io);
-  global.io = io;
+
 
   // Wire up socket handlers for this io instance
   setupOrderSocket(io);

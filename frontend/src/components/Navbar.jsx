@@ -317,7 +317,7 @@ const Navbar = () => {
       <div
         className="transition-[height] duration-500 ease-out"
         style={{
-          height: ['/', '/cart', '/profile', '/restaurants', '/reservation', '/my-reservations', '/admin/menu', '/admin/settings', '/restaurant'].some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
+          height: ['/', '/cart', '/profile', '/restaurants', '/reservation', '/my-reservations', '/admin/menu', '/admin/settings', '/restaurant', '/login', '/signup', '/payment', '/order-status', '/about'].some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
             ? '0px'
             : '64px'
         }}

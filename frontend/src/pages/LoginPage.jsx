@@ -29,16 +29,78 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-6">
-      <form onSubmit={submit} className="bg-dark-card border border-dark-surface rounded-2xl p-6 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-text-primary mb-4">Sign In</h1>
-        {error && <div className="text-red-400 mb-3">{error}</div>}
-        <label className="block text-sm text-text-secondary mb-1">Email</label>
-        <input value={email} onChange={(e)=>setEmail(e.target.value)} type="email" className="w-full bg-dark-surface border border-dark-surface rounded-xl p-3 text-text-primary mb-3" />
-        <label className="block text-sm text-text-secondary mb-1">Password</label>
-        <input value={password} onChange={(e)=>setPassword(e.target.value)} type="password" className="w-full bg-dark-surface border border-dark-surface rounded-xl p-3 text-text-primary mb-4" />
-        <button className="w-full bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-bold hover:bg-brand-lime/90">Sign In</button>
-        <div className="text-text-secondary text-sm mt-4">No account? <a className="text-brand-orange" href="/signup">Sign up</a></div>
+    <div className="min-h-screen relative overflow-hidden bg-[#000000] flex items-center justify-center p-6">
+      {/* BACKGROUND GRADIENT */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at center,
+              #E35504ff 0%,
+              #E35504aa 15%,
+              #000000 35%,
+              #5F2F14aa 55%,
+              #B5FF00ff 80%,
+              #000000 100%
+            )
+          `,
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
+      ></div>
+
+      <form onSubmit={submit} className="glass-card rounded-2xl p-8 w-full max-w-md relative z-10 border border-white/10">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2 font-display">Welcome Back</h1>
+          <p className="text-white/60">Sign in to continue your order</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 text-red-400 text-sm text-center backdrop-blur-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-2 ml-1">Email Address</label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              className="glass-input w-full rounded-xl p-4 outline-none transition-all"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-2 ml-1">Password</label>
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              required
+              className="glass-input w-full rounded-xl p-4 outline-none transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white p-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-brand-orange/20 hover:scale-[1.02] transition-all duration-300 mt-4"
+          >
+            Sign In
+          </button>
+        </div>
+
+        <div className="text-center mt-8 text-white/60 text-sm">
+          Don't have an account?{' '}
+          <a href="/signup" className="text-brand-lime hover:text-brand-lime/80 font-semibold transition-colors">
+            Create one now
+          </a>
+        </div>
       </form>
     </div>
   );

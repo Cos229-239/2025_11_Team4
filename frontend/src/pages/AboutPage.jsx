@@ -9,34 +9,17 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-dark-bg">
       {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 shadow-xl">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/20 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-            <Logo size="sm" />
-            <div className="w-20"></div>
-          </div>
-
-          <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+      {/* Content */}
+      <div className="container mx-auto px-4 pt-24 pb-12">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 font-display">
               About OrderEasy
             </h1>
-            <p className="text-white/90">
+            <p className="text-xl text-text-secondary">
               Your multi-restaurant reservation and ordering platform
             </p>
           </div>
-        </div>
-      </header>
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
           {/* Mission Section */}
           <div className="bg-dark-card rounded-3xl p-8 border border-dark-surface">
             <h2 className="text-2xl font-bold text-brand-lime mb-4">Our Mission</h2>

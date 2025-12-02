@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production');
+}
 
 // 1. Authenticate Token
 const authenticateToken = (req, res, next) => {
@@ -33,7 +36,7 @@ const requireRole = (allowedRoles) => {
       `, [req.user.sub]);
 
       const userRoles = result.rows.map(row => row.name);
-      
+
       // Also check legacy role column for compatibility if it exists in your JWT
       if (req.user.role) userRoles.push(req.user.role);
 
@@ -61,7 +64,7 @@ const authorizeRestaurant = async (req, res, next) => {
   const restaurantId = req.params.id || req.params.restaurantId || req.body.restaurant_id || req.query.restaurant_id;
 
   // If no restaurant context is needed/provided, skip
-  if (!restaurantId) return next(); 
+  if (!restaurantId) return next();
 
   // Developers bypass scoping (Super Admin)
   if (req.userRoles && req.userRoles.includes('developer')) return next();
