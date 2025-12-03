@@ -24,25 +24,6 @@ CREATE POLICY "Allow public read access" ON restaurants FOR SELECT USING (true);
 
 CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
 CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine_type ON restaurants(cuisine_type);
-CREATE INDEX IF NOT EXISTS idx_restaurants_rating ON restaurants(rating);
-
--- ============================================================================
--- USERS (BASIC PROFILES)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255),
-  phone VARCHAR(50),
-  email VARCHAR(150) UNIQUE,
-  role VARCHAR(50) DEFAULT 'customer', -- Kept for backward compatibility
-  password_hash TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
 -- ============================================================================
 -- RBAC: ROLES & PERMISSIONS (NEW)
 -- ============================================================================
@@ -63,20 +44,6 @@ ON CONFLICT (name) DO NOTHING;
 -- User Roles (Many-to-Many)
 CREATE TABLE IF NOT EXISTS user_roles (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, role_id)
-);
-
--- User Restaurants (Scoping)
-CREATE TABLE IF NOT EXISTS user_restaurants (
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, restaurant_id)
-);
-
--- ============================================================================
--- MENU ITEMS TABLE
--- ============================================================================
 CREATE TABLE IF NOT EXISTS menu_items (
   id SERIAL PRIMARY KEY,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,

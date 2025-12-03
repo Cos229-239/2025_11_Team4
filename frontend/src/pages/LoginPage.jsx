@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { setToken, setUser } = useUserAuth();
+  const { login } = useUserAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,8 +20,7 @@ const LoginPage = () => {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Login failed');
-      setToken(data.token);
-      setUser(data.user);
+      login(data.token, data.user);
       navigate('/profile');
     } catch (e) {
       setError(e.message);
@@ -85,6 +84,11 @@ const LoginPage = () => {
               className="glass-input w-full rounded-xl p-4 outline-none transition-all"
               placeholder="••••••••"
             />
+            <div className="text-right mt-2">
+              <a href="/forgot-password" className="text-sm text-brand-orange hover:text-brand-orange/80 transition-colors">
+                Forgot Password?
+              </a>
+            </div>
           </div>
 
           <button

@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { setToken, setUser } = useUserAuth();
+  const { login } = useUserAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,8 +22,7 @@ const SignupPage = () => {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Signup failed');
-      setToken(data.token);
-      setUser(data.user);
+      login(data.token, data.user);
       navigate('/profile');
     } catch (e) {
       setError(e.message);

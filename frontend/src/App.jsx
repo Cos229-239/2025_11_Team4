@@ -29,6 +29,9 @@ import MyReservations from './pages/MyReservations';
 import AdminSettings from './pages/AdminSettings';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import AboutPage from './pages/AboutPage';
 import UserProtectedRoute from './components/UserProtectedRoute';
 
@@ -79,6 +82,9 @@ function App() {
                   {/* Auth */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/verify-email" element={<VerifyEmailPage />} />
 
                   {/* PROTECTED ADMIN ROUTES */}
                   <Route path="/admin" element={
