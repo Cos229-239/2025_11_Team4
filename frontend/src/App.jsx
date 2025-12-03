@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { SocketProvider } from './context/SocketContext';
-import { UserAuthProvider } from './context/UserAuthContext';
-import { CartProvider } from './context/CartContext';
+import { SocketProvider } from './context/SocketProvider';
+import { UserAuthProvider } from './context/UserAuthProvider';
+import { CartProvider } from './context/CartProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';

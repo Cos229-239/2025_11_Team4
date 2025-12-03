@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useUserAuth } from '../hooks/useUserAuth';
 import ReservationDetailsModal from '../components/ReservationDetailsModal';
 import DateTimeDisplay from '../components/DateTimeDisplay';
 
@@ -130,7 +130,7 @@ const MyReservations = () => {
       setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'cancelled' } : r)));
       setToast('Reservation cancelled');
       setTimeout(() => setToast(''), 2000);
-    } catch (e) {
+    } catch {
       setToast('Failed to cancel');
       setTimeout(() => setToast(''), 2000);
     }
@@ -171,7 +171,7 @@ const MyReservations = () => {
         month: 'long',
         day: 'numeric'
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };

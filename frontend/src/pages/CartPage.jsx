@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCart } from '../hooks/useCart';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -29,6 +29,7 @@ const CartPage = () => {
   const [orderingMode, setOrderingMode] = useState(null); // null, 'dine-in', or 'reservation'
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState(null);
+  const [selectTable, setSelectTable] = useState('');
 
   // Set table ID in context when component mounts
   useEffect(() => {

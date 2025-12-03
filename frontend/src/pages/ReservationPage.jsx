@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useUserAuth } from '../context/UserAuthContext';
-import { useCart } from '../context/CartContext';
+import { useUserAuth } from '../hooks/useUserAuth';
+import { useCart } from '../hooks/useCart';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -24,7 +24,7 @@ const ReservationPage = () => {
   const [notes, setNotes] = useState('');
   const [userId] = useState(() => sessionStorage.getItem('ordereasy_user_id'));
   const [toast, setToast] = useState('');
-  const { token } = useUserAuth ? useUserAuth() : { token: null };
+  const { token } = useUserAuth();
 
   const checkAvailability = async () => {
     try {
@@ -60,7 +60,9 @@ const ReservationPage = () => {
           setPhone(data.data.phone || '');
           setEmail(data.data.email || '');
         }
-      } catch { }
+      } catch {
+        // ignore error
+      }
     };
     loadUser();
   }, [userId]);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 import CheckoutForm from '../components/CheckoutForm';
 import { fetchWithAuth } from '../utils/api';
 

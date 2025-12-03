@@ -18,16 +18,12 @@ export const fetchWithAuth = async (url, options = {}) => {
         headers,
     };
 
-    try {
-        const response = await fetch(url, config);
+    const response = await fetch(url, config);
 
-        if (response.status === 401) {
-            // Dispatch custom event for session expiration
-            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        }
-
-        return response;
-    } catch (error) {
-        throw error;
+    if (response.status === 401) {
+        // Dispatch custom event for session expiration
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
+
+    return response;
 };
