@@ -25,7 +25,7 @@ const ioCorsOptions = {
 };
 
 // Webhook route (must be before JSON parser for raw body verification)
-// Webhook route (must be before JSON parser for raw body verification)
+
 const webhookRoutes = require('./routes/webhook.routes');
 app.use('/api/webhook', express.raw({ type: 'application/json' }), webhookRoutes);
 

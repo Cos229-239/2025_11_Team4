@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { pool } = require('../config/database');
 const jwtLib = require('jsonwebtoken');
-const { getReservationDurationMinutes, getCancellationWindowHours } = require('../utils/settings.service');
+
 
 /**
  * Calculate total amount based on database prices
@@ -125,7 +125,7 @@ exports.confirmPayment = async (req, res) => {
         const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
         let userId = null;
         if (token) {
-            try { userId = jwtLib.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me')?.sub || null; } catch { }
+            try { userId = jwtLib.verify(token, process.env.JWT_SECRET)?.sub || null; } catch { }
         }
 
         const result = await paymentService.confirmPaymentLogic({

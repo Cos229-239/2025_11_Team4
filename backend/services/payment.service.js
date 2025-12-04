@@ -62,7 +62,8 @@ exports.confirmPaymentLogic = async ({ paymentIntentId, paymentStatus, reservati
         // Reservation Intent Logic (New Reservation)
         if (reservationIntent) {
             await client.query('BEGIN');
-            const secret = process.env.JWT_SECRET || 'dev-secret-change-me';
+            const secret = process.env.JWT_SECRET;
+            if (!secret) throw new Error('JWT_SECRET is not defined');
             let intent;
             try {
                 intent = jwtLib.verify(reservationIntent, secret);
