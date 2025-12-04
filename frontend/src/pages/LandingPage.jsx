@@ -19,7 +19,7 @@ const LandingPage = () => {
     >
       {/* BACKGROUND GRADIENT  */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none moving-bg"
         style={{
   background: `
     radial-gradient(circle at center,
