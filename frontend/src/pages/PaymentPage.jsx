@@ -178,7 +178,7 @@ const PaymentPage = () => {
         }}
       ></div>
 
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-2xl relative z-10">
+      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl relative z-10">
         <button
           onClick={() => navigate('/cart', { state: location.state })}
           className="mb-6 hover:bg-white/10 rounded-xl p-2 transition-all flex items-center gap-2 text-white/80 hover:text-white inline-flex"
