@@ -258,16 +258,7 @@ const MyReservations = () => {
       {/* Header integrated into page flow */}
       <div className="container mx-auto px-6 mb-8 relative z-10">
         <div className="flex items-center gap-4">
-          <a
-            href="/profile"
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition text-white"
-            title="Back to Profile"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </a>
-          <h1 className="text-3xl font-bold text-white drop-shadow-lg">My Reservations</h1>
+          <h1 className="text-4xl font-bold text-white drop-shadow-lg font-display">My Reservations</h1>
         </div>
       </div>
 

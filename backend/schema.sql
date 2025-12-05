@@ -181,46 +181,6 @@ ALTER TABLE reservations
   ) STORED;
 
 DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'no_overlap_per_table'
-  ) THEN
-    ALTER TABLE reservations
-      ADD CONSTRAINT no_overlap_per_table
-      EXCLUDE USING GIST (
-        table_id WITH =,
-        active_window WITH &&
-      );
-  END IF;
-END$$;
-
--- ============================================================================
--- ORDERS (WITH FKs TO RESTAURANTS, TABLES, RESERVATIONS)
-  payment_method VARCHAR(50),
-  payment_intent_id VARCHAR(255),
-  payment_amount DECIMAL(10, 2),
-  scheduled_for TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  CONSTRAINT valid_status CHECK (status IN ('pending', 'preparing', 'ready', 'completed', 'cancelled')),
-  CONSTRAINT valid_order_type CHECK (order_type IN ('dine-in', 'pre-order', 'walk-in', 'takeout'))
-);
-
-  id SERIAL PRIMARY KEY,
-  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE RESTRICT,
-  menu_item_name VARCHAR(255) NOT NULL,
-  menu_item_price DECIMAL(10, 2) NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  special_instructions TEXT,
-  subtotal DECIMAL(10, 2) NOT NULL CHECK (subtotal >= 0),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
-
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items(menu_item_id);
 
 -- ============================================================================
