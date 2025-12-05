@@ -12,4 +12,7 @@ router.post('/confirm', paymentController.confirmPayment);
 // Refund payment
 router.post('/refund', paymentController.refundPayment);
 
+// Get payment intent details
+router.get('/:id', paymentController.getPaymentIntent);
+
 module.exports = router;

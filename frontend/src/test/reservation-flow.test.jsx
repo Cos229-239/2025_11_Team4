@@ -58,15 +58,7 @@ describe('Reservation Flow - Per Flowchart', () => {
 
   describe('USE CASE: Verification Before Payment', () => {
     it('should verify reservation is still valid before payment', async () => {
-      const tentativeReservation = {
-        id: 123,
-        restaurant_id: 1,
-        table_id: 5,
-        reservation_date: '2025-01-20',
-        reservation_time: '19:00',
-        status: 'tentative',
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      };
+
 
       // Step 1: User adds items to cart
       // Step 2: User proceeds to checkout
@@ -186,10 +178,7 @@ describe('Reservation Flow - Per Flowchart', () => {
     });
 
     it('should delete tentative reservation if payment fails', () => {
-      const tentativeReservation = {
-        id: 123,
-        status: 'tentative',
-      };
+
 
       const paymentResult = {
         success: false,
@@ -240,8 +229,8 @@ describe('Reservation Flow - Per Flowchart', () => {
       // User B proceeds to payment
       // Verification should detect conflict
       const conflict = userAConfirmed.status === 'confirmed' &&
-                      userAConfirmed.table_id === userBReservation.table_id &&
-                      userAConfirmed.reservation_time === userBReservation.reservation_time;
+        userAConfirmed.table_id === userBReservation.table_id &&
+        userAConfirmed.reservation_time === userBReservation.reservation_time;
 
       expect(conflict).toBe(true);
 

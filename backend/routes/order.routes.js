@@ -15,6 +15,9 @@ router.get('/table/:tableId', orderController.getOrdersByTable);
 // GET /api/orders/user/:userId - Get orders by user
 router.get('/user/:userId', orderController.getUserOrders);
 
+// GET /api/orders/payment-intent/:paymentIntentId - Get order by payment intent
+router.get('/payment-intent/:paymentIntentId', orderController.getOrderByPaymentIntent);
+
 // POST /api/orders - Create new order
 router.post('/', orderController.createOrder);
 

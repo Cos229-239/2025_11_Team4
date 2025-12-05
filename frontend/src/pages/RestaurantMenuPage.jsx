@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import MenuItemCard from '../components/MenuItemCard';
 import CategoryTabs from '../components/CategoryTabs';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5020';
 
@@ -72,7 +72,7 @@ const RestaurantMenuPage = () => {
         });
       }
     }
-  }, [location.state, setPreOrderContext]);
+  }, [location.state, setPreOrderContext, restaurantId]);
 
   useEffect(() => {
     const load = async () => {
@@ -96,10 +96,7 @@ const RestaurantMenuPage = () => {
     load();
   }, [id]);
 
-  const filtered =
-    activeCategory && activeCategory !== 'All Items'
-      ? menuItems.filter((m) => m.category === activeCategory)
-      : menuItems;
+
 
 
   const handleAdd = async (item) => {

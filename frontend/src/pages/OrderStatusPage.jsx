@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useSocket } from '../context/SocketContext';
+import { useSocket } from '../hooks/useSocket';
 import { ArrowLeftIcon, PlusCircleIcon, HomeIcon } from '@heroicons/react/24/outline';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -30,7 +30,7 @@ const OrderStatusPage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch order details
-  const fetchOrderStatus = async () => {
+  const fetchOrderStatus = useCallback(async () => {
     try {
       // Only show the full-page loader on the first load.
       setLoading((prev) => (order ? prev : true));
@@ -77,7 +77,7 @@ const OrderStatusPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [from, orderId, orderNumber, order]);
 
   // Initial fetch
   useEffect(() => {
@@ -87,7 +87,7 @@ const OrderStatusPage = () => {
       setLoading(false);
       setError('Missing order number in URL');
     }
-  }, [orderNumber]);
+  }, [orderNumber, fetchOrderStatus]);
 
   // Real-time updates via Socket.IO (full order + status fallback)
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useCart } from '../hooks/useCart';
+import { useUserAuth } from '../hooks/useUserAuth';
 import {
   HomeIcon,
   MagnifyingGlassIcon,
@@ -24,7 +24,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cartItemCount } = useCart();
-  const { token } = useUserAuth ? useUserAuth() : { token: null };
+  const { token } = useUserAuth();
 
   // Don't show bottom nav on kitchen/admin/special pages
   const hideOnRoutes = ['/kitchen', '/kitchen-login', '/tables', '/admin', '/scan-qr'];

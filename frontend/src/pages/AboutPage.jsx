@@ -1,10 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Logo from '../components/Logo';
 
 const AboutPage = () => {
-  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-dark-bg">

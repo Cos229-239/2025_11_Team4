@@ -69,15 +69,6 @@ describe('Ordering Flow Integration Tests', () => {
       });
 
       // Step 1: User makes reservation
-      const reservationId = 123;
-      const reservationData = {
-        id: reservationId,
-        restaurant_id: 1,
-        customer_name: 'John Doe',
-        party_size: 4,
-        reservation_date: '2025-01-15',
-        reservation_time: '19:00:00',
-      };
 
       // Step 2: User is shown confirmation page
       // - Should see reservation details

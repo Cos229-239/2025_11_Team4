@@ -9,7 +9,6 @@ const MenuManagement = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // Form state
@@ -36,8 +35,8 @@ const MenuManagement = () => {
             setSelectedRestaurant(restData.data[0].id);
           }
         }
-      } catch (err) {
-        setError('Failed to load initial data');
+      } catch {
+        // ignore
       } finally {
         setLoading(false);
       }
@@ -94,7 +93,7 @@ const MenuManagement = () => {
           name: '', description: '', price: '', category: '', available: true, restaurant_id: ''
         });
       }
-    } catch (err) {
+    } catch {
       alert('Operation failed');
     }
   };
@@ -104,7 +103,7 @@ const MenuManagement = () => {
     try {
       await fetch(`${API_URL}/api/menu/${id}`, { method: 'DELETE' });
       setItems(items.filter(i => i.id !== id));
-    } catch (err) {
+    } catch {
       alert('Delete failed');
     }
   };

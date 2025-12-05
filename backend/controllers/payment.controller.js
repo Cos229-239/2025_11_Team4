@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { pool } = require('../config/database');
 const jwtLib = require('jsonwebtoken');
-const { getReservationDurationMinutes, getCancellationWindowHours } = require('../utils/settings.service');
+
 
 /**
  * Calculate total amount based on database prices
@@ -34,13 +34,18 @@ const calculateOrderAmount = async (items) => {
 exports.createPaymentIntent = async (req, res) => {
     const client = await pool.connect();
     try {
-        const { items, currency = 'usd', metadata, reservationId } = req.body;
+        const { items, currency = 'usd', metadata, reservationId, tipAmount = 0 } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ success: false, message: 'No items provided' });
         }
 
-        const amount = await calculateOrderAmount(items);
+        let amount = await calculateOrderAmount(items);
+
+        // Add tip if provided
+        if (tipAmount > 0) {
+            amount += Math.round(parseFloat(tipAmount) * 100);
+        }
 
         if (amount <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid order amount' });
@@ -85,7 +90,7 @@ exports.createPaymentIntent = async (req, res) => {
             automatic_payment_methods: {
                 enabled: true,
             },
-            metadata: metadata || {},
+            metadata: { ...metadata, tipAmount } || {},
         });
 
         res.send({
@@ -125,7 +130,7 @@ exports.confirmPayment = async (req, res) => {
         const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
         let userId = null;
         if (token) {
-            try { userId = jwtLib.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me')?.sub || null; } catch { }
+            try { userId = jwtLib.verify(token, process.env.JWT_SECRET)?.sub || null; } catch { }
         }
 
         const result = await paymentService.confirmPaymentLogic({
@@ -181,5 +186,25 @@ exports.refundPayment = async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     } finally {
         client.release();
+    }
+};
+
+exports.getPaymentIntent = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Payment Intent ID is required' });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.retrieve(id);
+
+        res.json({
+            success: true,
+            data: paymentIntent
+        });
+    } catch (error) {
+        console.error('Error retrieving payment intent:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };

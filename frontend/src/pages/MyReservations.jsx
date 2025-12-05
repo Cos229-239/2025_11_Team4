@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useUserAuth } from '../hooks/useUserAuth';
 import ReservationDetailsModal from '../components/ReservationDetailsModal';
 import DateTimeDisplay from '../components/DateTimeDisplay';
 
@@ -130,7 +130,7 @@ const MyReservations = () => {
       setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'cancelled' } : r)));
       setToast('Reservation cancelled');
       setTimeout(() => setToast(''), 2000);
-    } catch (e) {
+    } catch {
       setToast('Failed to cancel');
       setTimeout(() => setToast(''), 2000);
     }
@@ -171,7 +171,7 @@ const MyReservations = () => {
         month: 'long',
         day: 'numeric'
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -258,6 +258,11 @@ const MyReservations = () => {
       {/* Header integrated into page flow */}
       <div className="container mx-auto px-6 mb-8 relative z-10">
         <div className="flex items-center gap-4">
+          <a href="/profile" className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </a>
           <h1 className="text-4xl font-bold text-white drop-shadow-lg font-display">My Reservations</h1>
         </div>
       </div>

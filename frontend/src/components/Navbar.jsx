@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useCart } from '../hooks/useCart';
+import { useUserAuth } from '../hooks/useUserAuth';
 import Logo from './Logo';
 
 /**
@@ -13,7 +13,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItemCount } = useCart();
-  const { token, user, logout } = useUserAuth ? useUserAuth() : { token: null };
+  const { token, user, logout } = useUserAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -235,17 +235,6 @@ const Navbar = () => {
             >
               🏠 Home
             </Link>
-            {false && tableId && (
-              <Link
-                to={`/menu/${tableId}`}
-                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('/menu')
-                  ? 'bg-brand-orange text-white'
-                  : 'text-text-secondary hover:bg-dark-surface'
-                  }`}
-              >
-                🍽️ Menu
-              </Link>
-            )}
             <Link
               to="/restaurants"
               className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/restaurants') || location.pathname.startsWith('/restaurant/')
