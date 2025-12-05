@@ -1,5 +1,7 @@
 const orderModel = require('../models/order.model');
 const db = require('../config/database');
+const emailService = require('../services/email.service');
+const emailTemplates = require('../utils/email.templates');
 
 // Allowed status transitions
 const STATUS_TRANSITIONS = {
@@ -25,7 +27,8 @@ const createOrder = async (req, res) => {
       payment_method,
       payment_intent_id,
       payment_amount,
-      user_id
+      user_id,
+      tip_amount = 0
     } = req.body;
 
     // Determine user_id: prioritize req.user.id (from auth middleware), then req.body.user_id
@@ -190,7 +193,8 @@ const createOrder = async (req, res) => {
       payment_status,
       payment_method,
       payment_intent_id,
-      payment_amount
+      payment_amount,
+      tip_amount
     });
 
     // CRITICAL: Confirm reservation after successful payment (per flowchart)
@@ -211,8 +215,10 @@ const createOrder = async (req, res) => {
         );
 
         if (confirmResult.rows.length === 0) {
+          // Reservation may already be confirmed or expired
           console.warn(`[ORDER] Failed to confirm reservation ${reservation_id} - may already be confirmed or expired`);
         } else {
+          // Reservation confirmed successfully
           console.log(`[ORDER] Reservation ${reservation_id} confirmed successfully`);
         }
       } catch (err) {
@@ -234,6 +240,40 @@ const createOrder = async (req, res) => {
         // Pre-orders only notify admin, not kitchen (kitchen gets notified on check-in or scheduled time)
         io.to('admin').emit('new-pre-order', order);
       }
+    }
+
+    // Send email receipt (async, don't block response)
+    if (payment_status === 'completed' && order.user_id) {
+      // Fetch user email if not provided in request (assuming user_id is valid)
+      // For now, we'll try to get email from user_id if we had a user model, 
+      // but since we don't have easy access to user email here without querying,
+      // we might need to rely on the user being logged in or passed in.
+      // However, for guest checkout we might not have email.
+      // Let's assume we can get it from the user table if user_id exists.
+
+      (async () => {
+        try {
+          let userEmail = null;
+          if (userId) {
+            const userRes = await db.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+            if (userRes.rows.length > 0) {
+              userEmail = userRes.rows[0].email;
+            }
+          }
+
+          if (userEmail) {
+            const receipt = emailTemplates.paymentReceipt({ order, items, tip_amount, total: parseFloat(payment_amount) + parseFloat(tip_amount || 0) });
+            await emailService.sendEmail({
+              to: userEmail,
+              subject: receipt.subject,
+              html: receipt.html,
+              text: receipt.text
+            });
+          }
+        } catch (err) {
+          console.error(`[ORDER] Failed to send receipt email to ${userEmail}:`, err.message);
+        }
+      })();
     }
 
     res.status(201).json({
@@ -517,6 +557,55 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+// Get order by payment intent ID
+const getOrderByPaymentIntent = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.params;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment Intent ID is required'
+      });
+    }
+
+    const result = await db.query(
+      'SELECT * FROM orders WHERE payment_intent_id = $1 LIMIT 1',
+      [paymentIntentId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found for this payment'
+      });
+    }
+
+    const order = result.rows[0];
+    // Fetch items for the order to be complete
+    const itemsResult = await db.query(
+      `SELECT oi.*, m.name, m.price 
+       FROM order_items oi 
+       JOIN menu_items m ON oi.menu_item_id = m.id 
+       WHERE oi.order_id = $1`,
+      [order.id]
+    );
+    order.items = itemsResult.rows;
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Error fetching order by payment intent:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order',
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getAllOrders,
@@ -525,5 +614,6 @@ module.exports = {
   getOrdersByTable,
   updateOrderStatus,
   getOrderByNumber,
-  getUserOrders
+  getUserOrders,
+  getOrderByPaymentIntent
 };

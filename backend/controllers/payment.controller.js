@@ -34,13 +34,18 @@ const calculateOrderAmount = async (items) => {
 exports.createPaymentIntent = async (req, res) => {
     const client = await pool.connect();
     try {
-        const { items, currency = 'usd', metadata, reservationId } = req.body;
+        const { items, currency = 'usd', metadata, reservationId, tipAmount = 0 } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ success: false, message: 'No items provided' });
         }
 
-        const amount = await calculateOrderAmount(items);
+        let amount = await calculateOrderAmount(items);
+
+        // Add tip if provided
+        if (tipAmount > 0) {
+            amount += Math.round(parseFloat(tipAmount) * 100);
+        }
 
         if (amount <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid order amount' });
@@ -85,7 +90,7 @@ exports.createPaymentIntent = async (req, res) => {
             automatic_payment_methods: {
                 enabled: true,
             },
-            metadata: metadata || {},
+            metadata: { ...metadata, tipAmount } || {},
         });
 
         res.send({
@@ -181,5 +186,25 @@ exports.refundPayment = async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     } finally {
         client.release();
+    }
+};
+
+exports.getPaymentIntent = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Payment Intent ID is required' });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.retrieve(id);
+
+        res.json({
+            success: true,
+            data: paymentIntent
+        });
+    } catch (error) {
+        console.error('Error retrieving payment intent:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };

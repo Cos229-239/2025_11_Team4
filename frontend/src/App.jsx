@@ -17,6 +17,7 @@ import RestaurantListPage from './pages/RestaurantListPage';
 import CartPage from './pages/CartPage';
 import PaymentPage from './pages/PaymentPage';
 import ConfirmationPage from './pages/ConfirmationPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import KitchenDashboard from './pages/KitchenDashboard';
 import AdminPanel from './pages/AdminPanel';
 import TableManagement from './pages/admin/TableManagement';
@@ -63,6 +64,7 @@ function App() {
                   {/* Universal Order Flow */}
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/payment" element={<PaymentPage />} />
+                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/confirmation/:orderId" element={<ConfirmationPage />} />
                   <Route path="/order-status/:orderNumber" element={<OrderStatusPage />} />
                   <Route path="/reservation-confirmation" element={<ReservationConfirmationPage />} />

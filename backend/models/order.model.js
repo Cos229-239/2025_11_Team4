@@ -14,7 +14,8 @@ const createOrder = async (orderData) => {
     payment_status = 'pending',
     payment_method = null,
     payment_intent_id = null,
-    payment_amount = null
+    payment_amount = null,
+    tip_amount = 0
   } = orderData;
 
   // Get a client from the pool for transaction
@@ -59,10 +60,11 @@ const createOrder = async (orderData) => {
         payment_method,
         payment_intent_id,
         payment_amount,
+        tip_amount,
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
       RETURNING *`,
       [
         table_id,
@@ -77,7 +79,8 @@ const createOrder = async (orderData) => {
         payment_status,
         payment_method,
         payment_intent_id,
-        payment_amount
+        payment_amount,
+        tip_amount
       ]
     );
 
