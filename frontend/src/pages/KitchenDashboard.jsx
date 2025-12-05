@@ -292,13 +292,13 @@ const totalOnDuty = employees.filter(e => e.on_duty).length;
  
  // Example inventory data
 const [inventory, setInventory] = useState([
-  //Grain
-  { category: 'Grain', item: 'All-Purpose Flour', unit: 'lbs', quantity: 50 },
-  { category: 'Grain', item: 'Rice (long grain)', unit: 'lbs', quantity: 40 },
-  { category: 'Grain', item: 'Pasta (spaghetti)', unit: 'lbs', quantity: 30 },
-  { category: 'Grain', item: 'Bread Loaves', unit: 'loaves', quantity: 20 },
-  { category: 'Grain', item: 'Cornmeal', unit: 'lbs', quantity: 15 },
-  { category: 'Grain', item: 'Oats', unit: 'lbs', quantity: 25 },
+  //Grains
+  { category: 'Grains', item: 'All-Purpose Flour', unit: 'lbs', quantity: 50 },
+  { category: 'Grains', item: 'Rice (long grain)', unit: 'lbs', quantity: 40 },
+  { category: 'Grains', item: 'Pasta (spaghetti)', unit: 'lbs', quantity: 30 },
+  { category: 'Grains', item: 'Bread Loaves', unit: 'loaves', quantity: 20 },
+  { category: 'Grains', item: 'Cornmeal', unit: 'lbs', quantity: 15 },
+  { category: 'Grains', item: 'Oats', unit: 'lbs', quantity: 25 },
   // Spices
   { category: 'Spices', item: 'Sea Salt', unit: 'lbs', quantity: 5 },
   { category: 'Spices', item: 'Black Peppercorns', unit: 'oz', quantity: 24 },
@@ -885,7 +885,7 @@ const [sidebarOpen, setSidebarOpen] = useState(true);
     <h2 className="text-2xl font-bold mb-4">Inventory</h2>
 
     <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-      {['Spices', 'Veggies', 'Dairy', 'Meats', 'Liquor', 'Wine', 'Fine Dining'].map((cat) => (
+      {['Grains','Spices', 'Veggies', 'Dairy', 'Meats', 'Liquor', 'Wine', 'Fine Dining'].map((cat) => (
         <div key={cat}>
           <h3 className="text-lg font-semibold text-brand-orange mb-2">{cat}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
