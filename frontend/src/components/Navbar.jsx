@@ -81,11 +81,16 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 transform ${isScrolled
-          ? 'bg-white/5 backdrop-blur-2xl backdrop-saturate-150 shadow-lg border-b border-white/10'
-          : 'bg-transparent border-b border-transparent shadow-none'
-          } ${isVisible || isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
-      >
+
+  className={`fixed left-0 right-0 z-50 
+    bg-white/10 backdrop-blur-xl 
+    border-b border-white/20 
+    transition-all duration-300
+    ${isScrolled ? 'shadow-xl shadow-black/20' : ''}
+    ${isVisible ? 'top-0' : '-top-20'}
+  `}
+>
+
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}

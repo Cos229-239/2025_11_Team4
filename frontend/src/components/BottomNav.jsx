@@ -84,7 +84,20 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10 shadow-2xl z-50 safe-area-bottom">
+
+    <nav
+  className="
+    fixed bottom-0 left-0 right-0 
+    bg-white/10 
+    backdrop-blur-xl 
+    border-t border-white/20 
+    shadow-lg 
+    z-50 
+    safe-area-bottom
+  "
+>
+
+
       <div className="flex items-center justify-around h-20 max-w-screen-xl mx-auto px-4">
         {navItems.map((item) => {
           const isActive = isItemActive(item);

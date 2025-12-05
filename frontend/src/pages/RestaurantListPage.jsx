@@ -420,4 +420,4 @@ const RestaurantListPage = () => {
   );
 };
 
-export default RestaurantListPage;
+export default RestaurantListPage; 

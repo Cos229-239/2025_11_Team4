@@ -103,7 +103,7 @@ const QRCheckPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg flex flex-col px-4 py-6 relative overflow-hidden">
+    <div className="min-h-screen bg-transparent flex flex-col px-4 py-6 relative overflow-hidden">
       {/* Background glow effects */}
       <div className="absolute top-1/4 right-10 w-96 h-96 bg-brand-lime/10 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -133,7 +133,7 @@ const QRCheckPage = () => {
         </div>
 
         {/* Scan QR Section */}
-        <div className="bg-dark-card rounded-3xl p-6 sm:p-8 border border-dark-surface mb-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-6 sm:p-8 mb-6 transition-all duration-300">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-brand-lime/10 p-3 rounded-xl">
               <PlusCircleIcon className="w-6 h-6 text-brand-lime" />
@@ -174,7 +174,7 @@ const QRCheckPage = () => {
         )}
 
         {/* Existing Order Section */}
-        <div className="bg-dark-card rounded-3xl p-6 sm:p-8 border border-dark-surface mb-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-6 sm:p-8 mb-6 transition-all duration-300">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-brand-orange/10 p-3 rounded-xl">
               <MagnifyingGlassIcon className="w-6 h-6 text-brand-orange" />
