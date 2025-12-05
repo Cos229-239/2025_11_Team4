@@ -54,7 +54,26 @@ const CartPage = () => {
   if (!tableId && !orderingMode && !preOrderContext) {
     return (
 
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
+        {/* BACKGROUND GRADIENT */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at center,
+                #E35504ff 0%,
+                #E35504aa 15%,
+                #000000 35%,
+                #5F2F14aa 55%,
+                #B5FF00ff 80%,
+                #000000 100%
+              )
+            `,
+            filter: "blur(40px)",
+            backgroundSize: "180% 180%",
+            opacity: 0.55,
+          }}
+        ></div>
         <div className="
           bg-brand-lime/10
           backdrop-blur-xl
@@ -160,7 +179,26 @@ const CartPage = () => {
   // If they chose reservation but haven't made one yet, redirect them
   if (orderingMode === 'reservation' && !tableId) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
+        {/* BACKGROUND GRADIENT */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at center,
+                #E35504ff 0%,
+                #E35504aa 15%,
+                #000000 35%,
+                #5F2F14aa 55%,
+                #B5FF00ff 80%,
+                #000000 100%
+              )
+            `,
+            filter: "blur(40px)",
+            backgroundSize: "180% 180%",
+            opacity: 0.55,
+          }}
+        ></div>
         <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
           <div className="text-5xl mb-4">📅</div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">Make a Reservation First</h2>
@@ -189,7 +227,26 @@ const CartPage = () => {
   // If they chose dine-in, show table selection
   if (orderingMode === 'dine-in' && !tableId) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
+        {/* BACKGROUND GRADIENT */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at center,
+                #E35504ff 0%,
+                #E35504aa 15%,
+                #000000 35%,
+                #5F2F14aa 55%,
+                #B5FF00ff 80%,
+                #000000 100%
+              )
+            `,
+            filter: "blur(40px)",
+            backgroundSize: "180% 180%",
+            opacity: 0.55,
+          }}
+        ></div>
         <div className="bg-dark-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-dark-surface">
           <div className="text-5xl mb-4">🍽️</div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">Enter Your Table Number</h2>
