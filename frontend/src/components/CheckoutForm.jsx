@@ -51,14 +51,6 @@ const CheckoutForm = ({ amount, onSuccess, onError }) => {
                 <PaymentElement
                     options={{
                         layout: 'tabs',
-                        theme: 'night',
-                        variables: {
-                            colorPrimary: '#FA6C01',
-                            colorBackground: '#1a1a1a',
-                            colorText: '#ffffff',
-                            colorDanger: '#ef4444',
-                            fontFamily: 'Lora, serif',
-                        }
                     }}
                 />
             </div>
@@ -76,8 +68,8 @@ const CheckoutForm = ({ amount, onSuccess, onError }) => {
                 type="submit"
                 disabled={!stripe || isProcessing}
                 className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${!stripe || isProcessing
-                        ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
-                        : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
+                    ? 'bg-dark-surface text-text-secondary cursor-not-allowed'
+                    : 'bg-brand-lime text-dark-bg hover:bg-brand-lime/90 hover:shadow-brand-lime/30 pulse-lime'
                     }`}
             >
                 {isProcessing ? (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
@@ -19,7 +19,7 @@ const ConfirmationPage = () => {
 
   // Prevent back button navigation to payment/checkout
   useEffect(() => {
-    const handlePopState = (e) => {
+    const handlePopState = () => {
       // Prevent back navigation and redirect to home
       navigate('/', { replace: true });
     };
@@ -31,7 +31,7 @@ const ConfirmationPage = () => {
     };
   }, [navigate]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -64,11 +64,11 @@ const ConfirmationPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     if (orderId) fetchData();
-  }, [orderId]);
+  }, [orderId, fetchData]);
 
   // Countdown timer for tentative reservations
   useEffect(() => {

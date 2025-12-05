@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useCart } from '../hooks/useCart';
+import { useUserAuth } from '../hooks/useUserAuth';
 import Logo from './Logo';
 
 /**
@@ -13,7 +13,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItemCount } = useCart();
-  const { token, user, logout } = useUserAuth ? useUserAuth() : { token: null };
+  const { token, user, logout } = useUserAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -81,11 +81,16 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 transform ${isScrolled
-          ? 'bg-white/5 backdrop-blur-2xl backdrop-saturate-150 shadow-lg border-b border-white/10'
-          : 'bg-transparent border-b border-transparent shadow-none'
-          } ${isVisible || isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}
-      >
+
+  className={`fixed left-0 right-0 z-50 
+    bg-white/10 backdrop-blur-xl 
+    border-b border-white/20 
+    transition-all duration-300
+    ${isScrolled ? 'shadow-xl shadow-black/20' : ''}
+    ${isVisible ? 'top-0' : '-top-20'}
+  `}
+>
+
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -230,17 +235,6 @@ const Navbar = () => {
             >
               🏠 Home
             </Link>
-            {false && tableId && (
-              <Link
-                to={`/menu/${tableId}`}
-                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('/menu')
-                  ? 'bg-brand-orange text-white'
-                  : 'text-text-secondary hover:bg-dark-surface'
-                  }`}
-              >
-                🍽️ Menu
-              </Link>
-            )}
             <Link
               to="/restaurants"
               className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/restaurants') || location.pathname.startsWith('/restaurant/')

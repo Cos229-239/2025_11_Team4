@@ -8,7 +8,7 @@ import {
   ExclamationCircleIcon,
   CameraIcon
 } from '@heroicons/react/24/outline';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 import Logo from '../components/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -21,7 +21,6 @@ const QRScannerPage = () => {
   const navigate = useNavigate();
   const { setTableId } = useCart();
 
-  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -109,7 +108,7 @@ const QRScannerPage = () => {
   /**
    * Handle successful QR code scan
    */
-  const onScanSuccess = async (decodedText, decodedResult) => {
+  const onScanSuccess = async (decodedText) => {
     console.log('QR Code scanned:', decodedText);
 
     // Stop scanning
@@ -135,12 +134,8 @@ const QRScannerPage = () => {
       return;
     }
 
-    setIsValidating(true);
-
     // Validate table exists
     const validation = await validateTableNumber(tableNum);
-
-    setIsValidating(false);
 
     if (validation.valid) {
       setSuccess(`Table ${tableNum} found! Redirecting...`);
@@ -166,7 +161,7 @@ const QRScannerPage = () => {
   /**
    * Handle QR code scan errors
    */
-  const onScanError = (errorMessage) => {
+  const onScanError = () => {
     // We don't show per-frame errors to the user; just log if needed.
     // console.log('QR Scan error:', errorMessage);
   };

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 import CheckoutForm from '../components/CheckoutForm';
+import TipSelector from '../components/TipSelector';
 import { fetchWithAuth } from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -32,11 +33,25 @@ const PaymentPage = () => {
   const [clientSecret, setClientSecret] = useState('');
   const [error, setError] = useState(null);
   const [isLoadingSecret, setIsLoadingSecret] = useState(true);
+  const [tipAmount, setTipAmount] = useState(0);
+
+  const options = useMemo(() => ({
+    clientSecret,
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#FA6C01',
+        colorBackground: '#1a1a1a',
+        colorText: '#ffffff',
+        colorDanger: '#ef4444',
+        fontFamily: 'Lora, serif',
+      }
+    }
+  }), [clientSecret]);
 
   // Redirect if no cart items or missing required data
   useEffect(() => {
     if (cart.length === 0) {
-      console.warn('No items in cart, redirecting to home');
       navigate('/restaurants');
       return;
     }
@@ -45,7 +60,6 @@ const PaymentPage = () => {
       !order_type ||
       (order_type !== 'takeout' && !table_id && !reservation_id && !reservation_intent)
     ) {
-      console.warn('Missing order context, redirecting to cart');
       navigate('/cart');
       return;
     }
@@ -67,7 +81,8 @@ const PaymentPage = () => {
               restaurant_id,
               table_id,
               order_type
-            }
+            },
+            tipAmount
           }),
         });
 
@@ -86,7 +101,7 @@ const PaymentPage = () => {
     };
 
     createPaymentIntent();
-  }, [cart, order_type, reservation_id, restaurant_id, table_id]);
+  }, [cart, order_type, reservation_id, restaurant_id, table_id, tipAmount]);
 
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
@@ -127,7 +142,8 @@ const PaymentPage = () => {
         payment_method: 'stripe',
         payment_intent_id: paymentIntent.id,
         payment_amount: paymentIntent.amount / 100, // Convert cents back to dollars
-        user_id: sessionStorage.getItem('ordereasy_user_id')
+        user_id: sessionStorage.getItem('ordereasy_user_id'),
+        tip_amount: tipAmount
       };
 
       const orderResponse = await fetchWithAuth(`${API_URL}/api/orders`, {
@@ -178,7 +194,7 @@ const PaymentPage = () => {
         }}
       ></div>
 
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-2xl relative z-10">
+      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl relative z-10">
         <button
           onClick={() => navigate('/cart', { state: location.state })}
           className="mb-6 hover:bg-white/10 rounded-xl p-2 transition-all flex items-center gap-2 text-white/80 hover:text-white inline-flex"
@@ -242,12 +258,19 @@ const PaymentPage = () => {
                 <span className="font-semibold">${cartTax.toFixed(2)}</span>
               </div>
             )}
+            <div className="flex justify-between text-text-secondary">
+              <span>Tip</span>
+              <span className="font-semibold">${tipAmount.toFixed(2)}</span>
+            </div>
             <div className="border-t border-dark-surface pt-2 flex justify-between text-xl font-bold">
               <span className="text-text-primary">Total</span>
-              <span className="text-brand-lime">${cartTotal.toFixed(2)}</span>
+              <span className="text-brand-lime">${(cartTotal + tipAmount).toFixed(2)}</span>
             </div>
           </div>
         </div>
+
+        {/* Tip Selector */}
+        <TipSelector subtotal={cartSubtotal} onTipChange={setTipAmount} />
 
         {/* Stripe Payment Form */}
         <div className="bg-dark-card rounded-2xl shadow-xl p-6 mb-6 border border-dark-surface">
@@ -258,21 +281,9 @@ const PaymentPage = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
             </div>
           ) : clientSecret ? (
-            <Elements stripe={stripePromise} options={{
-              clientSecret,
-              appearance: {
-                theme: 'night',
-                variables: {
-                  colorPrimary: '#FA6C01',
-                  colorBackground: '#1a1a1a',
-                  colorText: '#ffffff',
-                  colorDanger: '#ef4444',
-                  fontFamily: 'Lora, serif',
-                }
-              }
-            }}>
+            <Elements stripe={stripePromise} options={options}>
               <CheckoutForm
-                amount={cartTotal}
+                amount={cartTotal + tipAmount}
                 onSuccess={handlePaymentSuccess}
                 onError={(msg) => setError(msg)}
               />

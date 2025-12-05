@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -46,7 +46,7 @@ const TableManagement = () => {
   };
 
   // Fetch tables for selected restaurant
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     if (!selectedRestaurant) return;
 
     try {
@@ -74,7 +74,7 @@ const TableManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRestaurant]);
 
   // Initial fetch
   useEffect(() => {
@@ -86,7 +86,7 @@ const TableManagement = () => {
     if (selectedRestaurant) {
       fetchTables();
     }
-  }, [selectedRestaurant]);
+  }, [selectedRestaurant, fetchTables]);
 
   // Handle create table
   const handleCreateTable = async (e) => {

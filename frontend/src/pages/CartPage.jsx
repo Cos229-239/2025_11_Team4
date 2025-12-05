@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCart } from '../hooks/useCart';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -29,6 +29,7 @@ const CartPage = () => {
   const [orderingMode, setOrderingMode] = useState(null); // null, 'dine-in', or 'reservation'
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState(null);
+  const [selectTable, setSelectTable] = useState('');
 
   // Set table ID in context when component mounts
   useEffect(() => {
@@ -52,28 +53,20 @@ const CartPage = () => {
   // If no table selected in the URL and no pre-order context, ask if they're at restaurant or planning ahead
   if (!tableId && !orderingMode && !preOrderContext) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-[#000000] flex items-center justify-center p-4">
-        {/* BACKGROUND GRADIENT */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at center,
-                #E35504ff 0%,
-                #E35504aa 15%,
-                #000000 35%,
-                #5F2F14aa 55%,
-                #B5FF00ff 80%,
-                #000000 100%
-              )
-            `,
-            filter: "blur(40px)",
-            backgroundSize: "180% 180%",
-            opacity: 0.55,
-          }}
-        ></div>
 
-        <div className="glass-panel rounded-2xl shadow-xl p-8 max-w-lg w-full border border-white/10 relative z-10">
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+        <div className="
+          bg-brand-lime/10
+          backdrop-blur-xl
+          border border-brand-lime/40
+          rounded-2xl
+          p-8
+          max-w-lg
+          w-full
+          shadow-[0_0_25px_rgba(181,255,0,0.25)]
+        ">
+
+
           <div className="text-center mb-6">
             <div className="text-5xl mb-4">🍽️</div>
             <h2 className="text-2xl font-bold text-text-primary mb-2">How would you like to order?</h2>

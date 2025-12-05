@@ -18,7 +18,7 @@ exports.handleStripeWebhook = async (req, res) => {
     // Handle the event
     try {
         switch (event.type) {
-            case 'payment_intent.succeeded':
+            case 'payment_intent.succeeded': {
                 const paymentIntent = event.data.object;
                 console.log(`PaymentIntent was successful: ${paymentIntent.id}`);
 
@@ -33,6 +33,7 @@ exports.handleStripeWebhook = async (req, res) => {
                     userId: null // Webhooks are system actions, no user auth context
                 });
                 break;
+            }
 
             case 'payment_intent.payment_failed':
                 const failedIntent = event.data.object;

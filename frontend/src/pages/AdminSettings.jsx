@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useUserAuth } from '../hooks/useUserAuth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -14,15 +14,17 @@ const AdminSettings = () => {
 
   const { token } = useUserAuth();
 
-  const loadRestaurants = async () => {
+  const loadRestaurants = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL} /api/restaurants`);
       const data = await res.json();
       if (data.success) setRestaurants(data.data || []);
-    } catch { }
-  };
+    } catch {
+      // ignore
+    }
+  }, []);
 
-  const loadSettings = async (rid) => {
+  const loadSettings = useCallback(async (rid) => {
     try {
       setLoading(true);
       const url = new URL(`${API_URL} /api/admin / settings`);
@@ -39,11 +41,13 @@ const AdminSettings = () => {
         setDuration(data.data?.reservation_duration_minutes ?? 90);
         setWindowHours(data.data?.cancellation_window_hours ?? 12);
       }
-    } catch { } finally { setLoading(false); }
-  };
+    } catch {
+      // ignore
+    } finally { setLoading(false); }
+  }, [token]);
 
-  useEffect(() => { loadRestaurants(); loadSettings(null); }, []);
-  useEffect(() => { loadSettings(restaurantId); }, [restaurantId]);
+  useEffect(() => { loadRestaurants(); loadSettings(null); }, [loadRestaurants, loadSettings]);
+  useEffect(() => { loadSettings(restaurantId); }, [restaurantId, loadSettings]);
 
   const save = async () => {
     try {

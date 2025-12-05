@@ -44,7 +44,7 @@ const DateTimeDisplay = ({ timestamp, restaurantTimezone, className = '' }) => {
                 year: 'numeric',
                 timeZone: restaurantTimezone
             });
-        } catch (e) {
+        } catch {
             console.warn('Invalid timezone:', restaurantTimezone);
         }
     }

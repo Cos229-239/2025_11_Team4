@@ -130,37 +130,7 @@ const RestaurantListPage = () => {
   /**
    * Render star rating
    */
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
 
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <StarIconSolid key={`full-${i}`} className="w-4 h-4 text-brand-lime" />
-      );
-    }
-
-    if (hasHalfStar) {
-      stars.push(
-        <div key="half" className="relative w-4 h-4">
-          <StarIcon className="absolute w-4 h-4 text-brand-lime" />
-          <div className="absolute overflow-hidden w-2">
-            <StarIconSolid className="w-4 h-4 text-brand-lime" />
-          </div>
-        </div>
-      );
-    }
-
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <StarIcon key={`empty-${i}`} className="w-4 h-4 text-text-secondary" />
-      );
-    }
-
-    return stars;
-  };
 
   return (
 
@@ -450,4 +420,4 @@ const RestaurantListPage = () => {
   );
 };
 
-export default RestaurantListPage;
+export default RestaurantListPage; 
