@@ -245,6 +245,14 @@ const totalReservationsToday = orders
     order.reservation_date.startsWith(todayStr)
   )
   .length;
+
+  const todaysReservations = orders
+  .filter(order =>
+    order.order_type === 'reservation' &&
+    order.reservation_date &&
+    order.reservation_date.startsWith(todayStr),
+  );
+
 // Replace this with our real fetch later!
 const [employees, setEmployees] = useState([]);
 // Collapsible states for panels
@@ -284,6 +292,13 @@ const totalOnDuty = employees.filter(e => e.on_duty).length;
  
  // Example inventory data
 const [inventory, setInventory] = useState([
+  //Grain
+  { category: 'Grain', item: 'All-Purpose Flour', unit: 'lbs', quantity: 50 },
+  { category: 'Grain', item: 'Rice (long grain)', unit: 'lbs', quantity: 40 },
+  { category: 'Grain', item: 'Pasta (spaghetti)', unit: 'lbs', quantity: 30 },
+  { category: 'Grain', item: 'Bread Loaves', unit: 'loaves', quantity: 20 },
+  { category: 'Grain', item: 'Cornmeal', unit: 'lbs', quantity: 15 },
+  { category: 'Grain', item: 'Oats', unit: 'lbs', quantity: 25 },
   // Spices
   { category: 'Spices', item: 'Sea Salt', unit: 'lbs', quantity: 5 },
   { category: 'Spices', item: 'Black Peppercorns', unit: 'oz', quantity: 24 },
@@ -820,33 +835,49 @@ const [sidebarOpen, setSidebarOpen] = useState(true);
 )}
 
 
- {activePanel === 'occupancy' && (
-  <div className="p-6 text-white overflow-y-auto">
+{activePanel === 'occupancy' && (
+  <div className="p-6 text-white h-full flex flex-col">
     <h2 className="text-2xl font-bold mb-4">Occupancy & Reservations</h2>
-    <div className="bg-dark-card/90 border-l-4 border-lime-400 rounded-xl px-5 py-4 shadow-xl max-w-xl">
-      <ul className="text-sm space-y-2">
+
+    <div className="bg-dark-card/90 border-l-4 border-lime-400 rounded-xl px-5 py-4 shadow-xl max-w-2xl w-full">
+      <ul className="text-sm space-y-2 mb-4">
         <li>
-          <span className="font-semibold text-brand-lime">
-            Current Occupancy:
-          </span>{' '}
+          <span className="font-semibold text-brand-lime">Current Occupancy:</span>{' '}
           {totalOccupancy}
         </li>
         <li>
-          <span className="font-semibold text-brand-orange">
-            To-Go Orders:
-          </span>{' '}
+          <span className="font-semibold text-brand-orange">To-Go Orders:</span>{' '}
           {totalToGo}
         </li>
         <li>
-          <span className="font-semibold text-text-secondary">
-            Today's Reservations:
-          </span>{' '}
+          <span className="font-semibold text-text-secondary">Today's Reservations:</span>{' '}
           {totalReservationsToday}
         </li>
       </ul>
+
+      {/* New reservations list */}
+{todaysReservations.length > 0 && (
+  <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+    {todaysReservations.map((res) => (
+      <div
+        key={res.id}
+        className="flex items-center justify-between text-xs bg-black/40 rounded-lg px-3 py-2"
+      >
+        <span className="font-medium text-gray-100">
+          {res.reservation_name || 'Unnamed Party'}
+        </span>
+        <span className="font-mono text-brand-lime">
+          {res.number_of_guests || 0} guest{(res.number_of_guests || 0) === 1 ? '' : 's'}
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+
     </div>
   </div>
 )}
+
 
 
 {activePanel === 'inventory' && (
