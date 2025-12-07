@@ -94,3 +94,12 @@ exports.deletePaymentMethod = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to remove payment method', error: error.message });
     }
 };
+
+exports.getEmployees = async (req, res) => {
+    try {
+        const employees = await UserModel.findAllEmployees();
+        res.json({ success: true, data: employees });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch employees', error: error.message });
+    }
+};

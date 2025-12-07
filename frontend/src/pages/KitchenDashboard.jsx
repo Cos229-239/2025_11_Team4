@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchEmployees } from '../api/users';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../hooks/useSocket';
 import { useUserAuth } from '../hooks/useUserAuth';
@@ -65,7 +66,6 @@ const KitchenDashboard = () => {
   // Join kitchen room when socket connects
   useEffect(() => {
     if (socket && isConnected) {
-      console.log('🔌 Joining kitchen room...');
       emit('join-kitchen');
 
 
@@ -199,7 +199,7 @@ const KitchenDashboard = () => {
   const totalPreparing = orders.filter(o => o.status === 'preparing').length;
   const totalReady = orders.filter(o => o.status === 'ready').length;
   const totalCompleted = orders.filter(o => o.status === 'completed').length;
-  console.log({ totalOrders, totalPending, totalPreparing, totalReady, totalCompleted });
+
 
   // Calculate average preparing time for orders with both preparing_at + completed_at/ready_at
   const avgPreparingTime = (() => {
@@ -269,22 +269,19 @@ const KitchenDashboard = () => {
   const activeDineInReservations = todaysReservations.filter(order =>
     ['pending', 'preparing', 'ready'].includes(order.status)
   );
-
-
   // LIVE EMPLOYEE MANAGEMENT DATA
 
-  const [employees, setEmployees] = useState([
-    { id: 1, name: 'Alice', role: 'manager', on_duty: true },
-    { id: 2, name: 'Bob', role: 'waiter', on_duty: false },
-    { id: 3, name: 'Charlie', role: 'chef', on_duty: true },
-    { id: 4, name: 'Diana', role: 'bartender', on_duty: true },
-    { id: 5, name: 'Ethan', role: 'busboy', on_duty: false },
-    { id: 6, name: 'Fiona', role: 'hostess', on_duty: true },
-    { id: 7, name: 'George', role: 'bar_back', on_duty: false },
-    { id: 8, name: 'Hannah', role: 'waiter', on_duty: true },
-    { id: 9, name: 'Ian', role: 'chef', on_duty: true },
-    { id: 10, name: 'Jenna', role: 'manager', on_duty: false },
-  ]);
+  const [employees, setEmployees] = useState([]);
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const result = await fetchEmployees();
+      if (result.success) {
+        setEmployees(result.data);
+      }
+    };
+    loadEmployees();
+  }, []);
 
   const [selectedRole, setSelectedRole] = useState(null);
 
@@ -298,6 +295,7 @@ const KitchenDashboard = () => {
         emp.id === id ? { ...emp, on_duty: checked } : emp
       )
     );
+    // TODO: Call API to update status
   };
 
   // This is our example data, to be replaced with real API data in further production stages
@@ -316,6 +314,15 @@ const KitchenDashboard = () => {
 
   const hostessCount = employees.filter(e => e.role === "hostess").length;
   const onDutyHostess = employees.filter(e => e.role === "hostess" && e.on_duty).length;
+
+  const bartenderCount = employees.filter(e => e.role === "bartender").length;
+  const onDutyBartenders = employees.filter(e => e.role === "bartender" && e.on_duty).length;
+
+  const chefCount = employees.filter(e => e.role === "chef").length;
+  const onDutyChefs = employees.filter(e => e.role === "chef" && e.on_duty).length;
+
+  const barBackCount = employees.filter(e => e.role === "bar_back").length;
+  const onDutyBarBacks = employees.filter(e => e.role === "bar_back" && e.on_duty).length;
 
   // Total
   const totalEmployees = employees.length;
