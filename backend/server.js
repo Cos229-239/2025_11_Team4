@@ -116,6 +116,10 @@ const paymentRoutes = require('./routes/payment.routes');
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/payments', paymentRoutes);
 
+const adminRoutes = require('./routes/admin.routes');
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
+
 // Protect Admin Routes
 // Only Developer and Owner can access admin settings
 const settingsRoutes = require('./routes/settings.routes');

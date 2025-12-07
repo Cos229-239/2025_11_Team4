@@ -19,15 +19,12 @@ import PaymentPage from './pages/PaymentPage';
 import ConfirmationPage from './pages/ConfirmationPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import KitchenDashboard from './pages/KitchenDashboard';
-import AdminPanel from './pages/AdminPanel';
-import TableManagement from './pages/admin/TableManagement';
-import MenuManagement from './pages/admin/MenuManagement';
+import OwnerDashboard from './pages/admin/OwnerDashboard';
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 import RestaurantMenuPage from './pages/RestaurantMenuPage';
 import ReservationPage from './pages/ReservationPage';
 import ProfilePage from './pages/ProfilePage';
 import MyReservations from './pages/MyReservations';
-import AdminSettings from './pages/AdminSettings';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -88,32 +85,17 @@ function App() {
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-                  {/* PROTECTED ADMIN ROUTES */}
-                  <Route path="/admin" element={
-                    <RoleRoute allowedRoles={['developer', 'owner']}>
-                      <AdminPanel />
-                    </RoleRoute>
-                  } />
-                  <Route path="/admin/tables" element={
-                    <RoleRoute allowedRoles={['developer', 'owner']}>
-                      <TableManagement />
-                    </RoleRoute>
-                  } />
-                  <Route path="/admin/menu" element={
-                    <RoleRoute allowedRoles={['developer', 'owner']}>
-                      <MenuManagement />
-                    </RoleRoute>
-                  } />
-                  <Route path="/admin/settings" element={
-                    <RoleRoute allowedRoles={['developer', 'owner']}>
-                      <AdminSettings />
-                    </RoleRoute>
-                  } />
-
                   {/* PROTECTED KITCHEN ROUTES */}
                   <Route path="/kitchen" element={
                     <RoleRoute allowedRoles={['developer', 'owner', 'employee']}>
                       <KitchenDashboard />
+                    </RoleRoute>
+                  } />
+
+                  {/* OWNER PORTAL */}
+                  <Route path="/owner" element={
+                    <RoleRoute allowedRoles={['developer', 'owner']}>
+                      <OwnerDashboard />
                     </RoleRoute>
                   } />
 
