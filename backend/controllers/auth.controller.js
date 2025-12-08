@@ -1,20 +1,12 @@
+const UserDTO = require('../dtos/user.dto');
 const UserModel = require('../models/user.model');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+// ... imports
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
-}
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-function signToken(user) {
-    return jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
+// ...
 
 exports.signup = async (req, res) => {
     try {
+        // ... validation ...
         const { name, email, phone, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Email and password are required' });
@@ -27,14 +19,13 @@ exports.signup = async (req, res) => {
 
         const user = await UserModel.create({ name, email, phone, password });
 
-        // Generate verification token (mock email sending)
+        // ... verify logic ...
         const verificationToken = crypto.randomBytes(32).toString('hex');
         await UserModel.setVerificationToken(user.id, verificationToken);
-
         console.log(`[MOCK EMAIL] Verification link: http://localhost:5173/verify-email?token=${verificationToken}&id=${user.id}`);
 
         const token = signToken(user);
-        res.status(201).json({ success: true, token, user });
+        res.status(201).json({ success: true, token, user: new UserDTO(user) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to sign up', error: error.message });
     }
@@ -58,9 +49,7 @@ exports.login = async (req, res) => {
         }
 
         const token = signToken(user);
-        const { password_hash, verification_token, reset_token, ...safeUser } = user;
-
-        res.json({ success: true, token, user: safeUser });
+        res.json({ success: true, token, user: new UserDTO(user) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to login', error: error.message });
     }

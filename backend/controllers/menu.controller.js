@@ -1,4 +1,5 @@
 const menuModel = require('../models/menu.model');
+const MenuDTO = require('../dtos/menu.dto');
 
 // Get all menu items with optional category filter
 const getAllMenuItems = async (req, res) => {
@@ -8,7 +9,7 @@ const getAllMenuItems = async (req, res) => {
 
     res.json({
       success: true,
-      data: menuItems,
+      data: menuItems.map(item => new MenuDTO(item)),
       count: menuItems.length
     });
   } catch (error) {
@@ -44,7 +45,7 @@ const getMenuItemById = async (req, res) => {
 
     res.json({
       success: true,
-      data: menuItem
+      data: new MenuDTO(menuItem)
     });
   } catch (error) {
     console.error('Error fetching menu item:', error);
@@ -108,7 +109,7 @@ const createMenuItem = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: menuItem,
+      data: new MenuDTO(menuItem),
       message: 'Menu item created successfully'
     });
   } catch (error) {
@@ -164,7 +165,7 @@ const updateMenuItem = async (req, res) => {
 
     res.json({
       success: true,
-      data: updatedMenuItem,
+      data: new MenuDTO(updatedMenuItem),
       message: 'Menu item updated successfully'
     });
   } catch (error) {
@@ -208,7 +209,7 @@ const deleteMenuItem = async (req, res) => {
 
     res.json({
       success: true,
-      data: deletedMenuItem,
+      data: new MenuDTO(deletedMenuItem),
       message: 'Menu item deleted successfully'
     });
   } catch (error) {

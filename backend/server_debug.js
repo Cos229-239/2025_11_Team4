@@ -69,34 +69,9 @@ app.get('/', (req, res) => {
   });
 });
 
-const pool = require('./config/db');
-
 // Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Check database connection
-    await pool.query('SELECT 1');
-
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: 'connected',
-        server: 'running'
-      }
-    });
-  } catch (error) {
-    console.error('Health check failed:', error);
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: 'disconnected',
-        server: 'running'
-      },
-      error: error.message
-    });
-  }
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy' });
 });
 
 // Cleanup job monitoring endpoint
@@ -110,22 +85,13 @@ app.get('/api/admin/cleanup-stats', (req, res) => {
 });
 
 // API routes
-const v1Routes = require('./routes/v1');
+// const v1Routes = require('./routes/v1');
 
 // Mount V1
-app.use('/api/v1', v1Routes);
+// app.use('/api/v1', v1Routes);
 
 // Backward Compatibility / Default to V1
-app.use('/api', v1Routes);
-
-// Swagger Documentation
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpecs = require('./config/swagger');
-
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-  explorer: true,
-  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css'
-}));
+// app.use('/api', v1Routes);
 
 // Socket.IO connection handling
 const { setupOrderSocket } = require('./sockets/order.socket');

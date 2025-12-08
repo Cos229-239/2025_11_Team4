@@ -13,7 +13,7 @@ const ReservationsSection = ({ restaurantId }) => {
         setLoading(true);
         if (!token) return;
         try {
-            let url = `${import.meta.env.VITE_API_URL}/api/reservations?restaurant_id=${restaurantId}`;
+            let url = `${import.meta.env.VITE_API_URL}/api/v1/reservations?restaurant_id=${restaurantId}`;
             if (filterStatus !== 'all') url += `&status=${filterStatus}`;
             if (filterDate) url += `&date=${filterDate}`;
 
@@ -38,7 +38,7 @@ const ReservationsSection = ({ restaurantId }) => {
     const updateStatus = async (id, newStatus) => {
         if (!token) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reservations/${id}/status`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/reservations/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

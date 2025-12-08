@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Printer, Download, Layout } from 'lucide-react';
 import { useUserAuth } from '../../../hooks/useUserAuth';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const TablesSection = ({ restaurantId }) => {
     const { token } = useUserAuth();
+    const { confirm } = useConfirm();
     const [tables, setTables] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -67,7 +69,7 @@ const TablesSection = ({ restaurantId }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this table?')) return;
+        if (!await confirm('Delete Table', 'Are you sure you want to delete this table? This action cannot be undone.')) return;
         if (!token) return;
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tables/${id}`, {
@@ -160,58 +162,65 @@ const TablesSection = ({ restaurantId }) => {
             </div>
 
             {/* Tables Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {tables.map(table => (
-                    <div key={table.id} className="glass-panel p-0 rounded-2xl border border-white/5 overflow-hidden group hover:border-brand-orange/30 transition-all">
-                        <div className="p-5 border-b border-white/5 bg-white/5 flex justify-between items-start">
-                            <div>
-                                <h3 className="text-xl font-bold">Table {table.table_number}</h3>
-                                <p className="text-sm text-zinc-400">{table.capacity} Seats</p>
-                            </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${table.status === 'available' ? 'bg-green-500/10 text-green-400' :
-                                table.status === 'occupied' ? 'bg-red-500/10 text-red-400' : 'bg-zinc-800 text-zinc-400'
-                                }`}>
-                                {table.status}
-                            </span>
-                        </div>
-
-                        <div className="p-6 flex flex-col items-center">
-                            {table.qr_code ? (
-                                <img src={table.qr_code} alt="QR" className="w-32 h-32 bg-white p-2 rounded-lg mb-4" />
-                            ) : (
-                                <div className="w-32 h-32 bg-white/5 rounded-lg mb-4 flex items-center justify-center text-zinc-500 text-xs">
-                                    No QR
+            {tables.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                    <p className="text-zinc-400 mb-2">No tables exist yet.</p>
+                    <p className="text-zinc-600 text-sm">Create your first table above to get started.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {tables.map(table => (
+                        <div key={table.id} className="glass-panel p-0 rounded-2xl border border-white/5 overflow-hidden group hover:border-brand-orange/30 transition-all">
+                            <div className="p-5 border-b border-white/5 bg-white/5 flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-xl font-bold">Table {table.table_number}</h3>
+                                    <p className="text-sm text-zinc-400">{table.capacity} Seats</p>
                                 </div>
-                            )}
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${table.status === 'available' ? 'bg-green-500/10 text-green-400' :
+                                    table.status === 'occupied' ? 'bg-red-500/10 text-red-400' : 'bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    {table.status}
+                                </span>
+                            </div>
 
-                            <div className="grid grid-cols-2 w-full gap-2">
-                                <button
-                                    onClick={() => handleDownloadQR(table)}
-                                    disabled={!table.qr_code}
-                                    className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 disabled:opacity-50 flex justify-center"
-                                    title="Download"
-                                >
-                                    <Download size={18} />
-                                </button>
-                                <button
-                                    onClick={() => handlePrintQR(table)}
-                                    disabled={!table.qr_code}
-                                    className="p-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 disabled:opacity-50 flex justify-center"
-                                    title="Print"
-                                >
-                                    <Printer size={18} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(table.id)}
-                                    className="col-span-2 p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 flex items-center justify-center gap-2 mt-2"
-                                >
-                                    <Trash2 size={16} /> Delete Table
-                                </button>
+                            <div className="p-6 flex flex-col items-center">
+                                {table.qr_code ? (
+                                    <img src={table.qr_code} alt="QR" className="w-32 h-32 bg-white p-2 rounded-lg mb-4" />
+                                ) : (
+                                    <div className="w-32 h-32 bg-white/5 rounded-lg mb-4 flex items-center justify-center text-zinc-500 text-xs">
+                                        No QR
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 w-full gap-2">
+                                    <button
+                                        onClick={() => handleDownloadQR(table)}
+                                        disabled={!table.qr_code}
+                                        className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 disabled:opacity-50 flex justify-center"
+                                        title="Download"
+                                    >
+                                        <Download size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => handlePrintQR(table)}
+                                        disabled={!table.qr_code}
+                                        className="p-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 disabled:opacity-50 flex justify-center"
+                                        title="Print"
+                                    >
+                                        <Printer size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(table.id)}
+                                        className="col-span-2 p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 flex items-center justify-center gap-2 mt-2"
+                                    >
+                                        <Trash2 size={16} /> Delete Table
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

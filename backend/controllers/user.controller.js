@@ -1,3 +1,4 @@
+const UserDTO = require('../dtos/user.dto');
 const UserModel = require('../models/user.model');
 const { pool } = require('../config/database');
 
@@ -6,8 +7,7 @@ exports.getProfile = async (req, res) => {
         const user = await UserModel.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        const { password_hash, verification_token, reset_token, ...safeUser } = user;
-        res.json({ success: true, data: safeUser });
+        res.json({ success: true, data: new UserDTO(user) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to fetch profile', error: error.message });
     }
@@ -18,8 +18,7 @@ exports.updateProfile = async (req, res) => {
         const user = await UserModel.update(req.params.id, req.body);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        const { password_hash, verification_token, reset_token, ...safeUser } = user;
-        res.json({ success: true, data: safeUser });
+        res.json({ success: true, data: new UserDTO(user) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
     }
@@ -98,7 +97,7 @@ exports.deletePaymentMethod = async (req, res) => {
 exports.getEmployees = async (req, res) => {
     try {
         const employees = await UserModel.findAllEmployees();
-        res.json({ success: true, data: employees });
+        res.json({ success: true, data: employees.map(u => new UserDTO(u)) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to fetch employees', error: error.message });
     }

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Tag, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { useUserAuth } from '../../../hooks/useUserAuth';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const MenuSection = ({ restaurantId }) => {
     const { token } = useUserAuth();
+    const { confirm } = useConfirm();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -79,7 +81,7 @@ const MenuSection = ({ restaurantId }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete this item?')) return;
+        if (!await confirm('Delete Menu Item', 'Are you sure you want to delete this menu item?')) return;
         if (!token) return;
         try {
             await fetch(`${import.meta.env.VITE_API_URL}/api/menu-items/${id}`, {

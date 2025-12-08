@@ -5,6 +5,7 @@
 
 const tableModel = require('../models/table.model');
 const qrCodeUtil = require('../utils/qrcode.util');
+const TableDTO = require('../dtos/table.dto');
 
 /**
  * Get all tables
@@ -16,7 +17,7 @@ const getAllTables = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: tables,
+      data: tables.map(table => new TableDTO(table)),
       count: tables.length,
     });
   } catch (error) {
@@ -56,7 +57,7 @@ const getTableById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: table,
+      data: new TableDTO(table),
     });
   } catch (error) {
     console.error('Error in getTableById controller:', error);
@@ -109,10 +110,6 @@ const createTable = async (req, res) => {
       });
     }
 
-    // Check if table number already exists (should be scoped by restaurant, but simple check for now)
-    // const existingTable = await tableModel.getTableByNumber(table_number);
-    // if (existingTable) { ... }
-
     // Create table first (without QR code)
     const tableData = {
       restaurant_id,
@@ -139,7 +136,7 @@ const createTable = async (req, res) => {
 
       res.status(201).json({
         success: true,
-        data: updatedTable,
+        data: new TableDTO(updatedTable),
         message: 'Table created successfully with QR code',
       });
     } catch (qrError) {
@@ -148,7 +145,7 @@ const createTable = async (req, res) => {
       // Return table even if QR generation fails
       res.status(201).json({
         success: true,
-        data: newTable,
+        data: new TableDTO(newTable),
         message: 'Table created successfully, but QR code generation failed',
         qr_error: qrError.message,
       });
@@ -263,7 +260,7 @@ const updateTable = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedTable,
+      data: new TableDTO(updatedTable),
       message: 'Table updated successfully',
     });
   } catch (error) {
@@ -439,7 +436,7 @@ const regenerateQRCode = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedTable,
+      data: new TableDTO(updatedTable),
       message: 'QR code regenerated successfully',
     });
   } catch (error) {

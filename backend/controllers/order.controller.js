@@ -1,619 +1,194 @@
-const orderModel = require('../models/order.model');
-const db = require('../config/database');
-const emailService = require('../services/email.service');
-const emailTemplates = require('../utils/email.templates');
+const orderService = require('../services/order.service');
+const logger = require('../utils/logger');
+const OrderDTO = require('../dtos/order.dto');
 
-// Allowed status transitions
-const STATUS_TRANSITIONS = {
-  'pending': ['preparing', 'cancelled'],
-  'preparing': ['ready', 'cancelled'],
-  'ready': ['completed', 'cancelled'],
-  'completed': [],
-  'cancelled': []
-};
+class OrderController {
 
-// Create new order
-const createOrder = async (req, res) => {
-  try {
-    const {
-      table_id,
-      items,
-      customer_notes,
-      order_type = 'dine-in',
-      restaurant_id,
-      reservation_id,
-      scheduled_for,
-      payment_status,
-      payment_method,
-      payment_intent_id,
-      payment_amount,
-      user_id,
-      tip_amount = 0
-    } = req.body;
+  async createOrder(req, res) {
+    try {
+      // Determine user_id from auth if not provided
+      const user_id = req.user ? req.user.id : req.body.user_id;
+      const orderData = { ...req.body, user_id };
 
-    // Determine user_id: prioritize req.user.id (from auth middleware), then req.body.user_id
-    const userId = req.user ? req.user.id : user_id;
+      const order = await orderService.createOrder(orderData);
 
-    // Validate order_type
-    const validOrderTypes = ['dine-in', 'pre-order', 'walk-in', 'takeout'];
-    if (!validOrderTypes.includes(order_type)) {
-      return res.status(400).json({
-        success: false,
-        error: `Invalid order_type. Must be one of: ${validOrderTypes.join(', ')}`
-      });
-    }
-
-    // Validate payment is completed before creating order
-    if (payment_status !== 'completed') {
-      return res.status(400).json({
-        success: false,
-        error: 'Payment must be completed before creating order'
-      });
-    }
-
-    // Validate payment details are provided
-    if (!payment_intent_id || !payment_amount) {
-      return res.status(400).json({
-        success: false,
-        error: 'Payment intent ID and payment amount are required'
-      });
-    }
-
-    // Idempotency guard: avoid creating duplicate orders for the same payment
-    if (payment_intent_id) {
-      try {
-        const existing = await db.query(
-          'SELECT id FROM orders WHERE payment_intent_id = $1 LIMIT 1',
-          [payment_intent_id]
-        );
-
-        if (existing.rows.length > 0) {
-          const existingOrder = await orderModel.getOrderById(existing.rows[0].id);
-          return res.status(200).json({
-            success: true,
-            data: existingOrder,
-            message: 'Order already exists for this payment'
-          });
+      // Socket Events
+      const io = req.app.get('io');
+      if (io) { // Only checking if io exists, emit logic is mostly fire-and-forget
+        if (order.order_type === 'dine-in' || order.order_type === 'walk-in' || order.order_type === 'takeout') {
+          // For sockets, we might send the raw order or DTO. 
+          // Usually raw for internal logic, but DTO is safer for frontend listeners.
+          // Let's send DTO to be consistent.
+          const dto = new OrderDTO(order);
+          io.to('kitchen').emit('new-order', dto);
+          io.to('admin').emit('new-order', dto);
+        } else if (order.order_type === 'pre-order') {
+          io.to('admin').emit('new-pre-order', new OrderDTO(order));
         }
-      } catch (e) {
-        console.warn('Order idempotency check failed:', e.message);
-        // Continue with normal creation on idempotency check failure
       }
-    }
 
-    // Validation based on order type
-    if (order_type === 'dine-in' || order_type === 'walk-in') {
-      if (!table_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'Table ID is required for dine-in and walk-in orders'
-        });
-      }
-    }
-
-    if (order_type === 'pre-order') {
-      if (!reservation_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'Reservation ID is required for pre-orders'
+      // Async Email Receipt
+      if (order.payment_status === 'completed' && order.user_id) {
+        orderService.sendReceiptEmail(order, order.items, null).catch(err => {
+          logger.error('Background email send failed', { error: err.message });
         });
       }
 
-      // Verify reservation exists and is valid
-      const reservationCheck = await db.query(
-        'SELECT * FROM reservations WHERE id = $1',
-        [reservation_id]
-      );
+      res.status(201).json({ success: true, data: new OrderDTO(order), message: 'Order created successfully' });
 
-      if (reservationCheck.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Reservation not found'
-        });
-      }
-
-      const reservation = reservationCheck.rows[0];
-
-      if (reservation.status === 'cancelled') {
-        return res.status(400).json({
-          success: false,
-          error: 'Cannot create pre-order for cancelled reservation'
-        });
-      }
-    }
-
-    // Validate items
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Items array is required and must contain at least one item'
-      });
-    }
-
-    // Validate each item
-    for (const item of items) {
-      if (!item.menu_item_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'Each item must have a menu_item_id'
-        });
-      }
-
-      if (!item.quantity || item.quantity < 1) {
-        return res.status(400).json({
-          success: false,
-          error: 'Each item must have a valid quantity (minimum 1)'
-        });
-      }
-    }
-
-    // Optional: detect imminent reservations for this table (guard)
-    // Only for dine-in/walk-in orders
-    if ((order_type === 'dine-in' || order_type === 'walk-in') && table_id) {
-      // Load restaurant_id for the table and use per-restaurant setting
-      const rRow = await db.query('SELECT restaurant_id FROM tables WHERE id = $1', [table_id]);
-      const restaurantId = rRow.rows[0]?.restaurant_id || null;
-      const { getReservationDurationMinutes } = require('../utils/settings.service');
-      const BUFFER_MINUTES = await getReservationDurationMinutes(restaurantId);
-      const guardQuery = `
-        SELECT r.*
-        FROM reservations r
-        WHERE r.table_id = $1
-          AND r.status IN ('pending','confirmed')
-          AND (r.reservation_date::timestamp + r.reservation_time)
-                BETWEEN NOW() AND (NOW() + ($2 || ' minutes')::interval)
-        ORDER BY r.reservation_date, r.reservation_time ASC
-        LIMIT 1
-      `;
-      try {
-        const guardRes = await db.query(guardQuery, [table_id, BUFFER_MINUTES]);
-        if (guardRes.rows.length > 0) {
-          return res.status(409).json({
-            success: false,
-            error: `Upcoming reservation detected for this table within ${BUFFER_MINUTES} minutes`,
-            reservation: guardRes.rows[0]
-          });
-        }
-      } catch (e) {
-        // Continue on guard error, do not block ordering
-        console.warn('Reservation guard check failed:', e.message);
-      }
-    }
-
-    // Create order
-    const order = await orderModel.createOrder({
-      table_id,
-      restaurant_id,
-      user_id: userId,
-      items,
-      customer_notes,
-      order_type,
-      reservation_id,
-      scheduled_for,
-      payment_status,
-      payment_method,
-      payment_intent_id,
-      payment_amount,
-      tip_amount
-    });
-
-    // CRITICAL: Confirm reservation after successful payment (per flowchart)
-    if (order_type === 'pre-order' && reservation_id && payment_status === 'completed') {
-      try {
-        console.log(`[ORDER] Confirming reservation ${reservation_id} after successful payment`);
-
-        const confirmResult = await db.query(
-          `UPDATE reservations
-           SET status = 'confirmed',
-               confirmed_at = NOW(),
-               payment_id = $1,
-               has_pre_order = true,
-               updated_at = NOW()
-           WHERE id = $2 AND status = 'tentative'
-           RETURNING *`,
-          [payment_intent_id, reservation_id]
-        );
-
-        if (confirmResult.rows.length === 0) {
-          // Reservation may already be confirmed or expired
-          console.warn(`[ORDER] Failed to confirm reservation ${reservation_id} - may already be confirmed or expired`);
-        } else {
-          // Reservation confirmed successfully
-          console.log(`[ORDER] Reservation ${reservation_id} confirmed successfully`);
-        }
-      } catch (err) {
-        console.error(`[ORDER] Error confirming reservation ${reservation_id}:`, err.message);
-        // Don't fail the order creation if reservation confirmation fails
-        // Order is already created and paid, just log the error
-      }
-    }
-
-    // Only emit socket event to kitchen for dine-in orders with completed payment
-    // Pre-orders will be sent to kitchen when customer checks in or at scheduled time
-    const io = req.app.get('io');
-    if (io) {
-      if (order_type === 'dine-in' || order_type === 'walk-in' || order_type === 'takeout') {
-        // Immediate orders go to kitchen right away
-        io.to('kitchen').emit('new-order', order);
-        io.to('admin').emit('new-order', order);
-      } else if (order_type === 'pre-order') {
-        // Pre-orders only notify admin, not kitchen (kitchen gets notified on check-in or scheduled time)
-        io.to('admin').emit('new-pre-order', order);
-      }
-    }
-
-    // Send email receipt (async, don't block response)
-    if (payment_status === 'completed' && order.user_id) {
-      // Fetch user email if not provided in request (assuming user_id is valid)
-      // For now, we'll try to get email from user_id if we had a user model, 
-      // but since we don't have easy access to user email here without querying,
-      // we might need to rely on the user being logged in or passed in.
-      // However, for guest checkout we might not have email.
-      // Let's assume we can get it from the user table if user_id exists.
-
-      (async () => {
+    } catch (error) {
+      // Idempotency check
+      if (error.message === 'Order already exists for this payment') {
         try {
-          let userEmail = null;
-          if (userId) {
-            const userRes = await db.query('SELECT email, name FROM users WHERE id = $1', [userId]);
-            if (userRes.rows.length > 0) {
-              userEmail = userRes.rows[0].email;
-            }
-          }
-
-          if (userEmail) {
-            const receipt = emailTemplates.paymentReceipt({ order, items, tip_amount, total: parseFloat(payment_amount) + parseFloat(tip_amount || 0) });
-            await emailService.sendEmail({
-              to: userEmail,
-              subject: receipt.subject,
-              html: receipt.html,
-              text: receipt.text
-            });
-          }
-        } catch (err) {
-          console.error(`[ORDER] Failed to send receipt email to ${userEmail}:`, err.message);
+          const existing = await orderService.getOrderByPaymentIntent(req.body.payment_intent_id);
+          return res.status(200).json({ success: true, data: new OrderDTO(existing), message: 'Order already exists for this payment' });
+        } catch (innerError) {
+          logger.error('Error fetching existing order after idempotency collision', innerError);
         }
-      })();
+      }
+
+      logger.error('Error creating order', { error: error.message });
+
+      if (error.statusCode) return res.status(error.statusCode).json({ success: false, error: error.message });
+      if (error.message.includes('required') || error.message.includes('Invalid') || error.message.includes('must be')) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+
+      res.status(500).json({ success: false, error: 'Failed to create order', message: error.message });
     }
-
-    res.status(201).json({
-      success: true,
-      data: order,
-      message: 'Order created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating order:', error);
-
-    // Check if it's a validation error from the model
-    if (error.message.includes('not found') || error.message.includes('not available')) {
-      return res.status(400).json({
-        success: false,
-        error: error.message
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create order',
-      message: error.message
-    });
   }
-};
 
-// Get all orders
-const getAllOrders = async (req, res) => {
-  try {
-    const orders = await orderModel.getAllOrders();
+  async getAllOrders(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const restaurantId = req.query.restaurant_id ? parseInt(req.query.restaurant_id) : null;
 
-    res.json({
-      success: true,
-      data: orders,
-      count: orders.length
-    });
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch orders',
-      message: error.message
-    });
+      const { orders, total } = await orderService.getAllOrders(page, limit, restaurantId);
+
+      res.json({
+        success: true,
+        data: orders.map(o => new OrderDTO(o)),
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching orders', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+    }
   }
-};
 
-// Get single order by "order number" (human-facing)
-const getOrderByNumber = async (req, res) => {
-  try {
-    const { orderNumber } = req.params;
-
-    if (!orderNumber) {
-      return res.status(400).json({
-        success: false,
-        error: 'Order number is required'
-      });
+  async getOrderById(req, res) {
+    try {
+      const { id } = req.params;
+      const order = await orderService.getOrderById(id);
+      if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+      res.json({ success: true, data: new OrderDTO(order) });
+    } catch (error) {
+      logger.error('Error fetching order', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch order' });
     }
-
-    // Normalize: strip non-digits so we can accept inputs like "#15"
-    const normalized = String(orderNumber).replace(/[^\d]/g, '');
-
-    if (!normalized) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid order number'
-      });
-    }
-
-    const id = parseInt(normalized, 10);
-
-    if (!id || Number.isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid order number'
-      });
-    }
-
-    const order = await orderModel.getOrderById(id);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        error: 'Order not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: order
-    });
-  } catch (error) {
-    console.error('Error fetching order by number:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch order',
-      message: error.message
-    });
   }
-};
 
-// Get single order by ID
-const getOrderById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid order ID'
-      });
+  async getActiveOrders(req, res) {
+    try {
+      const orders = await orderService.getActiveOrders();
+      res.json({ success: true, data: orders.map(o => new OrderDTO(o)), count: orders.length });
+    } catch (error) {
+      logger.error('Error fetching active orders', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch active orders' });
     }
-
-    const order = await orderModel.getOrderById(id);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        error: 'Order not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: order
-    });
-  } catch (error) {
-    console.error('Error fetching order:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch order',
-      message: error.message
-    });
   }
-};
 
-// Get active orders (for kitchen)
-const getActiveOrders = async (req, res) => {
-  try {
-    const orders = await orderModel.getActiveOrders();
-
-    res.json({
-      success: true,
-      data: orders,
-      count: orders.length
-    });
-  } catch (error) {
-    console.error('Error fetching active orders:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch active orders',
-      message: error.message
-    });
+  async getOrdersByTable(req, res) {
+    try {
+      const { tableId } = req.params;
+      const orders = await orderService.getOrdersByTable(tableId);
+      res.json({ success: true, data: orders.map(o => new OrderDTO(o)), count: orders.length });
+    } catch (error) {
+      logger.error('Error fetching orders by table', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+    }
   }
-};
 
-// Get orders by user ID
-const getUserOrders = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Security check: Ensure the requesting user matches the requested userId or is an admin/staff
-    // Note: This depends on your auth middleware populating req.user
-    if (req.user && req.user.id !== parseInt(userId) && req.user.role === 'customer') {
-      return res.status(403).json({ message: 'Unauthorized to view these orders' });
+  async getUserOrders(req, res) {
+    try {
+      const { userId } = req.params;
+      // Security check
+      if (req.user && req.user.id !== parseInt(userId) && req.user.role === 'customer') {
+        return res.status(403).json({ message: 'Unauthorized to view these orders' });
+      }
+      const orders = await orderService.getOrdersByUser(userId);
+      res.json(orders.map(o => new OrderDTO(o)));
+    } catch (error) {
+      logger.error('Error fetching user orders', error);
+      res.status(500).json({ message: 'Error fetching user orders', error: error.message });
     }
-
-    const orders = await orderModel.getOrdersByUser(userId);
-    res.status(200).json(orders);
-  } catch (error) {
-    console.error('Error fetching user orders:', error);
-    res.status(500).json({ message: 'Error fetching user orders', error: error.message });
   }
-};
 
-// Get orders by table ID
-const getOrdersByTable = async (req, res) => {
-  try {
-    const { tableId } = req.params;
+  async getOrderByNumber(req, res) {
+    try {
+      const { orderNumber } = req.params;
+      const normalized = String(orderNumber).replace(/[^\d]/g, '');
+      if (!normalized || isNaN(normalized)) return res.status(400).json({ success: false, error: 'Invalid order number' });
 
-    if (!tableId || isNaN(tableId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid table ID'
-      });
+      const order = await orderService.getOrderById(parseInt(normalized, 10));
+      if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+      res.json({ success: true, data: new OrderDTO(order) });
+    } catch (error) {
+      logger.error('Error fetching order by number', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch order' });
     }
-
-    const orders = await orderModel.getOrdersByTable(tableId);
-
-    res.json({
-      success: true,
-      data: orders,
-      count: orders.length
-    });
-  } catch (error) {
-    console.error('Error fetching orders by table:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch orders by table',
-      message: error.message
-    });
   }
-};
 
-// Update order status
-const updateOrderStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid order ID'
-      });
+  async getOrderByPaymentIntent(req, res) {
+    try {
+      const { paymentIntentId } = req.params;
+      const order = await orderService.getOrderByPaymentIntent(paymentIntentId);
+      if (!order) return res.status(404).json({ success: false, error: 'Order not found for this payment' });
+      res.json({ success: true, data: new OrderDTO(order) });
+    } catch (error) {
+      logger.error('Error fetching order by payment intent', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch order' });
     }
-
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        error: 'Status is required'
-      });
-    }
-
-    const validStatuses = ['pending', 'preparing', 'ready', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
-      });
-    }
-
-    // Get current order to check current status
-    const currentOrder = await orderModel.getOrderById(id);
-
-    if (!currentOrder) {
-      return res.status(404).json({
-        success: false,
-        error: 'Order not found'
-      });
-    }
-
-    // Validate status transition
-    const allowedTransitions = STATUS_TRANSITIONS[currentOrder.status];
-    if (!allowedTransitions.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: `Cannot transition from '${currentOrder.status}' to '${status}'. Allowed transitions: ${allowedTransitions.join(', ') || 'none'}`
-      });
-    }
-
-    // Update status
-    const updatedOrder = await orderModel.updateOrderStatus(id, status);
-
-    // Emit socket event for status update
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`table-${updatedOrder.table_id}`).emit('order-updated', updatedOrder);
-      io.to('kitchen').emit('order-updated', updatedOrder);
-      io.to('admin').emit('order-updated', updatedOrder);
-
-      const statusPayload = {
-        orderNumber: updatedOrder.order_number || String(updatedOrder.id),
-        status: updatedOrder.status,
-        estimatedTime: updatedOrder.estimated_completion || null
-      };
-      io.to(`table-${updatedOrder.table_id}`).emit('order-status-update', statusPayload);
-    }
-
-    res.json({
-      success: true,
-      data: updatedOrder,
-      message: 'Order status updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update order status',
-      message: error.message
-    });
   }
-};
 
-// Get order by payment intent ID
-const getOrderByPaymentIntent = async (req, res) => {
-  try {
-    const { paymentIntentId } = req.params;
+  async updateOrderStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
 
-    if (!paymentIntentId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Payment Intent ID is required'
-      });
+      const updatedOrder = await orderService.updateOrderStatus(id, status);
+      const dto = new OrderDTO(updatedOrder);
+
+      // Socket Events
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`table-${updatedOrder.table_id}`).emit('order-updated', dto);
+        io.to('kitchen').emit('order-updated', dto);
+        io.to('admin').emit('order-updated', dto);
+
+        const statusPayload = {
+          orderNumber: dto.order_number,
+          status: dto.status,
+          estimatedTime: dto.estimated_completion
+        };
+        io.to(`table-${updatedOrder.table_id}`).emit('order-status-update', statusPayload);
+      }
+
+      res.json({ success: true, data: dto, message: 'Order status updated successfully' });
+
+    } catch (error) {
+      logger.error('Error updating order status', error);
+      if (error.message.includes('Order not found')) return res.status(404).json({ success: false, error: 'Order not found' });
+      if (error.message.includes('Cannot transition')) return res.status(400).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: 'Failed to update order status' });
     }
-
-    const result = await db.query(
-      'SELECT * FROM orders WHERE payment_intent_id = $1 LIMIT 1',
-      [paymentIntentId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Order not found for this payment'
-      });
-    }
-
-    const order = result.rows[0];
-    // Fetch items for the order to be complete
-    const itemsResult = await db.query(
-      `SELECT oi.*, m.name, m.price 
-       FROM order_items oi 
-       JOIN menu_items m ON oi.menu_item_id = m.id 
-       WHERE oi.order_id = $1`,
-      [order.id]
-    );
-    order.items = itemsResult.rows;
-
-    res.json({
-      success: true,
-      data: order
-    });
-  } catch (error) {
-    console.error('Error fetching order by payment intent:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch order',
-      message: error.message
-    });
   }
-};
+}
 
-module.exports = {
-  createOrder,
-  getAllOrders,
-  getOrderById,
-  getActiveOrders,
-  getOrdersByTable,
-  updateOrderStatus,
-  getOrderByNumber,
-  getUserOrders,
-  getOrderByPaymentIntent
-};
+module.exports = new OrderController();

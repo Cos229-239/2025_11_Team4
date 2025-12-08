@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Search, MoreVertical, Shield, Mail, Phone, Trash2, Edit2 } from 'lucide-react';
 import { useUserAuth } from '../../../hooks/useUserAuth';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const EmployeeSection = ({ restaurantId }) => {
     const [employees, setEmployees] = useState([]);
@@ -10,6 +11,7 @@ const EmployeeSection = ({ restaurantId }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
     const { token } = useUserAuth();
+    const { confirm } = useConfirm();
 
     const fetchEmployees = async () => {
         try {
@@ -66,7 +68,7 @@ const EmployeeSection = ({ restaurantId }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to remove this employee?')) return;
+        if (!await confirm('Remove Employee', 'Are you sure you want to remove this employee?')) return;
         if (!token) return;
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/employees/${id}`, {
@@ -115,48 +117,57 @@ const EmployeeSection = ({ restaurantId }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? <p>Loading...</p> : employees.map((emp) => (
-                    <div key={emp.id} className="glass-panel p-6 rounded-2xl border border-white/5 relative group">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center text-xl font-bold border border-white/10">
-                                {emp.name[0]}
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(emp)} className="p-2 hover:bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                                    <Edit2 size={16} />
-                                </button>
-                                <button onClick={() => handleDelete(emp.id)} className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-400 transition-colors">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <h3 className="text-lg font-bold mb-1">{emp.name}</h3>
-                        <div className="space-y-2 text-sm text-zinc-400 mb-6">
-                            <div className="flex items-center gap-2">
-                                <Mail size={14} /> {emp.email}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Phone size={14} /> {emp.phone || 'N/A'}
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${emp.on_duty
-                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                }`}>
-                                {emp.on_duty ? 'On Duty' : 'Off Duty'}
-                            </span>
-                            <button
-                                onClick={() => toggleDuty(emp.id, emp.on_duty)}
-                                className="text-xs font-medium text-brand-lime hover:underline"
-                            >
-                                {emp.on_duty ? 'Clock Out' : 'Clock In'}
-                            </button>
-                        </div>
+                {loading ? (
+                    <p>Loading...</p>
+                ) : employees.length === 0 ? (
+                    <div className="col-span-full text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                        <p className="text-zinc-400 mb-2">No employees found.</p>
+                        <p className="text-zinc-600 text-sm">Add your first employee to start managing staff.</p>
                     </div>
-                ))}
+                ) : (
+                    employees.map((emp) => (
+                        <div key={emp.id} className="glass-panel p-6 rounded-2xl border border-white/5 relative group">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center text-xl font-bold border border-white/10">
+                                    {emp.name[0]}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(emp)} className="p-2 hover:bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(emp.id)} className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-400 transition-colors">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h3 className="text-lg font-bold mb-1">{emp.name}</h3>
+                            <div className="space-y-2 text-sm text-zinc-400 mb-6">
+                                <div className="flex items-center gap-2">
+                                    <Mail size={14} /> {emp.email}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Phone size={14} /> {emp.phone || 'N/A'}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${emp.on_duty
+                                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                    }`}>
+                                    {emp.on_duty ? 'On Duty' : 'Off Duty'}
+                                </span>
+                                <button
+                                    onClick={() => toggleDuty(emp.id, emp.on_duty)}
+                                    className="text-xs font-medium text-brand-lime hover:underline"
+                                >
+                                    {emp.on_duty ? 'Clock Out' : 'Clock In'}
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {showModal && (

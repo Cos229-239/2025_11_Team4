@@ -82,14 +82,14 @@ const Navbar = () => {
     <>
       <nav
 
-  className={`fixed left-0 right-0 z-50 
+        className={`fixed left-0 right-0 z-50 
     bg-white/10 backdrop-blur-xl 
     border-b border-white/20 
     transition-all duration-300
     ${isScrolled ? 'shadow-xl shadow-black/20' : ''}
     ${isVisible ? 'top-0' : '-top-20'}
   `}
->
+      >
 
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -307,15 +307,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Spacer to prevent content from going under fixed navbar - Hidden on pages with transparent header */}
-      <div
-        className="transition-[height] duration-500 ease-out"
-        style={{
-          height: ['/', '/cart', '/profile', '/restaurants', '/reservation', '/my-reservations', '/admin/menu', '/admin/settings', '/restaurant', '/login', '/signup', '/payment', '/order-status', '/about'].some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
-            ? '0px'
-            : '64px'
-        }}
-      ></div>
+
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (

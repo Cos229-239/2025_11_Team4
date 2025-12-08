@@ -50,7 +50,7 @@ const MyReservations = () => {
           return;
         }
 
-        const res = await fetch(`${API_URL}/api/reservations/me`, {
+        const res = await fetch(`${API_URL}/api/v1/reservations/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -101,7 +101,7 @@ const MyReservations = () => {
   const cancelReservation = async (id, e) => {
     e.stopPropagation(); // Prevent opening modal
     try {
-      const res = await fetch(`${API_URL}/api/reservations/${id}/status`, {
+      const res = await fetch(`${API_URL}/api/v1/reservations/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ const MyReservations = () => {
   const checkIn = async (id, e) => {
     e.stopPropagation(); // Prevent opening modal
     try {
-      const res = await fetch(`${API_URL}/api/reservations/${id}/checkin`, {
+      const res = await fetch(`${API_URL}/api/v1/reservations/${id}/checkin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

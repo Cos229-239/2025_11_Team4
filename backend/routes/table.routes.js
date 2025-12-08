@@ -12,6 +12,27 @@ const tableController = require('../controllers/table.controller');
  * @desc    Get all tables
  * @access  Public
  */
+/**
+ * @swagger
+ * tags:
+ *   name: Tables
+ *   description: Table management
+ */
+
+/**
+ * @swagger
+ * /tables:
+ *   get:
+ *     summary: Get all tables
+ *     tags: [Tables]
+ *     responses:
+ *       200:
+ *         description: List of tables
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ */
 router.get('/', tableController.getAllTables);
 
 /**
