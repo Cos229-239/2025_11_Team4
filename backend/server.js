@@ -69,7 +69,7 @@ app.get('/', (req, res) => {
   });
 });
 
-const pool = require('./config/db');
+const pool = require('./config/database');
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

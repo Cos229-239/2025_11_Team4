@@ -69,7 +69,7 @@ const Navbar = () => {
   };
 
   // Don't show navbar on certain pages
-  const hideNavbarPages = ['/kitchen', '/admin', '/admin/tables', '/scan-qr'];
+  const hideNavbarPages = ['/kitchen', '/admin', '/owner', '/scan-qr'];
   const shouldHide = hideNavbarPages.some(route => location.pathname.startsWith(route));
   if (shouldHide) {
     return null;

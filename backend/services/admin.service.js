@@ -67,7 +67,13 @@ class AdminService {
     // Restaurants
     // ========================
 
-    async getMyRestaurants(user_id) {
+    async getMyRestaurants(user_id, user_role) {
+        // Super Admin access for developers
+        if (user_role === 'developer') {
+            const result = await pool.query('SELECT * FROM restaurants ORDER BY name');
+            return result.rows;
+        }
+
         const query = `
             SELECT r.* 
             FROM restaurants r
