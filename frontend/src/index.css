@@ -151,3 +151,19 @@ h6 {
     @apply bg-black/30 border border-white/10 focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/50 transition-all duration-200 backdrop-blur-sm text-white placeholder-white/40;
   }
 }
+
+@keyframes slowMove {
+  0% {
+    transform: translate(-20%, -20%) scale(1.2);
+  }
+  50% {
+    transform: translate(20%, 20%) scale(1.2);
+  }
+  100% {
+    transform: translate(-20%, -20%) scale(1.2);
+  }
+}
+
+.moving-bg {
+  animation: slowMove 15s ease-in-out infinite;
+}

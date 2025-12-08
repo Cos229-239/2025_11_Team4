@@ -57,14 +57,11 @@ const ReservationConfirmationPage = () => {
   const {
     confirmationNumber,
     restaurantName: restaurantNameProp,
-    restaurantId,
     date,
     time,
     partySize,
     customerName,
-    customerEmail,
-    reservationId,
-    scheduledFor
+    customerEmail
   } = reservationData;
 
   const effectiveRestaurantName = restaurantNameState || restaurantNameProp || '';

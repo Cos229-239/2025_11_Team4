@@ -72,9 +72,29 @@ const STATUS_CONFIG = {
 const OrderCard = ({ order, onStatusUpdate }) => {
   const [timeDisplay, setTimeDisplay] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState(null);
 
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+  // Preparing timer hooks  
+  const startTime = order.preparing_at || order.status_updated_at || order.created_at;
+  const [preparingElapsed, setPreparingElapsed] = useState(() =>
+    Math.floor((Date.now() - new Date(startTime)) / 1000)
+  );
+
+  useEffect(() => {
+    if (order.status !== 'preparing') return;
+    const interval = setInterval(() => {
+      setPreparingElapsed(Math.floor((Date.now() - new Date(startTime)) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [order.status, startTime]);
+
+  function formatElapsed(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
 
   // Update time display every minute
   useEffect(() => {
@@ -93,7 +113,6 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     if (!config.nextStatus || isUpdating) return;
 
     setIsUpdating(true);
-    setError(null);
 
     try {
       const response = await fetch(
@@ -119,7 +138,6 @@ const OrderCard = ({ order, onStatusUpdate }) => {
       }
     } catch (err) {
       console.error('Error updating order status:', err);
-      setError(err.message);
     } finally {
       setIsUpdating(false);
     }
@@ -132,7 +150,6 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     if (!confirm('Are you sure you want to cancel this order?')) return;
 
     setIsUpdating(true);
-    setError(null);
 
     try {
       const response = await fetch(
@@ -157,7 +174,6 @@ const OrderCard = ({ order, onStatusUpdate }) => {
       }
     } catch (err) {
       console.error('Error cancelling order:', err);
-      setError(err.message);
     } finally {
       setIsUpdating(false);
     }
@@ -221,6 +237,13 @@ const OrderCard = ({ order, onStatusUpdate }) => {
             {timeDisplay}
           </span>
         </div>
+        {/* Preparing Timer */}
+        {order.status === 'preparing' && (
+          <div className="text-xs text-yellow-400 mt-1 pl-5 pb-2">
+            Preparing for: {formatElapsed(preparingElapsed)}
+          </div>
+        )}
+
       </div>
 
       {/* Order Items */}
@@ -230,7 +253,7 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           <span className="h-px flex-1 bg-white/10"></span>
         </h3>
         <div className="space-y-3">
-          {order.items && order.items.map((item, index) => (
+          {order.items && order.items.map((item) => (
             <div
               key={item.id}
               className="group/item flex justify-between items-start"
@@ -283,8 +306,8 @@ const OrderCard = ({ order, onStatusUpdate }) => {
             onClick={handleStatusUpdate}
             disabled={isUpdating}
             className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg relative overflow-hidden group/btn ${isUpdating
-                ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
-                : `${config.actionColor} text-white shadow-lg shadow-${config.textColor}/20 border border-white/10`
+              ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+              : `${config.actionColor} text-white shadow-lg shadow-${config.textColor}/20 border border-white/10`
               }`}
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -309,8 +332,8 @@ const OrderCard = ({ order, onStatusUpdate }) => {
             onClick={handleCancel}
             disabled={isUpdating}
             className={`w-full py-3 rounded-xl font-bold text-red-400 border border-red-500/20 bg-red-500/5 transition-all ${isUpdating
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-300'
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-300'
               }`}
           >
             Cancel Order

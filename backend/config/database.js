@@ -11,33 +11,30 @@ const wantsSSL = (() => {
   return url !== '' && !/localhost|127\.0\.0\.1/i.test(url);
 })();
 
-// As a last resort for dev environments with self-signed chains, disable TLS verification globally
-if (wantsSSL && (process.env.NODE_ENV !== 'production')) {
-  // This affects all TLS connections (HTTP and PG). Use only in dev.
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = process.env.NODE_TLS_REJECT_UNAUTHORIZED || '0';
-}
+// Global TLS verification disable removed for security.
+// Database connection handles SSL via poolConfig.ssl.rejectUnauthorized: false if needed.
 
 // PostgreSQL connection pool
 // Support both DATABASE_URL (Railway, Heroku, Supabase, etc.) and individual connection params
 const poolConfig = process.env.DATABASE_URL
   ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    }
+    connectionString: process.env.DATABASE_URL,
+    ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  }
   : {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'ordereasy',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD,
-      ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    };
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'ordereasy',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    ssl: wantsSSL ? { require: true, rejectUnauthorized: false } : undefined,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
 
 // Also set pg global defaults to ensure any ad-hoc Pool/Client honors SSL in this env
 if (wantsSSL) {
@@ -58,7 +55,7 @@ try {
   }
   const sslState = poolConfig.ssl ? (poolConfig.ssl.rejectUnauthorized === false ? 'enabled-no-verify' : 'enabled') : 'disabled';
   console.log(`DB init: usingUrl=${usingUrl} host=${host} ssl=${sslState}`);
-} catch (_) {}
+} catch (_) { }
 
 const pool = new Pool(poolConfig);
 

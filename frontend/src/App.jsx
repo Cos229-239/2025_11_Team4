@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { SocketProvider } from './context/SocketContext';
-import { UserAuthProvider } from './context/UserAuthContext';
-import { CartProvider } from './context/CartContext';
+import { SocketProvider } from './context/SocketProvider';
+import { UserAuthProvider } from './context/UserAuthProvider';
+import { CartProvider } from './context/CartProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
@@ -17,6 +17,7 @@ import RestaurantListPage from './pages/RestaurantListPage';
 import CartPage from './pages/CartPage';
 import PaymentPage from './pages/PaymentPage';
 import ConfirmationPage from './pages/ConfirmationPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import KitchenDashboard from './pages/KitchenDashboard';
 import AdminPanel from './pages/AdminPanel';
 import TableManagement from './pages/admin/TableManagement';
@@ -29,6 +30,9 @@ import MyReservations from './pages/MyReservations';
 import AdminSettings from './pages/AdminSettings';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import AboutPage from './pages/AboutPage';
 import UserProtectedRoute from './components/UserProtectedRoute';
 
@@ -62,6 +66,7 @@ function App() {
                   {/* Universal Order Flow */}
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/payment" element={<PaymentPage />} />
+                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/confirmation/:orderId" element={<ConfirmationPage />} />
                   <Route path="/order-status/:orderNumber" element={<OrderStatusPage />} />
                   <Route path="/reservation-confirmation" element={<ReservationConfirmationPage />} />
@@ -81,6 +86,9 @@ function App() {
                   {/* Auth */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/verify-email" element={<VerifyEmailPage />} />
 
                   {/* PROTECTED ADMIN ROUTES */}
                   <Route path="/admin" element={

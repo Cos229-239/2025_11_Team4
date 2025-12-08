@@ -21,7 +21,6 @@ const AdminPanel = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [restaurantId, setRestaurantId] = useState(1);
   const [todayReservations, setTodayReservations] = useState([]);
-  const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
@@ -41,10 +40,12 @@ const AdminPanel = () => {
           setRestaurants(data.data || []);
           if (data.data?.length && !restaurantId) setRestaurantId(data.data[0].id);
         }
-      } catch { }
+      } catch {
+        // ignore
+      }
     };
     loadRestaurants();
-  }, []);
+  }, [restaurantId]);
 
   const loadStats = async (rid) => {
     if (!rid) return;
@@ -68,9 +69,6 @@ const AdminPanel = () => {
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Failed to load reservations');
       setTodayReservations(data.data || []);
-      const tRes = await fetch(`${API_URL}/api/restaurants/${rid}/tables`);
-      const tData = await tRes.json();
-      if (tData.success) setTables(tData.data || []);
     } catch (e) {
       setErr(e.message || 'Failed to load reservations');
     } finally {

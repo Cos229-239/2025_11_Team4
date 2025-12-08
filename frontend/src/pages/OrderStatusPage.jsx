@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useSocket } from '../context/SocketContext';
+import { useSocket } from '../hooks/useSocket';
 import { ArrowLeftIcon, PlusCircleIcon, HomeIcon } from '@heroicons/react/24/outline';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -30,7 +30,7 @@ const OrderStatusPage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch order details
-  const fetchOrderStatus = async () => {
+  const fetchOrderStatus = useCallback(async () => {
     try {
       // Only show the full-page loader on the first load.
       setLoading((prev) => (order ? prev : true));
@@ -77,7 +77,7 @@ const OrderStatusPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [from, orderId, orderNumber, order]);
 
   // Initial fetch
   useEffect(() => {
@@ -87,7 +87,7 @@ const OrderStatusPage = () => {
       setLoading(false);
       setError('Missing order number in URL');
     }
-  }, [orderNumber]);
+  }, [orderNumber, fetchOrderStatus]);
 
   // Real-time updates via Socket.IO (full order + status fallback)
   useEffect(() => {
@@ -259,28 +259,23 @@ const OrderStatusPage = () => {
       ></div>
 
       {/* Header */}
-      <header className="bg-gradient-to-r from-brand-orange to-brand-orange/80 text-white shadow-xl">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleBack}
-              className="hover:bg-white/10 rounded-xl p-2 transition-all flex items-center gap-2"
-            >
-              <ArrowLeftIcon className="w-6 h-6" />
-              <span className="hidden sm:inline">
-                {from === 'qr-check' ? 'Back to Menu' : 'Back to Home'}
-              </span>
-            </button>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">Order Status</h1>
-              <p className="text-sm opacity-90">Order #{order.order_number || order.id}</p>
-            </div>
-            <div className="w-20"></div>
+      <div className="container mx-auto px-4 pt-24 pb-8 max-w-3xl relative z-10">
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={handleBack}
+            className="hover:bg-white/10 rounded-xl p-2 transition-all flex items-center gap-2 text-white"
+          >
+            <ArrowLeftIcon className="w-6 h-6" />
+            <span className="hidden sm:inline">
+              {from === 'qr-check' ? 'Back to Menu' : 'Back to Home'}
+            </span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white font-display">Order Status</h1>
+            <p className="text-white/60 text-sm">Order #{order.order_number || order.id}</p>
           </div>
+          <div className="w-20"></div>
         </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-3xl relative z-10">
         {/* Status Tracker */}
         <div className={`${statusInfo.bgColor} border-2 border-${statusInfo.color.replace('text-', '')} rounded-2xl p-6 sm:p-8 mb-6`}>
           <div className="text-center">
