@@ -537,7 +537,7 @@ const CartPage = () => {
         </div >
 
         {/* Cart Items */}
-        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-6 shadow-2xl" >
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <div className="p-2 border-b border-white/10 mb-4">
             <h2 className="text-xl font-bold text-white drop-shadow-md">
               Cart Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
@@ -642,7 +642,7 @@ const CartPage = () => {
         </div >
 
         {/* Special Instructions for Order */}
-        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 mb-6" >
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <label className="block text-sm font-bold text-white mb-3 drop-shadow-sm">
             Special Instructions (Optional)
           </label>
@@ -720,7 +720,7 @@ const CartPage = () => {
         }
 
         {/* Order Summary - Desktop */}
-        <div className="hidden md:block bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8">
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <h2 className="text-xl font-bold text-white mb-6 drop-shadow-md">Order Summary</h2>
 
           <div className="space-y-4 mb-8">
