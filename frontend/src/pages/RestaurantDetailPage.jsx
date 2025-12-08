@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
+import SakuraImg from '../assets/sakurarestaurant.jpeg';
+import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const RestaurantDetailPage = () => {
@@ -42,6 +46,15 @@ const RestaurantDetailPage = () => {
   if (!restaurant) {
     return <div className="min-h-screen bg-dark-bg flex items-center justify-center text-text-secondary">Not found</div>;
   }
+// Select proper image for this restaurant
+const restaurantImage =
+  restaurant.name === 'OrderEasy Restaurant'
+    ? OrderEasyImg
+    : restaurant.name === 'Sakura Sushi Bar'
+    ? SakuraImg
+    : restaurant.name === 'Bella Italia'
+    ? BellaItaliaImg
+    : null;
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-20">
@@ -79,14 +92,16 @@ const RestaurantDetailPage = () => {
           <span className="text-text-secondary text-sm uppercase tracking-wider font-bold">Back to List</span>
         </div>
 
-        <div className="bg-dark-card/80 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden shadow-2xl">
+        <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 overflow-hidden shadow-xl">
+
           {/* Hero Image with Text Overlay */}
           <div className="relative">
-            {restaurant.image_url ? (
-              <img src={restaurant.image_url} alt={restaurant.name} className="w-full h-60 object-cover" />
-            ) : (
-              <div className="w-full h-60 bg-dark-surface" />
-            )}
+           <img
+            src={restaurantImage}
+            alt={restaurant.name}
+            className="w-full h-60 object-cover object-center"
+          />
+
 
             {/* Dark gradient overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
@@ -157,10 +172,21 @@ const RestaurantDetailPage = () => {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {menuPreview.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-dark-surface/85 backdrop-blur-lg border border-white/10 rounded-2xl p-4 hover:border-brand-orange/40 hover:bg-dark-surface/90 transition-all"
-                    >
+                   <div
+                    key={item.id}
+                    className="
+                      bg-white/10
+                      backdrop-blur-xl
+                      border border-white/20
+                      rounded-2xl
+                      p-4
+                      shadow-sm shadow-black/30
+                      hover:bg-white/15
+                      hover:border-brand-lime/40
+                      transition-all
+                    "
+                  >
+
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-text-primary">{item.name}</h3>
                         <span className="text-brand-lime font-bold text-lg">${Number(item.price).toFixed(2)}</span>

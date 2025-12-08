@@ -347,12 +347,14 @@ const RestaurantListPage = () => {
                 "
               >
                 {/* Image Section */}
-                <div className="bg-dark-surface h-48 flex items-center justify-center relative overflow-hidden">
+                <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
                   <img
         src={restaurant.image}
         alt={restaurant.name}
         className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
       />
+
+<div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
 
 
 
