@@ -10,6 +10,11 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
 
+import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
+import SakuraImg from '../assets/sakurarestaurant.jpeg';
+import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
+
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 
@@ -81,7 +86,15 @@ const RestaurantListPage = () => {
       rating: Number(r.rating || 0).toFixed(1),
       deliveryTime: '',
       distance: typeof r.distance_km === 'number' ? `${Number(r.distance_km).toFixed(1)} km` : '',
-      image: '',
+      image:
+  r.name === 'OrderEasy Restaurant'
+    ? OrderEasyImg
+    : r.name === 'Sakura Sushi Bar'
+    ? SakuraImg
+    : r.name === 'Bella Italia'
+    ? BellaItaliaImg
+    : '',
+
       source: 'api',
       priceRange: '$$'
     }));
@@ -335,9 +348,13 @@ const RestaurantListPage = () => {
               >
                 {/* Image Section */}
                 <div className="bg-dark-surface h-48 flex items-center justify-center relative overflow-hidden">
-                  <span className="text-8xl transform group-hover:scale-110 transition-transform duration-300">
-                    {restaurant.image}
-                  </span>
+                  <img
+        src={restaurant.image}
+        alt={restaurant.name}
+        className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
+      />
+
+
 
                   {/* Distance badge (when Near Me filter used) */}
                   {restaurant.distance && (
