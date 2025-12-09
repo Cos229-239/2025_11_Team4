@@ -20,7 +20,73 @@ const createReservationSchema = z.object({
     special_requests: z.string().optional().nullable()
 });
 
+const createOrderSchema = z.object({
+    restaurant_id: z.coerce.number().int().positive('Restaurant ID is required'),
+    table_id: z.coerce.number().int().positive().optional().nullable(),
+    items: z.array(z.object({
+        menu_item_id: z.coerce.number().int().positive(),
+        quantity: z.coerce.number().int().min(1),
+        special_instructions: z.string().optional()
+    })).min(1, 'At least one item is required'),
+    order_type: z.enum(['dine-in', 'pre-order', 'walk-in', 'takeout']).default('dine-in'),
+    customer_notes: z.string().optional(),
+    scheduled_for: z.string().datetime({ offset: false }).optional().nullable(),
+    reservation_id: z.coerce.number().int().positive().optional().nullable(),
+    payment_status: z.enum(['pending', 'completed', 'failed']).optional(),
+    payment_method: z.string().optional(),
+    payment_intent_id: z.string().optional(),
+    payment_amount: z.coerce.number().nonnegative().optional(),
+    tip_amount: z.coerce.number().nonnegative().optional()
+});
+
+const createMenuItemSchema = z.object({
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    price: z.coerce.number().positive('Price must be positive'),
+    category: z.string().min(1, 'Category is required'),
+    category_id: z.coerce.number().int().positive().optional().nullable(),
+    image_url: z.string().url().optional().nullable().or(z.literal('')),
+    available: z.boolean().optional().default(true),
+    restaurant_id: z.coerce.number().int().positive('Restaurant ID is required'),
+    // Enhanced fields
+    dietary_tags: z.array(z.string()).optional().default([]),
+    allergens: z.array(z.string()).optional().default([]),
+    calories: z.coerce.number().int().nonnegative().optional().nullable(),
+    prep_time_minutes: z.coerce.number().int().nonnegative().optional().nullable(),
+    spice_level: z.coerce.number().int().min(0).max(5).optional().nullable(),
+    is_featured: z.boolean().optional().default(false),
+    is_new: z.boolean().optional().default(false),
+    sort_order: z.coerce.number().int().optional().default(0),
+    modifier_group_ids: z.array(z.coerce.number().int().positive()).optional()
+});
+
+const createTableSchema = z.object({
+    table_number: z.coerce.number().int(),
+    capacity: z.coerce.number().int().min(1, 'Capacity must be at least 1'),
+    status: z.enum(['available', 'occupied', 'reserved', 'unavailable', 'out-of-service']).optional().default('available'),
+    restaurant_id: z.coerce.number().int().positive('Restaurant ID is required')
+});
+
+const updateRestaurantSchema = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    cuisine_type: z.string().optional(),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().email().optional(),
+    opening_hours: z.any().optional(),
+    status: z.enum(['active', 'inactive', 'closed', 'archived']).optional(),
+    latitude: z.coerce.number().optional(),
+    longitude: z.coerce.number().optional(),
+    logo_url: z.string().optional().nullable(),
+    cover_image_url: z.string().optional().nullable()
+});
+
 module.exports = {
     createEmployeeSchema,
-    createReservationSchema
+    createReservationSchema,
+    createOrderSchema,
+    createMenuItemSchema,
+    createTableSchema,
+    updateRestaurantSchema
 };

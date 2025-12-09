@@ -81,6 +81,20 @@ class AdminController {
         }
     }
 
+    async deleteRestaurant(req, res) {
+        try {
+            const { id } = req.params;
+            const deleted = await adminService.deleteRestaurant(id);
+            if (!deleted) {
+                return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            }
+            res.json({ success: true, message: 'Restaurant deleted' });
+        } catch (error) {
+            logger.error('Error deleting restaurant', { error });
+            res.status(500).json({ success: false, message: 'Failed to delete restaurant' });
+        }
+    }
+
     // Settings
     async getSettings(req, res) {
         try {

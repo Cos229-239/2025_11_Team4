@@ -1,21 +1,30 @@
 const db = require('../config/database');
 
 // Get all menu items with optional category filter (uses menu_items.category)
-const getAllMenuItems = async (category = null) => {
+const getAllMenuItems = async (category = null, restaurantId = null) => {
   try {
     let query = `
-      SELECT mi.*
+      SELECT mi.*,
+        COALESCE(mi.dietary_tags, '{}') as dietary_tags,
+        COALESCE(mi.allergens, '{}') as allergens
       FROM menu_items mi
       WHERE 1=1
     `;
     const params = [];
+    let paramCount = 1;
+
+    if (restaurantId) {
+      query += ` AND mi.restaurant_id = $${paramCount}`;
+      params.push(restaurantId);
+      paramCount++;
+    }
 
     if (category) {
-      query += ' AND mi.category = $1';
+      query += ` AND mi.category = $${paramCount}`;
       params.push(category);
     }
 
-    query += ' ORDER BY mi.category, mi.name';
+    query += ' ORDER BY mi.sort_order, mi.category, mi.name';
 
     const result = await db.query(query, params);
     return result.rows;
@@ -49,16 +58,40 @@ const getAllCategories = async () => {
   }
 };
 
-// Create new menu item
+// Create new menu item with enhanced fields
 const createMenuItem = async (menuItem) => {
   try {
-    const { name, description, price, category, image_url, available, restaurant_id } = menuItem;
+    const {
+      name, description, price, category, image_url, available, restaurant_id,
+      dietary_tags, allergens, calories, prep_time_minutes, spice_level,
+      is_featured, is_new, sort_order
+    } = menuItem;
 
     const result = await db.query(
-      `INSERT INTO menu_items (restaurant_id, name, description, price, category, image_url, available, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      `INSERT INTO menu_items (
+        restaurant_id, name, description, price, category, image_url, available,
+        dietary_tags, allergens, calories, prep_time_minutes, spice_level,
+        is_featured, is_new, sort_order, created_at, updated_at
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
        RETURNING *`,
-      [restaurant_id || null, name, description, price, category, image_url || null, available !== undefined ? available : true]
+      [
+        restaurant_id || null,
+        name,
+        description,
+        price,
+        category,
+        image_url || null,
+        available !== undefined ? available : true,
+        dietary_tags || [],
+        allergens || [],
+        calories || null,
+        prep_time_minutes || null,
+        spice_level || null,
+        is_featured || false,
+        is_new || false,
+        sort_order || 0
+      ]
     );
 
     return result.rows[0];

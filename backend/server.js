@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 const { validateEnv } = require('./utils/env.validation');
 validateEnv();
+const logger = require('./utils/logger');
 const { authenticateToken, requireRole } = require('./middleware/auth.middleware');
 
 
@@ -50,13 +51,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files statically
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 // Rate limiting
 const { apiLimiter, authLimiter, orderLimiter, adminLimiter } = require('./middleware/rateLimiter');
 app.use('/api/', apiLimiter); // Apply general rate limiting to all API routes
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  logger.info(`${req.method} ${req.path}`);
   next();
 });
 
@@ -86,7 +92,7 @@ app.get('/health', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed:', error);
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -166,21 +172,21 @@ const startServer = (port) => {
   setupOrderSocket(io);
 
   server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    logger.info(`Server running on port ${port}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 
     // Start background jobs after server is ready
-    console.log('Starting background jobs...');
+    logger.info('Starting background jobs...');
     cleanupJob.start();
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${port} is already in use, trying ${port + 1}...`);
+      logger.info(`Port ${port} is already in use, trying ${port + 1}...`);
       const next = port + 1;
       // Try next port with a fresh server instance
       startServer(next);
     } else {
-      console.error('Server error:', err);
+      logger.error('Server error:', err);
       process.exit(1);
     }
   });
@@ -190,13 +196,13 @@ startServer(currentPort);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server gracefully...');
+  logger.info('SIGTERM received, closing server gracefully...');
 
   // Stop background jobs
   cleanupJob.stop();
 
   server.close(() => {
-    console.log('Server closed');
+    logger.info('Server closed');
     process.exit(0);
   });
 });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Clock } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 import { useUserAuth } from '../../../hooks/useUserAuth';
 
 const SettingsSection = ({ restaurantId }) => {
@@ -39,8 +40,8 @@ const SettingsSection = ({ restaurantId }) => {
                 body: JSON.stringify({ ...settings, restaurant_id: restaurantId })
             });
             const data = await res.json();
-            if (data.success) alert("Settings saved successfully");
-            else alert(data.message);
+            if (data.success) showToast.success("Settings saved successfully");
+            else showToast.error(data.message);
         } catch (err) { console.error(err); }
         finally { setSaving(false); }
     };

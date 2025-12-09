@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Search, Filter, CheckCircle, XCircle } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 import { useUserAuth } from '../../../hooks/useUserAuth';
 
 const ReservationsSection = ({ restaurantId }) => {
@@ -47,8 +48,10 @@ const ReservationsSection = ({ restaurantId }) => {
                 body: JSON.stringify({ status: newStatus })
             });
             const data = await res.json();
-            if (data.success) fetchReservations();
-            else alert(data.message);
+            if (data.success) {
+                showToast.success('Reservation status updated');
+                fetchReservations();
+            } else showToast.error(data.message);
         } catch (err) { console.error(err); }
     };
 

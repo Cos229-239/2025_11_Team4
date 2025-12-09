@@ -1,5 +1,6 @@
 const UserDTO = require('../dtos/user.dto');
 const UserModel = require('../models/user.model');
+const logger = require('../utils/logger');
 // ... imports
 
 // ...
@@ -22,7 +23,7 @@ exports.signup = async (req, res) => {
         // ... verify logic ...
         const verificationToken = crypto.randomBytes(32).toString('hex');
         await UserModel.setVerificationToken(user.id, verificationToken);
-        console.log(`[MOCK EMAIL] Verification link: http://localhost:5173/verify-email?token=${verificationToken}&id=${user.id}`);
+        logger.info(`[MOCK EMAIL] Verification link: http://localhost:5173/verify-email?token=${verificationToken}\u0026id=${user.id}`);
 
         const token = signToken(user);
         res.status(201).json({ success: true, token, user: new UserDTO(user) });
@@ -86,7 +87,7 @@ exports.forgotPassword = async (req, res) => {
 
         await UserModel.setResetToken(email, resetToken, expires);
 
-        console.log(`[MOCK EMAIL] Reset link: http://localhost:5173/reset-password?token=${resetToken}&email=${email}`);
+        logger.info(`[MOCK EMAIL] Reset link: http://localhost:5173/reset-password?token=${resetToken}\u0026email=${email}`);
 
         res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
     } catch (error) {

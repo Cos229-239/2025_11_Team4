@@ -6,23 +6,6 @@ const ConfirmModal = () => {
     const { confirmModal, closeConfirm } = useUIStore();
     const { isOpen, title, message, options } = confirmModal;
 
-    if (!isOpen) return null;
-
-    const variant = options.variant || 'danger'; // 'danger' | 'info' | 'warning'
-    const confirmText = options.confirmText || 'Confirm';
-    const cancelText = options.cancelText || 'Cancel';
-
-    const getIcon = () => {
-        if (variant === 'danger' || variant === 'warning') return <AlertTriangle size={24} className={variant === 'danger' ? "text-red-500" : "text-yellow-500"} />;
-        return <Info size={24} className="text-blue-500" />;
-    };
-
-    const getButtonStyles = () => {
-        if (variant === 'danger') return "bg-red-500 hover:bg-red-600 text-white";
-        if (variant === 'warning') return "bg-yellow-500 hover:bg-yellow-600 text-black";
-        return "bg-brand-lime hover:bg-opacity-90 text-black";
-    };
-
     // Focus management
     const cancelRef = React.useRef(null);
     const confirmRef = React.useRef(null);
@@ -47,6 +30,23 @@ const ConfirmModal = () => {
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, [isOpen, closeConfirm]);
+
+    if (!isOpen) return null;
+
+    const variant = options.variant || 'danger'; // 'danger' | 'info' | 'warning'
+    const confirmText = options.confirmText || 'Confirm';
+    const cancelText = options.cancelText || 'Cancel';
+
+    const getIcon = () => {
+        if (variant === 'danger' || variant === 'warning') return <AlertTriangle size={24} className={variant === 'danger' ? "text-red-500" : "text-yellow-500"} />;
+        return <Info size={24} className="text-blue-500" />;
+    };
+
+    const getButtonStyles = () => {
+        if (variant === 'danger') return "bg-red-500 hover:bg-red-600 text-white";
+        if (variant === 'warning') return "bg-yellow-500 hover:bg-yellow-600 text-black";
+        return "bg-brand-lime hover:bg-opacity-90 text-black";
+    };
 
     return (
         <div

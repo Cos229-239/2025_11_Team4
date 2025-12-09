@@ -86,7 +86,7 @@ class AdminService {
     }
 
     async updateRestaurant(id, data) {
-        const { name, description, cuisine_type, address, phone, email, opening_hours } = data;
+        const { name, description, cuisine_type, address, phone, email, opening_hours, status, latitude, longitude, logo_url, cover_image_url } = data;
 
         const result = await pool.query(
             `UPDATE restaurants 
@@ -97,10 +97,15 @@ class AdminService {
                  phone = COALESCE($5, phone),
                  email = COALESCE($6, email),
                  opening_hours = COALESCE($7, opening_hours),
+                 status = COALESCE($8, status),
+                 latitude = COALESCE($9, latitude),
+                 longitude = COALESCE($10, longitude),
+                 logo_url = COALESCE($11, logo_url),
+                 cover_image_url = COALESCE($12, cover_image_url),
                  updated_at = NOW()
-             WHERE id = $8
+             WHERE id = $13
              RETURNING *`,
-            [name, description, cuisine_type, address, phone, email, opening_hours, id]
+            [name, description, cuisine_type, address, phone, email, opening_hours, status, latitude, longitude, data.logo_url, data.cover_image_url, id]
         );
 
         return result.rows[0];
@@ -114,6 +119,11 @@ class AdminService {
             [name, description, cuisine_type, address, phone, email]
         );
         return result.rows[0];
+    }
+
+    async deleteRestaurant(id) {
+        const result = await pool.query('DELETE FROM restaurants WHERE id = $1 RETURNING id', [id]);
+        return result.rows.length > 0;
     }
 
     // ========================

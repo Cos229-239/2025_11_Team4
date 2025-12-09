@@ -58,8 +58,13 @@ router.get('/', menuController.getAllMenuItems);
 // GET /api/menu/:id - Get single menu item by ID
 router.get('/:id', menuController.getMenuItemById);
 
+const { validate } = require('../middleware/validation.middleware');
+const { createMenuItemSchema } = require('../utils/validationSchemas');
+
+// ...
+
 // POST /api/menu - Create new menu item
-router.post('/', menuController.createMenuItem);
+router.post('/', validate(createMenuItemSchema), menuController.createMenuItem);
 
 // PUT /api/menu/:id - Update menu item
 router.put('/:id', menuController.updateMenuItem);

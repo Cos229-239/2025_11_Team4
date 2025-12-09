@@ -48,7 +48,12 @@ router.get('/:id', tableController.getTableById);
  * @access  Public (should be protected in production)
  * @body    {table_number: number, capacity: number, status: string}
  */
-router.post('/', tableController.createTable);
+const { validate } = require('../middleware/validation.middleware');
+const { createTableSchema } = require('../utils/validationSchemas');
+
+// ...
+
+router.post('/', validate(createTableSchema), tableController.createTable);
 
 /**
  * @route   PATCH /api/tables/:id

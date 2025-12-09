@@ -15,6 +15,8 @@ const restaurantRoutes = require('../restaurant.routes');
 const userRoutes = require('../user.routes');
 const paymentRoutes = require('../payment.routes');
 const settingsRoutes = require('../settings.routes');
+const uploadRoutes = require('../upload.routes');
+const modifierRoutes = require('../modifier.routes');
 
 // Mount Routes
 router.use('/auth', authLimiter, authRoutes);
@@ -22,10 +24,13 @@ router.use('/reservations', reservationRoutes);
 router.use('/admin', adminLimiter, adminRoutes);
 router.use('/orders', orderLimiter, orderRoutes);
 router.use('/menu', menuRoutes);
+router.use('/menu-items', menuRoutes); // Alias for backward compatibility
 router.use('/tables', tableRoutes);
 router.use('/restaurants', restaurantRoutes);
 router.use('/users', userRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/upload', uploadRoutes);
+router.use('/modifiers', modifierRoutes);
 
 // Protected Nested Admin Routes (Settings)
 // In server.js this was mounted as /api/admin/settings

@@ -18,11 +18,24 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address TEXT,
   phone VARCHAR(50),
   email VARCHAR(100),
+  logo_url TEXT,
+  cover_image_url TEXT,
+  website_url TEXT,
+  social_media JSONB DEFAULT '{}',
   rating DECIMAL(3, 1) DEFAULT 0,
   status VARCHAR(20) DEFAULT 'active',
   opening_hours JSONB,
   latitude DECIMAL(10, 8),
   longitude DECIMAL(11, 8),
+  service_types TEXT[] DEFAULT '{dine-in}',
+  accepts_reservations BOOLEAN DEFAULT true,
+  accepts_online_orders BOOLEAN DEFAULT true,
+  delivery_radius_km DECIMAL(5, 2),
+  minimum_order_amount DECIMAL(10, 2),
+  delivery_fee DECIMAL(10, 2),
+  estimated_prep_time_minutes INTEGER DEFAULT 30,
+  tax_rate DECIMAL(5, 4) DEFAULT 0.0875,
+  service_charge_percent DECIMAL(5, 2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -57,15 +70,119 @@ CREATE TABLE IF NOT EXISTS user_roles (
   PRIMARY KEY (user_id, role_id)
 );
 
+-- ============================================================================
+-- EMPLOYEE SHIFTS & SCHEDULING
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS employee_schedules (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  shift_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  role VARCHAR(50) DEFAULT 'server',
+  notes TEXT,
+  status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, completed, no-show, cancelled
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_employee_schedules_user ON employee_schedules(user_id);
+CREATE INDEX IF NOT EXISTS idx_employee_schedules_restaurant ON employee_schedules(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_employee_schedules_date ON employee_schedules(shift_date);
+
+-- Add employee fields to users (if not exists)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hourly_rate DECIMAL(10, 2);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hire_date DATE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contact TEXT;
+
+-- ============================================================================
+-- MENU CATEGORIES
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS menu_categories (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  available_from TIME,
+  available_until TIME,
+  available_days TEXT[] DEFAULT '{monday,tuesday,wednesday,thursday,friday,saturday,sunday}',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(restaurant_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_menu_categories_restaurant ON menu_categories(restaurant_id);
+
+-- ============================================================================
+-- MENU ITEM MODIFIERS / CONDIMENTS SYSTEM
+-- ============================================================================
+
+-- Modifier Groups
+CREATE TABLE IF NOT EXISTS modifier_groups (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  selection_type VARCHAR(20) DEFAULT 'single', -- 'single', 'multiple'
+  min_selections INTEGER DEFAULT 0,
+  max_selections INTEGER DEFAULT 1,
+  is_required BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(restaurant_id, name)
+);
+
+-- Modifiers/Options
+CREATE TABLE IF NOT EXISTS modifiers (
+  id SERIAL PRIMARY KEY,
+  group_id INTEGER REFERENCES modifier_groups(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  price_adjustment DECIMAL(10, 2) DEFAULT 0.00,
+  is_default BOOLEAN DEFAULT false,
+  is_available BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Link menu items to modifier groups
+CREATE TABLE IF NOT EXISTS menu_item_modifier_groups (
+  id SERIAL PRIMARY KEY,
+  menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
+  modifier_group_id INTEGER REFERENCES modifier_groups(id) ON DELETE CASCADE,
+  sort_order INTEGER DEFAULT 0,
+  UNIQUE(menu_item_id, modifier_group_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_modifier_groups_restaurant ON modifier_groups(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_modifiers_group ON modifiers(group_id);
+CREATE INDEX IF NOT EXISTS idx_menu_item_modifier_groups_item ON menu_item_modifier_groups(menu_item_id);
+CREATE INDEX IF NOT EXISTS idx_menu_item_modifier_groups_group ON menu_item_modifier_groups(modifier_group_id);
+
 CREATE TABLE IF NOT EXISTS menu_items (
   id SERIAL PRIMARY KEY,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  category_id INTEGER REFERENCES menu_categories(id) ON DELETE SET NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
   category VARCHAR(100) NOT NULL,
   image_url TEXT,
   available BOOLEAN DEFAULT true,
+  dietary_tags TEXT[] DEFAULT '{}',
+  allergens TEXT[] DEFAULT '{}',
+  calories INTEGER,
+  prep_time_minutes INTEGER,
+  spice_level INTEGER CHECK (spice_level >= 0 AND spice_level <= 5),
+  is_featured BOOLEAN DEFAULT false,
+  is_new BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(restaurant_id, name)
@@ -89,6 +206,13 @@ CREATE TABLE IF NOT EXISTS tables (
   restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   table_number INTEGER NOT NULL,
   capacity INTEGER NOT NULL,
+  section VARCHAR(50),
+  location_x INTEGER,
+  location_y INTEGER,
+  shape VARCHAR(20) DEFAULT 'square',
+  notes TEXT,
+  min_capacity INTEGER,
+  is_accessible BOOLEAN DEFAULT false,
   status VARCHAR(50) DEFAULT 'available',
   qr_code TEXT,
   created_at TIMESTAMP DEFAULT NOW(),

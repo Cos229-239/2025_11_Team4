@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireRole } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validation.middleware');
-// const { createEmployeeSchema } = require('../utils/validationSchemas'); // Keep if we want to add validation back later
+const { updateRestaurantSchema } = require('../utils/validationSchemas');
 const adminController = require('../controllers/admin.controller');
 
 // Middleware to ensure all routes in this file are protected
@@ -53,10 +53,13 @@ router.delete('/employees/:id', adminController.deleteEmployee);
 router.get('/my-restaurants', adminController.getMyRestaurants);
 
 // PUT /api/admin/restaurants/:id
-router.put('/restaurants/:id', adminController.updateRestaurant);
+router.put('/restaurants/:id', validate(updateRestaurantSchema), adminController.updateRestaurant);
 
 // POST /api/admin/restaurants
 router.post('/restaurants', adminController.createRestaurant);
+
+// DELETE /api/admin/restaurants/:id
+router.delete('/restaurants/:id', adminController.deleteRestaurant);
 
 // ==============================================================================
 // SETTINGS

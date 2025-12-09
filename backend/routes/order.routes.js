@@ -60,7 +60,12 @@ router.get('/payment-intent/:paymentIntentId', orderController.getOrderByPayment
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.post('/', orderController.createOrder);
+const { validate } = require('../middleware/validation.middleware');
+const { createOrderSchema } = require('../utils/validationSchemas');
+
+// ...
+
+router.post('/', validate(createOrderSchema), orderController.createOrder);
 
 // GET /api/orders - Get all orders
 router.get('/', orderController.getAllOrders);
