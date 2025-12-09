@@ -284,6 +284,8 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
 
+    const [error, setError] = useState(null);
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -291,13 +293,16 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
                 const data = await res.json();
                 if (data.success) {
                     setProfile({
-                        ...data.restaurant,
-                        service_types: data.restaurant.service_types || ['dine-in'],
-                        social_media: data.restaurant.social_media || {}
+                        ...data.data,
+                        service_types: data.data.service_types || ['dine-in'],
+                        social_media: data.data.social_media || {}
                     });
+                } else {
+                    setError(data.message || 'Restaurant not found API error');
                 }
             } catch (err) {
                 console.error(err);
+                setError(err.message || 'Network error');
             } finally {
                 setLoading(false);
             }
@@ -375,7 +380,13 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
     };
 
     if (loading) return <div>Loading...</div>;
-    if (!profile) return <div>Restaurant not found</div>;
+    if (!profile) return (
+        <div>
+            <h3 className="text-red-500 font-bold">Error Loading Restaurant</h3>
+            <p>ID: {restaurantId}</p>
+            <p className="text-sm text-zinc-400">Error: {error || 'Restaurant not found'}</p>
+        </div>
+    );
 
     return (
         <div className="max-w-5xl mx-auto">

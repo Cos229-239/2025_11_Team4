@@ -81,7 +81,12 @@ const getAllCategories = async (req, res) => {
 // Create new menu item
 const createMenuItem = async (req, res) => {
   try {
-    const { name, description, price, category, image_url, available, restaurant_id } = req.body;
+    const {
+      name, description, price, category, image_url, available, restaurant_id,
+      // Enhanced fields
+      dietary_tags, allergens, calories, prep_time_minutes, spice_level,
+      is_featured, is_new, sort_order, category_id
+    } = req.body;
 
     // Validation
     if (!name || !price || !category || !restaurant_id) {
@@ -103,9 +108,18 @@ const createMenuItem = async (req, res) => {
       description,
       price,
       category,
+      category_id,
       image_url,
       available,
-      restaurant_id
+      restaurant_id,
+      dietary_tags,
+      allergens,
+      calories,
+      prep_time_minutes,
+      spice_level,
+      is_featured,
+      is_new,
+      sort_order
     });
 
     res.status(201).json({

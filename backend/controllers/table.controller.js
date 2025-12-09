@@ -77,7 +77,10 @@ const getTableById = async (req, res) => {
  */
 const createTable = async (req, res) => {
   try {
-    const { table_number, capacity, status, restaurant_id } = req.body;
+    const {
+      table_number, capacity, min_capacity, status, restaurant_id,
+      section, shape, notes, is_accessible
+    } = req.body;
 
     // Validate required fields
     if (!table_number || typeof table_number !== 'number') {
@@ -102,6 +105,14 @@ const createTable = async (req, res) => {
       });
     }
 
+    // Validate min_capacity
+    if (min_capacity && (typeof min_capacity !== 'number' || min_capacity < 1)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid min_capacity: must be a positive number',
+      });
+    }
+
     // Validate status
     const validStatuses = ['available', 'occupied', 'reserved', 'unavailable'];
     if (status && !validStatuses.includes(status)) {
@@ -111,13 +122,27 @@ const createTable = async (req, res) => {
       });
     }
 
+    // Validate shape if provided
+    const validShapes = ['square', 'round', 'rectangle', 'booth'];
+    if (shape && !validShapes.includes(shape)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid shape: must be one of ${validShapes.join(', ')}`,
+      });
+    }
+
     // Create table first (without QR code)
     const tableData = {
       restaurant_id,
       table_number,
       capacity: capacity || 4,
+      min_capacity: min_capacity || 1,
       status: status || 'available',
       qr_code: null,
+      section: section || null,
+      shape: shape || 'square',
+      notes: notes || null,
+      is_accessible: is_accessible || false,
     };
 
     const newTable = await tableModel.createTable(tableData);

@@ -9,7 +9,9 @@ class AdminService {
 
     async listEmployees(restaurant_id) {
         let query = `
-      SELECT u.id, u.name, u.email, u.phone, u.role, u.on_duty, ur.restaurant_id
+      SELECT u.id, u.name, u.email, u.phone, u.role, u.on_duty,
+             u.position, u.hourly_rate, u.hire_date, u.emergency_contact,
+             ur.restaurant_id
       FROM users u
       LEFT JOIN user_restaurants ur ON u.id = ur.user_id
       WHERE u.role = 'employee'
@@ -28,26 +30,29 @@ class AdminService {
     }
 
     async updateEmployee(id, data) {
-        const { name, email, phone, on_duty } = data;
-
         const updates = [];
         const values = [];
         let idx = 1;
 
-        const allowedFields = ['name', 'email', 'phone', 'on_duty'];
+        // Extended allowed fields to include new employee properties
+        const allowedFields = ['name', 'email', 'phone', 'on_duty', 'position', 'hourly_rate', 'hire_date', 'emergency_contact'];
         allowedFields.forEach(field => {
             const val = data[field];
-            if (val !== undefined && val !== null) {
-                if (typeof val === 'string' && val === '') return;
-                updates.push(`${field} = $${idx++}`);
-                values.push(val);
+            if (val !== undefined) {
+                // Allow null values for optional fields
+                if (val === null || val === '') {
+                    updates.push(`${field} = NULL`);
+                } else {
+                    updates.push(`${field} = $${idx++}`);
+                    values.push(val);
+                }
             }
         });
 
         if (updates.length === 0) return null; // No changes
 
         values.push(id);
-        const query = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING id, name, on_duty`;
+        const query = `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`;
 
         const result = await pool.query(query, values);
         return result.rows[0];
@@ -86,10 +91,18 @@ class AdminService {
     }
 
     async updateRestaurant(id, data) {
-        const { name, description, cuisine_type, address, phone, email, opening_hours, status, latitude, longitude, logo_url, cover_image_url } = data;
+        const {
+            name, description, cuisine_type, address, phone, email,
+            opening_hours, status, latitude, longitude, logo_url, cover_image_url,
+            // New fields
+            service_types, accepts_reservations, accepts_online_orders,
+            delivery_radius_km, minimum_order_amount, delivery_fee,
+            estimated_prep_time_minutes, tax_rate, service_charge_percent,
+            website_url, social_media
+        } = data;
 
         const result = await pool.query(
-            `UPDATE restaurants 
+            `UPDATE restaurants
              SET name = COALESCE($1, name),
                  description = COALESCE($2, description),
                  cuisine_type = COALESCE($3, cuisine_type),
@@ -102,10 +115,28 @@ class AdminService {
                  longitude = COALESCE($10, longitude),
                  logo_url = COALESCE($11, logo_url),
                  cover_image_url = COALESCE($12, cover_image_url),
+                 service_types = COALESCE($13, service_types),
+                 accepts_reservations = COALESCE($14, accepts_reservations),
+                 accepts_online_orders = COALESCE($15, accepts_online_orders),
+                 delivery_radius_km = COALESCE($16, delivery_radius_km),
+                 minimum_order_amount = COALESCE($17, minimum_order_amount),
+                 delivery_fee = COALESCE($18, delivery_fee),
+                 estimated_prep_time_minutes = COALESCE($19, estimated_prep_time_minutes),
+                 tax_rate = COALESCE($20, tax_rate),
+                 service_charge_percent = COALESCE($21, service_charge_percent),
+                 website_url = COALESCE($22, website_url),
+                 social_media = COALESCE($23, social_media),
                  updated_at = NOW()
-             WHERE id = $13
+             WHERE id = $24
              RETURNING *`,
-            [name, description, cuisine_type, address, phone, email, opening_hours, status, latitude, longitude, data.logo_url, data.cover_image_url, id]
+            [
+                name, description, cuisine_type, address, phone, email,
+                opening_hours, status, latitude, longitude, logo_url, cover_image_url,
+                service_types, accepts_reservations, accepts_online_orders,
+                delivery_radius_km, minimum_order_amount, delivery_fee,
+                estimated_prep_time_minutes, tax_rate, service_charge_percent,
+                website_url, social_media, id
+            ]
         );
 
         return result.rows[0];

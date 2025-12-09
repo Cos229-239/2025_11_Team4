@@ -63,8 +63,13 @@ const createMenuItemSchema = z.object({
 const createTableSchema = z.object({
     table_number: z.coerce.number().int(),
     capacity: z.coerce.number().int().min(1, 'Capacity must be at least 1'),
+    min_capacity: z.coerce.number().int().min(1).optional().default(1),
     status: z.enum(['available', 'occupied', 'reserved', 'unavailable', 'out-of-service']).optional().default('available'),
-    restaurant_id: z.coerce.number().int().positive('Restaurant ID is required')
+    restaurant_id: z.coerce.number().int().positive('Restaurant ID is required'),
+    section: z.string().optional().nullable(),
+    shape: z.enum(['square', 'round', 'rectangle', 'booth']).optional().default('square'),
+    notes: z.string().optional().nullable(),
+    is_accessible: z.boolean().optional().default(false)
 });
 
 const updateRestaurantSchema = z.object({
@@ -79,7 +84,23 @@ const updateRestaurantSchema = z.object({
     latitude: z.coerce.number().optional(),
     longitude: z.coerce.number().optional(),
     logo_url: z.string().optional().nullable(),
-    cover_image_url: z.string().optional().nullable()
+    cover_image_url: z.string().optional().nullable(),
+    // Enhanced service fields
+    service_types: z.array(z.string()).optional(),
+    accepts_reservations: z.boolean().optional(),
+    accepts_online_orders: z.boolean().optional(),
+    delivery_radius_km: z.coerce.number().nonnegative().optional().nullable(),
+    minimum_order_amount: z.coerce.number().nonnegative().optional().nullable(),
+    delivery_fee: z.coerce.number().nonnegative().optional().nullable(),
+    estimated_prep_time_minutes: z.coerce.number().int().nonnegative().optional().nullable(),
+    tax_rate: z.coerce.number().min(0).max(100).optional().nullable(),
+    service_charge_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+    website_url: z.string().url().optional().nullable().or(z.literal('')),
+    social_media: z.object({
+        instagram: z.string().optional().nullable(),
+        facebook: z.string().optional().nullable(),
+        twitter: z.string().optional().nullable()
+    }).optional().nullable()
 });
 
 module.exports = {
