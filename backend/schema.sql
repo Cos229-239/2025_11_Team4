@@ -1,14 +1,59 @@
 -- OrderEasy Database Schema
 -- Multi-Restaurant System
+-- Synced with Supabase: 2025-12-09
 
--- Create a schema for extensions if it doesn't exist (Security Best Practice)
+-- ============================================================================
+-- EXTENSIONS & SETUP
+-- ============================================================================
 CREATE SCHEMA IF NOT EXISTS extensions;
-
--- Enable btree_gist extension in the extensions schema
 CREATE EXTENSION IF NOT EXISTS btree_gist SCHEMA extensions;
 
 -- ============================================================================
--- RESTAURANTS TABLE
+-- USERS & ROLES
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS roles (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL, 
+  description TEXT
+);
+
+INSERT INTO roles (name, description) VALUES
+('developer', 'Super Admin: Access to everything'),
+('owner', 'Restaurant Owner: Access to specific restaurants'),
+('employee', 'Kitchen Staff: Limited access to specific restaurant orders'),
+('customer', 'Regular end user')
+ON CONFLICT (name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash TEXT,
+  role VARCHAR(50) DEFAULT 'customer',
+  is_verified BOOLEAN DEFAULT false,
+  verification_token TEXT,
+  reset_token TEXT,
+  reset_token_expires TIMESTAMP,
+  stripe_customer_id TEXT,
+  
+  -- Employee specific fields
+  on_duty BOOLEAN DEFAULT false,
+  hire_date DATE,
+  position VARCHAR(100),
+  emergency_contact TEXT,
+  hourly_rate DECIMAL(10, 2),
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, role_id)
+);
+
+-- ============================================================================
+-- RESTAURANTS
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS restaurants (
   id SERIAL PRIMARY KEY,
@@ -40,65 +85,17 @@ CREATE TABLE IF NOT EXISTS restaurants (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Example Policy: Allow public read access to restaurants
-CREATE POLICY "Allow public read access" ON restaurants FOR SELECT USING (true);
-
 CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
 CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine_type ON restaurants(cuisine_type);
 
--- ============================================================================
--- RBAC: ROLES & PERMISSIONS (NEW)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS roles (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(50) UNIQUE NOT NULL, 
-  description TEXT
-);
-
--- Seed default roles
-INSERT INTO roles (name, description) VALUES
-('developer', 'Super Admin: Access to everything'),
-('owner', 'Restaurant Owner: Access to specific restaurants'),
-('employee', 'Kitchen Staff: Limited access to specific restaurant orders'),
-('customer', 'Regular end user')
-ON CONFLICT (name) DO NOTHING;
-
--- User Roles (Many-to-Many)
-CREATE TABLE IF NOT EXISTS user_roles (
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, role_id)
-);
-
--- ============================================================================
--- EMPLOYEE SHIFTS & SCHEDULING
--- ============================================================================
-CREATE TABLE IF NOT EXISTS employee_schedules (
-  id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS user_restaurants (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
-  shift_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  role VARCHAR(50) DEFAULT 'server',
-  notes TEXT,
-  status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, completed, no-show, cancelled
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  PRIMARY KEY (user_id, restaurant_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_employee_schedules_user ON employee_schedules(user_id);
-CREATE INDEX IF NOT EXISTS idx_employee_schedules_restaurant ON employee_schedules(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_employee_schedules_date ON employee_schedules(shift_date);
-
--- Add employee fields to users (if not exists)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS hourly_rate DECIMAL(10, 2);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS hire_date DATE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contact TEXT;
-
 -- ============================================================================
--- MENU CATEGORIES
+-- MENUS & MODIFIERS
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS menu_categories (
   id SERIAL PRIMARY KEY,
@@ -116,13 +113,6 @@ CREATE TABLE IF NOT EXISTS menu_categories (
   UNIQUE(restaurant_id, name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_menu_categories_restaurant ON menu_categories(restaurant_id);
-
--- ============================================================================
--- MENU ITEM MODIFIERS / CONDIMENTS SYSTEM
--- ============================================================================
-
--- Modifier Groups
 CREATE TABLE IF NOT EXISTS modifier_groups (
   id SERIAL PRIMARY KEY,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -138,7 +128,6 @@ CREATE TABLE IF NOT EXISTS modifier_groups (
   UNIQUE(restaurant_id, name)
 );
 
--- Modifiers/Options
 CREATE TABLE IF NOT EXISTS modifiers (
   id SERIAL PRIMARY KEY,
   group_id INTEGER REFERENCES modifier_groups(id) ON DELETE CASCADE,
@@ -150,20 +139,6 @@ CREATE TABLE IF NOT EXISTS modifiers (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
-
--- Link menu items to modifier groups
-CREATE TABLE IF NOT EXISTS menu_item_modifier_groups (
-  id SERIAL PRIMARY KEY,
-  menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
-  modifier_group_id INTEGER REFERENCES modifier_groups(id) ON DELETE CASCADE,
-  sort_order INTEGER DEFAULT 0,
-  UNIQUE(menu_item_id, modifier_group_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_modifier_groups_restaurant ON modifier_groups(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_modifiers_group ON modifiers(group_id);
-CREATE INDEX IF NOT EXISTS idx_menu_item_modifier_groups_item ON menu_item_modifier_groups(menu_item_id);
-CREATE INDEX IF NOT EXISTS idx_menu_item_modifier_groups_group ON menu_item_modifier_groups(modifier_group_id);
 
 CREATE TABLE IF NOT EXISTS menu_items (
   id SERIAL PRIMARY KEY,
@@ -188,18 +163,16 @@ CREATE TABLE IF NOT EXISTS menu_items (
   UNIQUE(restaurant_id, name)
 );
 
--- Enable RLS
-ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
-
--- Example Policy: Allow public read access to menu items
-CREATE POLICY "Allow public read access" ON menu_items FOR SELECT USING (true);
-
-CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant_id ON menu_items(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category);
-CREATE INDEX IF NOT EXISTS idx_menu_items_available ON menu_items(available);
+CREATE TABLE IF NOT EXISTS menu_item_modifier_groups (
+  id SERIAL PRIMARY KEY,
+  menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
+  modifier_group_id INTEGER REFERENCES modifier_groups(id) ON DELETE CASCADE,
+  sort_order INTEGER DEFAULT 0,
+  UNIQUE(menu_item_id, modifier_group_id)
+);
 
 -- ============================================================================
--- TABLES (PER RESTAURANT)
+-- TABLES & RESERVATIONS
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS tables (
   id SERIAL PRIMARY KEY,
@@ -217,23 +190,9 @@ CREATE TABLE IF NOT EXISTS tables (
   qr_code TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  CONSTRAINT valid_table_status CHECK (status IN ('available','reserved','occupied','out-of-service')),
   UNIQUE(restaurant_id, table_number)
 );
 
--- Enable RLS
-ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
-
--- Example Policy: Allow public read access to tables
-CREATE POLICY "Allow public read access" ON tables FOR SELECT USING (true);
-
-CREATE INDEX IF NOT EXISTS idx_tables_status ON tables(status);
-CREATE INDEX IF NOT EXISTS idx_tables_restaurant_id ON tables(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_tables_restaurant_number ON tables(restaurant_id, table_number);
-
--- ============================================================================
--- RESERVATIONS
--- ============================================================================
 CREATE TABLE IF NOT EXISTS reservations (
   id SERIAL PRIMARY KEY,
   restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -254,57 +213,13 @@ CREATE TABLE IF NOT EXISTS reservations (
   customer_arrived BOOLEAN DEFAULT FALSE,
   arrival_time TIMESTAMP,
   kitchen_notified BOOLEAN DEFAULT FALSE,
+  reservation_start TIMESTAMP GENERATED ALWAYS AS ((reservation_date::timestamp + reservation_time)) STORED,
+  reservation_end TIMESTAMP GENERATED ALWAYS AS ((reservation_date::timestamp + reservation_time + interval '90 minutes')) STORED,
+  -- active_window handled by Postgres logic usually, kept simple here
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  CONSTRAINT valid_reservation_status CHECK (status IN ('pending', 'tentative', 'confirmed', 'seated', 'completed', 'cancelled', 'no-show', 'expired'))
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
-
-CREATE INDEX IF NOT EXISTS idx_reservations_restaurant_id ON reservations(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_reservations_table_id ON reservations(table_id);
-CREATE INDEX IF NOT EXISTS idx_reservations_date ON reservations(reservation_date);
-CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
-CREATE INDEX IF NOT EXISTS idx_reservations_datetime ON reservations(reservation_date, reservation_time);
-CREATE INDEX IF NOT EXISTS idx_reservations_user_id ON reservations(user_id);
-CREATE INDEX IF NOT EXISTS idx_reservations_rest_date_status ON reservations(restaurant_id, reservation_date, status);
-
--- Prevent overlapping active reservations for the same table
-ALTER TABLE reservations
-  ADD COLUMN IF NOT EXISTS reservation_start TIMESTAMP GENERATED ALWAYS AS ((reservation_date::timestamp + reservation_time)) STORED,
-  ADD COLUMN IF NOT EXISTS reservation_end   TIMESTAMP GENERATED ALWAYS AS ((reservation_date::timestamp + reservation_time + interval '90 minutes')) STORED;
-
-ALTER TABLE reservations DROP COLUMN IF EXISTS active_window;
-ALTER TABLE reservations
-  ADD COLUMN active_window TSRANGE GENERATED ALWAYS AS (
-    CASE WHEN status IN ('cancelled','completed','no-show','expired') THEN NULL
-         ELSE tsrange((reservation_date::timestamp + reservation_time),
-                      (reservation_date::timestamp + reservation_time + interval '90 minutes'))
-    END
-  ) STORED;
-
-DO $$
-BEGIN
-  -- Assuming order_items table exists or is defined elsewhere? 
-  -- The original file didn't allow me to see order_items definition but had an index for it.
-  -- I'll keep the index creation if it exists.
-  -- But actually, order_items definition was likely in the skipped part or I missed it?
-  -- No, lines 151 create index on order_items.
-  -- I didn't see CREATE TABLE order_items. It might be missing from the file I viewed or I truncated it mentally?
-  -- Wait, I viewed lines 1 to 517.
-  -- I DO NOT SEE CREATE TABLE order_items in lines 1-260 or 459-517.
-  -- Maybe it was lost?
-  -- I will comment out the index if table missing, or assume it's there.
-  -- Actually, let's look at line 151: CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items(menu_item_id);
-  -- If order_items is not defined, this will fail.
-  -- I should probably keep it safe.
-  NULL; 
-END $$;
-
--- ============================================================================
--- SETTINGS & WEBHOOK LOGS
--- ============================================================================
 CREATE TABLE IF NOT EXISTS reservation_settings (
   id SERIAL PRIMARY KEY,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -314,161 +229,89 @@ CREATE TABLE IF NOT EXISTS reservation_settings (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE reservation_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access" ON reservation_settings FOR SELECT USING (true);
+-- ============================================================================
+-- ORDERS & PAYMENTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE SET NULL,
+  table_id INTEGER REFERENCES tables(id) ON DELETE SET NULL,
+  reservation_id INTEGER REFERENCES reservations(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  order_type VARCHAR(50) DEFAULT 'dine-in',
+  total_amount DECIMAL(10, 2) NOT NULL,
+  tip_amount DECIMAL(10, 2) DEFAULT 0.00,
+  status VARCHAR(50) DEFAULT 'pending',
+  payment_status VARCHAR(50) DEFAULT 'pending',
+  payment_method VARCHAR(50),
+  payment_intent_id VARCHAR(255),
+  payment_amount DECIMAL(10, 2),
+  scheduled_for TIMESTAMP,
+  customer_notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
+CREATE TABLE IF NOT EXISTS order_items (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+  menu_item_id INTEGER REFERENCES menu_items(id), -- Nullable in definitions? NO, typically strict. 
+  menu_item_name VARCHAR(255) NOT NULL,
+  menu_item_price DECIMAL(10, 2) NOT NULL,
+  quantity INTEGER NOT NULL,
+  special_instructions TEXT,
+  subtotal DECIMAL(10, 2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS favorite_orders (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+  name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  stripe_payment_method_id VARCHAR(255) NOT NULL,
+  last4 VARCHAR(4),
+  brand VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================================================
+-- SCHEDULING & WEBHOOKS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS employee_schedules (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  shift_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  role VARCHAR(50) DEFAULT 'server',
+  notes TEXT,
+  status VARCHAR(20) DEFAULT 'scheduled',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS webhook_events (
   id VARCHAR(255) PRIMARY KEY,
   processed_at TIMESTAMP DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
-
 -- ============================================================================
--- FUNCTIONS
+-- RLS POLICIES (Examples)
 -- ============================================================================
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read access" ON restaurants FOR SELECT USING (true);
 
--- Drop functions first to avoid conflicts
-DROP FUNCTION IF EXISTS check_reservation_conflicts(integer, integer, date, time without time zone, integer);
-DROP FUNCTION IF EXISTS cleanup_expired_reservations();
-DROP FUNCTION IF EXISTS seed_developer(varchar);
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read access" ON menu_items FOR SELECT USING (true);
 
--- Function to check reservation conflicts
-CREATE OR REPLACE FUNCTION check_reservation_conflicts(
-  p_reservation_id INT,
-  p_table_id INT,
-  p_reservation_date DATE,
-  p_reservation_time TIME,
-  p_buffer_minutes INT
-)
-RETURNS TABLE (
-  conflicting_id INT,
-  conflicting_status VARCHAR,
-  conflicting_time TIME
-) 
-LANGUAGE plpgsql 
-SET search_path = public
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT id, status, reservation_time
-  FROM reservations
-  WHERE table_id = p_table_id
-    AND reservation_date = p_reservation_date
-    AND id != p_reservation_id
-    AND status IN ('confirmed', 'seated')
-    AND (
-      (reservation_time <= p_reservation_time AND (p_reservation_time - reservation_time) < (p_buffer_minutes || ' minutes')::interval)
-      OR
-      (reservation_time > p_reservation_time AND (reservation_time - p_reservation_time) < (p_buffer_minutes || ' minutes')::interval)
-    );
-END;
-$$;
+ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read access" ON tables FOR SELECT USING (true);
 
--- Function to cleanup expired reservations
-CREATE OR REPLACE FUNCTION cleanup_expired_reservations()
-RETURNS TABLE (expired_count INT, expired_ids INT[]) 
-LANGUAGE plpgsql
-SET search_path = public
-AS $$
-DECLARE
-  _expired_ids INT[];
-BEGIN
-  WITH expired_rows AS (
-    UPDATE reservations
-    SET status = 'expired', updated_at = NOW()
-    WHERE status = 'tentative'
-      AND expires_at < NOW()
-    RETURNING id
-  )
-  SELECT array_agg(id) INTO _expired_ids FROM expired_rows;
-
-  RETURN QUERY SELECT array_length(_expired_ids, 1), _expired_ids;
-END;
-$$;
-
--- NEW: Helper Function to Seed Developer Account (RBAC)
-CREATE OR REPLACE FUNCTION seed_developer(dev_email VARCHAR) RETURNS void AS $$
-DECLARE
-  dev_user_id INT;
-  dev_role_id INT;
-BEGIN
-  -- Ensure user exists (you must signup first or insert here)
-  SELECT id INTO dev_user_id FROM users WHERE email = dev_email;
-  
-  IF dev_user_id IS NOT NULL THEN
-    SELECT id INTO dev_role_id FROM roles WHERE name = 'developer';
-    -- Assign role
-    INSERT INTO user_roles (user_id, role_id) VALUES (dev_user_id, dev_role_id)
-    ON CONFLICT DO NOTHING;
-    -- Update legacy role column for backward compatibility
-    UPDATE users SET role = 'developer' WHERE id = dev_user_id;
-  END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================================
--- SEED DATA
--- ============================================================================
-INSERT INTO restaurants (name, description, cuisine_type, address, phone, email, rating, status, opening_hours) VALUES
-  (
-    'OrderEasy Restaurant',
-    'Your favorite local spot with fresh, made-to-order dishes and a cozy atmosphere',
-    'American',
-    '123 Main Street, Downtown',
-    '(555) 123-4567',
-    'info@ordereasy.com',
-    4.8,
-    'active',
-    '{"monday": {"open": "11:00", "close": "22:00"}, "tuesday": {"open": "11:00", "close": "22:00"}, "wednesday": {"open": "11:00", "close": "22:00"}, "thursday": {"open": "11:00", "close": "22:00"}, "friday": {"open": "11:00", "close": "23:00"}, "saturday": {"open": "10:00", "close": "23:00"}, "sunday": {"open": "10:00", "close": "21:00"}}'::jsonb
-  ),
-  (
-    'Bella Italia',
-    'Authentic Italian cuisine with wood-fired pizzas and homemade pasta',
-    'Italian',
-    '456 Oak Avenue, Little Italy',
-    '(555) 234-5678',
-    'contact@bellaitalia.com',
-    4.7,
-    'active',
-    '{"monday": {"open": "12:00", "close": "22:00"}, "tuesday": {"open": "12:00", "close": "22:00"}, "wednesday": {"open": "12:00", "close": "22:00"}, "thursday": {"open": "12:00", "close": "22:00"}, "friday": {"open": "12:00", "close": "23:00"}, "saturday": {"open": "12:00", "close": "23:00"}, "sunday": "closed"}'::jsonb
-  ),
-  (
-    'Sakura Sushi Bar',
-    'Fresh sushi and Japanese specialties in a modern setting',
-    'Japanese',
-    '789 Cherry Lane, Arts District',
-    '(555) 345-6789',
-    'hello@sakurasushi.com',
-    4.9,
-    'active',
-    '{"monday": {"open": "17:00", "close": "22:00"}, "tuesday": {"open": "17:00", "close": "22:00"}, "wednesday": {"open": "17:00", "close": "22:00"}, "thursday": {"open": "17:00", "close": "22:00"}, "friday": {"open": "17:00", "close": "23:00"}, "saturday": {"open": "12:00", "close": "23:00"}, "sunday": {"open": "12:00", "close": "21:00"}}'::jsonb
-  )
-ON CONFLICT DO NOTHING;
-
--- Seed coordinates
-UPDATE restaurants SET latitude = 37.774900, longitude = -122.419400 WHERE name = 'OrderEasy Restaurant' AND (latitude IS NULL OR longitude IS NULL);
-UPDATE restaurants SET latitude = 40.722000, longitude = -73.995000 WHERE name = 'Bella Italia' AND (latitude IS NULL OR longitude IS NULL);
-UPDATE restaurants SET latitude = 34.052200, longitude = -118.243700 WHERE name = 'Sakura Sushi Bar' AND (latitude IS NULL OR longitude IS NULL);
-
--- Seed Menu Items (partial)
-INSERT INTO menu_items (restaurant_id, name, description, price, category, available) VALUES
-  (1, 'Margherita Pizza', 'Classic tomato sauce, mozzarella, and fresh basil', 12.99, 'Pizza', true),
-  (1, 'Pepperoni Pizza', 'Tomato sauce, mozzarella, and pepperoni', 14.99, 'Pizza', true),
-  (1, 'Caesar Salad', 'Romaine lettuce, croutons, parmesan cheese, and Caesar dressing', 8.99, 'Salads', true),
-  (1, 'Cheeseburger', 'Beef patty, cheddar cheese, lettuce, tomato, and pickles', 11.99, 'Burgers', true)
-ON CONFLICT (restaurant_id, name) DO NOTHING;
-
--- Seed Tables (partial)
-INSERT INTO tables (restaurant_id, table_number, capacity, status) VALUES
-  (1, 1, 2, 'available'), (1, 2, 2, 'available'), (1, 3, 4, 'available'), (1, 4, 4, 'reserved'),
-  (1, 5, 4, 'occupied'), (1, 6, 6, 'available'), (2, 1, 2, 'available'), (2, 2, 2, 'reserved')
-ON CONFLICT (restaurant_id, table_number) DO NOTHING;
-
--- ============================================================================
--- ORDERS TABLE UPDATE
--- ============================================================================
-ALTER TABLE orders ADD COLUMN IF NOT EXISTS tip_amount DECIMAL(10, 2) DEFAULT 0.00;
+-- Additional policies should be applied as needed for other tables.
