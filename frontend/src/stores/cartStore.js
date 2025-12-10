@@ -41,7 +41,7 @@ const useCartStore = create(
             }),
 
             addToCart: (item, quantity = 1, specialInstructions = '', context = null) => {
-                const { cart, orderContext, clearCart, setOrderContext } = get();
+                const { cart, orderContext, setOrderContext } = get();
 
                 // Restaurant mismatch check
                 if (context && context.restaurantId && orderContext.restaurantId &&

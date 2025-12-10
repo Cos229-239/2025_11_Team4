@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const TipSelector = ({ subtotal, onTipChange }) => {
     const [selectedPercentage, setSelectedPercentage] = useState(null);
@@ -45,8 +45,8 @@ const TipSelector = ({ subtotal, onTipChange }) => {
                         type="button"
                         onClick={() => handlePercentageClick(percent)}
                         className={`py-2 px-1 rounded-lg text-sm font-medium transition-all ${selectedPercentage === percent
-                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                                : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
                             }`}
                     >
                         {percent}%
@@ -62,8 +62,8 @@ const TipSelector = ({ subtotal, onTipChange }) => {
                         onTipChange(0);
                     }}
                     className={`py-2 px-1 rounded-lg text-sm font-medium transition-all ${selectedPercentage === 'custom'
-                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
                         }`}
                 >
                     Custom

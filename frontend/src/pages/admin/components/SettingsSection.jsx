@@ -27,7 +27,7 @@ const SettingsSection = ({ restaurantId }) => {
             }
         };
         fetchSettings();
-    }, [restaurantId]);
+    }, [restaurantId, token]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

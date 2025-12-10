@@ -10,7 +10,7 @@ const OverviewSection = ({ restaurantId }) => {
         reservations: 0,
         activeTables: 0
     });
-    const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -39,8 +39,6 @@ const OverviewSection = ({ restaurantId }) => {
                 }
             } catch (err) {
                 console.error("Failed to load stats", err);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -48,19 +46,22 @@ const OverviewSection = ({ restaurantId }) => {
     }, [restaurantId, token]);
 
 
-    const StatCard = ({ title, value, icon: Icon, color, prefix = '' }) => (
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
-            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
-                <Icon size={64} />
+    const StatCard = ({ title, value, icon, color, prefix = '' }) => {
+        const Icon = icon;
+        return (
+            <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
+                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+                    <Icon size={64} />
+                </div>
+                <div>
+                    <p className="text-zinc-400 text-sm font-medium mb-1">{title}</p>
+                    <h3 className="text-3xl font-bold bg-white bg-clip-text text-transparent">
+                        {prefix}{typeof value === 'number' ? value.toLocaleString() : value}
+                    </h3>
+                </div>
             </div>
-            <div>
-                <p className="text-zinc-400 text-sm font-medium mb-1">{title}</p>
-                <h3 className="text-3xl font-bold bg-white bg-clip-text text-transparent">
-                    {prefix}{typeof value === 'number' ? value.toLocaleString() : value}
-                </h3>
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="space-y-8">

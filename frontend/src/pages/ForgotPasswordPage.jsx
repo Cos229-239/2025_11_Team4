@@ -27,7 +27,7 @@ const ForgotPasswordPage = () => {
             } else {
                 setError(data.message || 'Something went wrong');
             }
-        } catch (err) {
+        } catch {
             setError('Failed to connect to server');
         } finally {
             setLoading(false);
