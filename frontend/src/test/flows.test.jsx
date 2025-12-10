@@ -23,8 +23,7 @@ describe('Ordering Flow Integration Tests', () => {
       setTableId(null);
     });
 
-    // Reset sessionStorage mock to return null by default
-    sessionStorage.getItem.mockReturnValue(null);
+
   });
 
   describe('USE CASE 1: Dine-In Flow (QR Code Scan)', () => {
