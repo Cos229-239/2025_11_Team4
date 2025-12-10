@@ -80,6 +80,13 @@ class UserModel {
             [passwordHash, id]
         );
     }
+
+    static async findAllEmployees() {
+        const result = await pool.query(
+            "SELECT id, name, email, phone, role, on_duty FROM users WHERE role != 'customer' ORDER BY name ASC"
+        );
+        return result.rows;
+    }
 }
 
 module.exports = UserModel;

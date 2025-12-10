@@ -30,12 +30,12 @@ export const useSocketEvent = (eventName, callback) => {
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        console.log(`👂 Listening for socket event: ${eventName}`);
+        // console.log(`👂 Listening for socket event: ${eventName}`);
         socket.on(eventName, callback);
 
         // Cleanup
         return () => {
-            console.log(`🔇 Stopped listening for socket event: ${eventName}`);
+            // console.log(`🔇 Stopped listening for socket event: ${eventName}`);
             socket.off(eventName, callback);
         };
     }, [socket, isConnected, eventName, callback]);
@@ -56,7 +56,7 @@ export const useSocketEmit = () => {
             return false;
         }
 
-        console.log(`📤 Emitting socket event: ${eventName}`, data);
+        // console.log(`📤 Emitting socket event: ${eventName}`, data);
         socket.emit(eventName, data);
         return true;
     };

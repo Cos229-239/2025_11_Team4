@@ -12,6 +12,27 @@ const tableController = require('../controllers/table.controller');
  * @desc    Get all tables
  * @access  Public
  */
+/**
+ * @swagger
+ * tags:
+ *   name: Tables
+ *   description: Table management
+ */
+
+/**
+ * @swagger
+ * /tables:
+ *   get:
+ *     summary: Get all tables
+ *     tags: [Tables]
+ *     responses:
+ *       200:
+ *         description: List of tables
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ */
 router.get('/', tableController.getAllTables);
 
 /**
@@ -27,7 +48,12 @@ router.get('/:id', tableController.getTableById);
  * @access  Public (should be protected in production)
  * @body    {table_number: number, capacity: number, status: string}
  */
-router.post('/', tableController.createTable);
+const { validate } = require('../middleware/validation.middleware');
+const { createTableSchema } = require('../utils/validationSchemas');
+
+// ...
+
+router.post('/', validate(createTableSchema), tableController.createTable);
 
 /**
  * @route   PATCH /api/tables/:id

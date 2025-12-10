@@ -18,8 +18,54 @@ router.get('/user/:userId', orderController.getUserOrders);
 // GET /api/orders/payment-intent/:paymentIntentId - Get order by payment intent
 router.get('/payment-intent/:paymentIntentId', orderController.getOrderByPaymentIntent);
 
-// POST /api/orders - Create new order
-router.post('/', orderController.createOrder);
+/**
+ * @swagger
+ * tags:
+ *   name: Orders
+ *   description: Order management
+ */
+
+/**
+ * @swagger
+ * /orders:
+ *   post:
+ *     summary: Create a new order
+ *     tags: [Orders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - items
+ *               - total_amount
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
+ *               total_amount:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Order created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ */
+const { validate } = require('../middleware/validation.middleware');
+const { createOrderSchema } = require('../utils/validationSchemas');
+
+// ...
+
+router.post('/', validate(createOrderSchema), orderController.createOrder);
 
 // GET /api/orders - Get all orders
 router.get('/', orderController.getAllOrders);

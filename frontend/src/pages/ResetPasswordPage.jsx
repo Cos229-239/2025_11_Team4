@@ -39,7 +39,7 @@ const ResetPasswordPage = () => {
             } else {
                 setError(data.message || 'Failed to reset password');
             }
-        } catch (err) {
+        } catch {
             setError('Failed to connect to server');
         } finally {
             setLoading(false);

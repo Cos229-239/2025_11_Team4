@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { timeAgo, formatTime } from '../utils/timeAgo';
+import { useConfirm } from '../hooks/useConfirm';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -72,6 +73,7 @@ const STATUS_CONFIG = {
 const OrderCard = ({ order, onStatusUpdate }) => {
   const [timeDisplay, setTimeDisplay] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const { confirm } = useConfirm();
 
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   // Preparing timer hooks  
@@ -147,7 +149,7 @@ const OrderCard = ({ order, onStatusUpdate }) => {
   const handleCancel = async () => {
     if (order.status !== 'pending' || isUpdating) return;
 
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    if (!await confirm('Cancel Order', 'Are you sure you want to cancel this order?', { variant: 'danger', confirmText: 'Yes, Cancel' })) return;
 
     setIsUpdating(true);
 
@@ -305,6 +307,7 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           <button
             onClick={handleStatusUpdate}
             disabled={isUpdating}
+            aria-label={`Mark order #${order.id} as ${config.nextStatus}`}
             className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg relative overflow-hidden group/btn ${isUpdating
               ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
               : `${config.actionColor} text-white shadow-lg shadow-${config.textColor}/20 border border-white/10`
@@ -331,6 +334,7 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           <button
             onClick={handleCancel}
             disabled={isUpdating}
+            aria-label={`Cancel order #${order.id}`}
             className={`w-full py-3 rounded-xl font-bold text-red-400 border border-red-500/20 bg-red-500/5 transition-all ${isUpdating
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-300'

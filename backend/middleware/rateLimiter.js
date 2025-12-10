@@ -74,8 +74,20 @@ const orderLimiter = rateLimit({
   skip: (req) => req.method !== 'POST'
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: {
+    success: false,
+    error: 'Too many admin requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
-  orderLimiter
+  orderLimiter,
+  adminLimiter
 };

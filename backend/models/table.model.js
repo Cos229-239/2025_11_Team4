@@ -17,8 +17,13 @@ const getAllTables = async () => {
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
       FROM tables
@@ -46,8 +51,13 @@ const getTableById = async (id) => {
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
       FROM tables
@@ -67,23 +77,34 @@ const getTableById = async (id) => {
  * @param {number} tableNumber - Table number
  * @returns {Promise<Object|null>} Table object or null if not found
  */
-const getTableByNumber = async (tableNumber) => {
+const getTableByNumber = async (tableNumber, restaurantId = null) => {
   try {
-    const query = `
+    let query = `
       SELECT
         id,
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
       FROM tables
       WHERE table_number = $1
     `;
+    const params = [tableNumber];
 
-    const result = await db.pool.query(query, [tableNumber]);
+    if (restaurantId) {
+      query += ` AND restaurant_id = $2`;
+      params.push(restaurantId);
+    }
+
+    const result = await db.pool.query(query, params);
     return result.rows.length > 0 ? result.rows[0] : null;
   } catch (error) {
     console.error('Error in getTableByNumber:', error);
@@ -96,29 +117,40 @@ const getTableByNumber = async (tableNumber) => {
  * @param {Object} tableData - Table data
  * @param {number} tableData.table_number - Table number
  * @param {number} tableData.capacity - Table capacity
+ * @param {number} tableData.min_capacity - Minimum capacity
  * @param {string} tableData.status - Table status (default: 'available')
  * @param {string} tableData.qr_code - QR code data URL
+ * @param {string} tableData.section - Table section
+ * @param {string} tableData.shape - Table shape
+ * @param {string} tableData.notes - Notes about the table
+ * @param {boolean} tableData.is_accessible - Accessibility flag
  * @returns {Promise<Object>} Created table object
  */
 const createTable = async (tableData) => {
   try {
-    const { table_number, capacity, status, qr_code, restaurant_id } = tableData;
-
-    // Check if table number already exists for this restaurant
-    // Note: getTableByNumber needs to be updated to filter by restaurant_id too, 
-    // but for now we rely on the unique constraint in DB or update that function separately.
-    // Ideally: const existingTable = await getTableByNumber(table_number, restaurant_id);
+    const {
+      table_number, capacity, min_capacity, status, qr_code, restaurant_id,
+      section, shape, notes, is_accessible
+    } = tableData;
 
     const query = `
-      INSERT INTO tables (restaurant_id, table_number, capacity, status, qr_code, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO tables (
+        restaurant_id, table_number, capacity, min_capacity, status, qr_code,
+        section, shape, notes, is_accessible, created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
       RETURNING
         id,
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
     `;
@@ -126,9 +158,14 @@ const createTable = async (tableData) => {
     const values = [
       restaurant_id,
       table_number,
-      capacity || 4, // Default capacity
+      capacity || 4,
+      min_capacity || 1,
       status || 'available',
       qr_code || null,
+      section || null,
+      shape || 'square',
+      notes || null,
+      is_accessible !== undefined ? is_accessible : false,
     ];
 
     const result = await db.pool.query(query, values);
@@ -147,7 +184,10 @@ const createTable = async (tableData) => {
  */
 const updateTable = async (id, updates) => {
   try {
-    const allowedFields = ['table_number', 'capacity', 'status', 'qr_code'];
+    const allowedFields = [
+      'table_number', 'capacity', 'min_capacity', 'status', 'qr_code',
+      'section', 'shape', 'notes', 'is_accessible'
+    ];
     const fields = [];
     const values = [];
     let paramIndex = 1;
@@ -180,8 +220,13 @@ const updateTable = async (id, updates) => {
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
     `;
@@ -253,8 +298,13 @@ const updateTableStatus = async (id, status) => {
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
     `;
@@ -272,24 +322,36 @@ const updateTableStatus = async (id, status) => {
  * @param {string} status - Table status
  * @returns {Promise<Array>} Array of table objects
  */
-const getTablesByStatus = async (status) => {
+const getTablesByStatus = async (status, restaurantId = null) => {
   try {
-    const query = `
+    let query = `
       SELECT
         id,
         restaurant_id,
         table_number,
         capacity,
+        min_capacity,
         status,
         qr_code,
+        section,
+        shape,
+        notes,
+        is_accessible,
         created_at,
         updated_at
       FROM tables
       WHERE status = $1
-      ORDER BY table_number ASC
     `;
+    const params = [status];
 
-    const result = await db.pool.query(query, [status]);
+    if (restaurantId) {
+      query += ` AND restaurant_id = $2`;
+      params.push(restaurantId);
+    }
+
+    query += ` ORDER BY table_number ASC`;
+
+    const result = await db.pool.query(query, params);
     return result.rows;
   } catch (error) {
     console.error('Error in getTablesByStatus:', error);
