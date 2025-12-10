@@ -6,6 +6,9 @@ const http = require('http');
 
 const { Server } = require('socket.io');
 require('dotenv').config();
+const { validateEnv } = require('./utils/env.validation');
+validateEnv();
+const logger = require('./utils/logger');
 const { authenticateToken, requireRole } = require('./middleware/auth.middleware');
 
 
@@ -48,13 +51,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files statically
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 // Rate limiting
-const { apiLimiter, authLimiter, orderLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, authLimiter, orderLimiter, adminLimiter } = require('./middleware/rateLimiter');
 app.use('/api/', apiLimiter); // Apply general rate limiting to all API routes
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  logger.info(`${req.method} ${req.path}`);
   next();
 });
 
@@ -67,9 +75,34 @@ app.get('/', (req, res) => {
   });
 });
 
+const pool = require('./config/database');
+
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+app.get('/health', async (req, res) => {
+  try {
+    // Check database connection
+    await pool.query('SELECT 1');
+
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'connected',
+        server: 'running'
+      }
+    });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'disconnected',
+        server: 'running'
+      },
+      error: error.message
+    });
+  }
 });
 
 // Cleanup job monitoring endpoint
@@ -83,44 +116,22 @@ app.get('/api/admin/cleanup-stats', (req, res) => {
 });
 
 // API routes
-const menuRoutes = require('./routes/menu.routes');
-const orderRoutes = require('./routes/order.routes');
-const tableRoutes = require('./routes/table.routes');
-const restaurantRoutes = require('./routes/restaurant.routes');
-const reservationRoutes = require('./routes/reservation.routes');
+const v1Routes = require('./routes/v1');
 
-app.use('/api/v1/menu', menuRoutes);
-app.use('/api/menu', menuRoutes);
+// Mount V1
+app.use('/api/v1', v1Routes);
 
-app.use('/api/v1/orders', orderLimiter, orderRoutes);
-app.use('/api/orders', orderLimiter, orderRoutes);
+// Backward Compatibility / Default to V1
+app.use('/api', v1Routes);
 
-app.use('/api/v1/tables', tableRoutes);
-app.use('/api/tables', tableRoutes);
+// Swagger Documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
 
-app.use('/api/v1/restaurants', restaurantRoutes);
-app.use('/api/restaurants', restaurantRoutes);
-
-app.use('/api/v1/reservations', reservationRoutes);
-app.use('/api/reservations', reservationRoutes);
-
-const userRoutes = require('./routes/user.routes');
-app.use('/api/v1/users', userRoutes);
-app.use('/api/users', userRoutes);
-
-const authRoutes = require('./routes/auth.routes');
-app.use('/api/v1/auth', authLimiter, authRoutes);
-app.use('/api/auth', authLimiter, authRoutes);
-
-const paymentRoutes = require('./routes/payment.routes');
-app.use('/api/v1/payments', paymentRoutes);
-app.use('/api/payments', paymentRoutes);
-
-// Protect Admin Routes
-// Only Developer and Owner can access admin settings
-const settingsRoutes = require('./routes/settings.routes');
-app.use('/api/v1/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
-app.use('/api/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  explorer: true,
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css'
+}));
 
 // Socket.IO connection handling
 const { setupOrderSocket } = require('./sockets/order.socket');
@@ -161,21 +172,21 @@ const startServer = (port) => {
   setupOrderSocket(io);
 
   server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    logger.info(`Server running on port ${port}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 
     // Start background jobs after server is ready
-    console.log('Starting background jobs...');
+    logger.info('Starting background jobs...');
     cleanupJob.start();
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${port} is already in use, trying ${port + 1}...`);
+      logger.info(`Port ${port} is already in use, trying ${port + 1}...`);
       const next = port + 1;
       // Try next port with a fresh server instance
       startServer(next);
     } else {
-      console.error('Server error:', err);
+      logger.error('Server error:', err);
       process.exit(1);
     }
   });
@@ -185,13 +196,13 @@ startServer(currentPort);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server gracefully...');
+  logger.info('SIGTERM received, closing server gracefully...');
 
   // Stop background jobs
   cleanupJob.stop();
 
   server.close(() => {
-    console.log('Server closed');
+    logger.info('Server closed');
     process.exit(0);
   });
 });

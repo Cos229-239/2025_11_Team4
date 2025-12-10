@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { pool } = require('../config/database');
+const logger = require('../utils/logger');
 const jwtLib = require('jsonwebtoken');
 
 
@@ -102,7 +103,7 @@ exports.createPaymentIntent = async (req, res) => {
         });
     } catch (error) {
         try { await client.query('ROLLBACK'); } catch (_) { }
-        console.error('Error creating payment intent:', error);
+        logger.error('Error creating payment intent:', error);
         res.status(500).json({ success: false, error: error.message });
     } finally {
         client.release();
@@ -147,7 +148,7 @@ exports.confirmPayment = async (req, res) => {
             res.status(400).json(result);
         }
     } catch (error) {
-        console.error('Error confirming payment:', error);
+        logger.error('Error confirming payment:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -182,7 +183,7 @@ exports.refundPayment = async (req, res) => {
         res.json({ success: true, refund });
     } catch (error) {
         try { await client.query('ROLLBACK'); } catch (_) { }
-        console.error('Error processing refund:', error);
+        logger.error('Error processing refund:', error);
         res.status(500).json({ success: false, error: error.message });
     } finally {
         client.release();
@@ -204,7 +205,7 @@ exports.getPaymentIntent = async (req, res) => {
             data: paymentIntent
         });
     } catch (error) {
-        console.error('Error retrieving payment intent:', error);
+        logger.error('Error retrieving payment intent:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 };

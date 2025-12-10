@@ -4,7 +4,9 @@
  */
 
 const tableModel = require('../models/table.model');
+const logger = require('../utils/logger');
 const qrCodeUtil = require('../utils/qrcode.util');
+const TableDTO = require('../dtos/table.dto');
 
 /**
  * Get all tables
@@ -16,11 +18,11 @@ const getAllTables = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: tables,
+      data: tables.map(table => new TableDTO(table)),
       count: tables.length,
     });
   } catch (error) {
-    console.error('Error in getAllTables controller:', error);
+    logger.error('Error in getAllTables controller:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch tables',
@@ -56,10 +58,10 @@ const getTableById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: table,
+      data: new TableDTO(table),
     });
   } catch (error) {
-    console.error('Error in getTableById controller:', error);
+    logger.error('Error in getTableById controller:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch table',
@@ -75,7 +77,10 @@ const getTableById = async (req, res) => {
  */
 const createTable = async (req, res) => {
   try {
-    const { table_number, capacity, status, restaurant_id } = req.body;
+    const {
+      table_number, capacity, min_capacity, status, restaurant_id,
+      section, shape, notes, is_accessible
+    } = req.body;
 
     // Validate required fields
     if (!table_number || typeof table_number !== 'number') {
@@ -100,6 +105,14 @@ const createTable = async (req, res) => {
       });
     }
 
+    // Validate min_capacity
+    if (min_capacity && (typeof min_capacity !== 'number' || min_capacity < 1)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid min_capacity: must be a positive number',
+      });
+    }
+
     // Validate status
     const validStatuses = ['available', 'occupied', 'reserved', 'unavailable'];
     if (status && !validStatuses.includes(status)) {
@@ -109,17 +122,27 @@ const createTable = async (req, res) => {
       });
     }
 
-    // Check if table number already exists (should be scoped by restaurant, but simple check for now)
-    // const existingTable = await tableModel.getTableByNumber(table_number);
-    // if (existingTable) { ... }
+    // Validate shape if provided
+    const validShapes = ['square', 'round', 'rectangle', 'booth'];
+    if (shape && !validShapes.includes(shape)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid shape: must be one of ${validShapes.join(', ')}`,
+      });
+    }
 
     // Create table first (without QR code)
     const tableData = {
       restaurant_id,
       table_number,
       capacity: capacity || 4,
+      min_capacity: min_capacity || 1,
       status: status || 'available',
       qr_code: null,
+      section: section || null,
+      shape: shape || 'square',
+      notes: notes || null,
+      is_accessible: is_accessible || false,
     };
 
     const newTable = await tableModel.createTable(tableData);
@@ -139,22 +162,22 @@ const createTable = async (req, res) => {
 
       res.status(201).json({
         success: true,
-        data: updatedTable,
+        data: new TableDTO(updatedTable),
         message: 'Table created successfully with QR code',
       });
     } catch (qrError) {
-      console.error('Error generating QR code:', qrError);
+      logger.error('Error generating QR code:', qrError);
 
       // Return table even if QR generation fails
       res.status(201).json({
         success: true,
-        data: newTable,
+        data: new TableDTO(newTable),
         message: 'Table created successfully, but QR code generation failed',
         qr_error: qrError.message,
       });
     }
   } catch (error) {
-    console.error('Error in createTable controller:', error);
+    logger.error('Error in createTable controller:', error);
 
     // Handle unique constraint violation
     if (error.code === '23505') {
@@ -253,7 +276,7 @@ const updateTable = async (req, res) => {
         );
         updates.qr_code = newQRCode;
       } catch (qrError) {
-        console.error('Error regenerating QR code:', qrError);
+        logger.error('Error regeneratring QR code:', qrError);
         // Continue with update even if QR generation fails
       }
     }
@@ -263,11 +286,11 @@ const updateTable = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedTable,
+      data: new TableDTO(updatedTable),
       message: 'Table updated successfully',
     });
   } catch (error) {
-    console.error('Error in updateTable controller:', error);
+    logger.error('Error in updateTable controller:', error);
 
     // Handle unique constraint violation
     if (error.code === '23505') {
@@ -325,7 +348,7 @@ const deleteTable = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error in deleteTable controller:', error);
+    logger.error('Error in deleteTable controller:', error);
 
     // Check if error is about active orders
     if (error.message.includes('active order')) {
@@ -395,7 +418,7 @@ const getTableQRCode = async (req, res) => {
     );
     res.status(200).send(qrBuffer);
   } catch (error) {
-    console.error('Error in getTableQRCode controller:', error);
+    logger.error('Error in getTableQRCode controller:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate QR code',
@@ -439,11 +462,11 @@ const regenerateQRCode = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedTable,
+      data: new TableDTO(updatedTable),
       message: 'QR code regenerated successfully',
     });
   } catch (error) {
-    console.error('Error in regenerateQRCode controller:', error);
+    logger.error('Error in regenerateQRCode controller:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to regenerate QR code',

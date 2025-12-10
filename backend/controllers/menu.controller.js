@@ -1,4 +1,6 @@
 const menuModel = require('../models/menu.model');
+const logger = require('../utils/logger');
+const MenuDTO = require('../dtos/menu.dto');
 
 // Get all menu items with optional category filter
 const getAllMenuItems = async (req, res) => {
@@ -8,11 +10,11 @@ const getAllMenuItems = async (req, res) => {
 
     res.json({
       success: true,
-      data: menuItems,
+      data: menuItems.map(item => new MenuDTO(item)),
       count: menuItems.length
     });
   } catch (error) {
-    console.error('Error fetching menu items:', error);
+    logger.error('Error fetching menu items:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch menu items',
@@ -44,10 +46,10 @@ const getMenuItemById = async (req, res) => {
 
     res.json({
       success: true,
-      data: menuItem
+      data: new MenuDTO(menuItem)
     });
   } catch (error) {
-    console.error('Error fetching menu item:', error);
+    logger.error('Error fetching menu item:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch menu item',
@@ -67,7 +69,7 @@ const getAllCategories = async (req, res) => {
       count: categories.length
     });
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    logger.error('Error fetching categories:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch categories',
@@ -79,7 +81,12 @@ const getAllCategories = async (req, res) => {
 // Create new menu item
 const createMenuItem = async (req, res) => {
   try {
-    const { name, description, price, category, image_url, available, restaurant_id } = req.body;
+    const {
+      name, description, price, category, image_url, available, restaurant_id,
+      // Enhanced fields
+      dietary_tags, allergens, calories, prep_time_minutes, spice_level,
+      is_featured, is_new, sort_order, category_id
+    } = req.body;
 
     // Validation
     if (!name || !price || !category || !restaurant_id) {
@@ -101,18 +108,27 @@ const createMenuItem = async (req, res) => {
       description,
       price,
       category,
+      category_id,
       image_url,
       available,
-      restaurant_id
+      restaurant_id,
+      dietary_tags,
+      allergens,
+      calories,
+      prep_time_minutes,
+      spice_level,
+      is_featured,
+      is_new,
+      sort_order
     });
 
     res.status(201).json({
       success: true,
-      data: menuItem,
+      data: new MenuDTO(menuItem),
       message: 'Menu item created successfully'
     });
   } catch (error) {
-    console.error('Error creating menu item:', error);
+    logger.error('Error creating menu item:', error);
 
     // Handle duplicate entry
     if (error.code === '23505') {
@@ -164,11 +180,11 @@ const updateMenuItem = async (req, res) => {
 
     res.json({
       success: true,
-      data: updatedMenuItem,
+      data: new MenuDTO(updatedMenuItem),
       message: 'Menu item updated successfully'
     });
   } catch (error) {
-    console.error('Error updating menu item:', error);
+    logger.error('Error updating menu item:', error);
 
     if (error.message === 'No fields to update') {
       return res.status(400).json({
@@ -208,11 +224,11 @@ const deleteMenuItem = async (req, res) => {
 
     res.json({
       success: true,
-      data: deletedMenuItem,
+      data: new MenuDTO(deletedMenuItem),
       message: 'Menu item deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting menu item:', error);
+    logger.error('Error deleting menu item:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete menu item',
