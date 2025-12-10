@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchEmployees } from '../api/users';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, useSocketEvent, useSocketEmit } from '../hooks/useSocket';
 import { useUserAuth } from '../hooks/useUserAuth';
@@ -6,6 +7,9 @@ import OrderCard from '../components/OrderCard';
 import Logo from '../components/Logo';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import yukonImage from '../assets/yukon.png';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { fetchActiveOrders } from '../api/orders';
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -38,15 +42,12 @@ const KitchenDashboard = () => {
 
 
   // Fetch initial active orders on mount
-  const fetchActiveOrders = useCallback(async () => {
+  const fetchActiveOrdersFromApi = async () => {
     try {
       setLoading(true);
       setError(null);
 
-
-      const response = await fetch(`${API_URL}/api/orders/active`);
-      const data = await response.json();
-
+      const data = await fetchActiveOrders(); // <- from ../api/orders
 
       if (data.success) {
         setOrders(data.data);
@@ -59,13 +60,12 @@ const KitchenDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
 
   // Join kitchen room when socket connects
   useEffect(() => {
     if (socket && isConnected) {
-      console.log('🔌 Joining kitchen room...');
       emit('join-kitchen');
 
 
@@ -79,8 +79,8 @@ const KitchenDashboard = () => {
 
   // Fetch orders on mount
   useEffect(() => {
-    fetchActiveOrders();
-  }, [fetchActiveOrders]);
+    fetchActiveOrdersFromApi();
+  }, []);
 
 
   // Handle new order event - adds order to state
@@ -199,7 +199,7 @@ const KitchenDashboard = () => {
   const totalPreparing = orders.filter(o => o.status === 'preparing').length;
   const totalReady = orders.filter(o => o.status === 'ready').length;
   const totalCompleted = orders.filter(o => o.status === 'completed').length;
-  console.log({ totalOrders, totalPending, totalPreparing, totalReady, totalCompleted });
+
 
   // Calculate average preparing time for orders with both preparing_at + completed_at/ready_at
   const avgPreparingTime = (() => {
@@ -222,11 +222,22 @@ const KitchenDashboard = () => {
     .filter(order => order.order_type === 'dine-in' && ['pending', 'preparing', 'ready'].includes(order.status))
     .reduce((sum, order) => sum + (order.number_of_guests || 0), 0);
 
-
   const totalToGo = orders
     .filter(order => order.order_type === 'to-go' && ['pending', 'preparing', 'ready'].includes(order.status))
     .length;
 
+  const activeDineIn = orders.filter(order =>
+    order.order_type === 'dine-in' &&
+    ['pending', 'preparing', 'ready'].includes(order.status)
+  );
+
+  const activeToGo = orders.filter(order =>
+    order.order_type === 'to-go' &&
+    ['pending', 'preparing', 'ready'].includes(order.status)
+  );
+
+  const LEGAL_CAPACITY = 100; // legal occupancy limit for the restaurant
+  const occupancyPercent = LEGAL_CAPACITY ? Math.min((totalOccupancy / LEGAL_CAPACITY) * 100, 100) : 0;
 
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -250,23 +261,48 @@ const KitchenDashboard = () => {
       order.reservation_date.startsWith(todayStr),
     );
 
-  // Replace this with our real fetch later!
+  const activeToGoReservation = orders.filter(order =>
+    order.order_type === 'to-go' &&
+    ['pending', 'preparing', 'ready'].includes(order.status)
+  );
+
+  const activeDineInReservations = todaysReservations.filter(order =>
+    ['pending', 'preparing', 'ready'].includes(order.status)
+  );
+  // LIVE EMPLOYEE MANAGEMENT DATA
+
   const [employees, setEmployees] = useState([]);
-  // Collapsible states for panels
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const result = await fetchEmployees();
+      if (result.success) {
+        setEmployees(result.data);
+      }
+    };
+    loadEmployees();
+  }, []);
+
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  const handleRoleClick = (role) => {
+    // For now just set which role is active; later we can show a detail view
+    setSelectedRole(role);
+  };
+  const handleEmployeeOnDutyChange = (id, checked) => {
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp.id === id ? { ...emp, on_duty: checked } : emp
+      )
+    );
+    // TODO: Call API to update status
+  };
 
   // This is our example data, to be replaced with real API data in further production stages
   // Category lists
   // In production we will fetch() from our API, similar to how we did the orders.
   const managerCount = employees.filter(e => e.role === "manager").length;
   const onDutyManagers = employees.filter(e => e.role === "manager" && e.on_duty).length;
-
-  const bartenderCount = employees.filter(e => e.role === "bartender").length;
-  const onDutyBartenders = employees.filter(e => e.role === "bartender" && e.on_duty).length;
-
-
-  const barBackCount = employees.filter(e => e.role === "bar_back").length;
-  const onDutyBarBacks = employees.filter(e => e.role === "bar_back" && e.on_duty).length;
-
 
   const busboyCount = employees.filter(e => e.role === "busboy").length;
   const onDutyBusboys = employees.filter(e => e.role === "busboy" && e.on_duty).length;
@@ -279,6 +315,14 @@ const KitchenDashboard = () => {
   const hostessCount = employees.filter(e => e.role === "hostess").length;
   const onDutyHostess = employees.filter(e => e.role === "hostess" && e.on_duty).length;
 
+  const bartenderCount = employees.filter(e => e.role === "bartender").length;
+  const onDutyBartenders = employees.filter(e => e.role === "bartender" && e.on_duty).length;
+
+  const chefCount = employees.filter(e => e.role === "chef").length;
+  const onDutyChefs = employees.filter(e => e.role === "chef" && e.on_duty).length;
+
+  const barBackCount = employees.filter(e => e.role === "bar_back").length;
+  const onDutyBarBacks = employees.filter(e => e.role === "bar_back" && e.on_duty).length;
 
   // Total
   const totalEmployees = employees.length;
@@ -353,8 +397,33 @@ const KitchenDashboard = () => {
     { category: 'Fine Dining', item: 'Wagyu Striploin', unit: 'lbs', quantity: 10 },
     { category: 'Fine Dining', item: 'Caviar', unit: 'oz', quantity: 12 },
     { category: 'Fine Dining', item: 'Black Garlic', unit: 'bulbs', quantity: 20 },
+
+    // Silver-Ware
+    { category: 'Silver-Ware', item: 'Forks', unit: 'pieces', quantity: 200 },
+    { category: 'Silver-Ware', item: 'Knives', unit: 'pieces', quantity: 200 },
+    { category: 'Silver-Ware', item: 'Spoons', unit: 'pieces', quantity: 200 },
+    { category: 'Silver-Ware', item: 'Soup Spoons', unit: 'pieces', quantity: 100 },
+    { category: 'Silver-Ware', item: 'Teaspoons', unit: 'pieces', quantity: 150 },
+    { category: 'Silver-Ware', item: 'Serving Spoons', unit: 'pieces', quantity: 50 },
+    { category: 'Silver-Ware', item: 'Tongs', unit: 'pieces', quantity: 30 },
+    { category: 'Silver-Ware', item: 'Ladles', unit: 'pieces', quantity: 20 },
+    { category: 'Silver-Ware', item: 'Cake Servers', unit: 'pieces', quantity: 15 },
+    { category: 'Silver-Ware', item: 'Cheese Knives', unit: 'pieces', quantity: 25 },
+    { category: 'Silver-Ware', item: 'Butter Knives', unit: 'pieces', quantity: 100 },
+    { category: 'Silver-Ware', item: 'Steak Knives', unit: 'pieces', quantity: 150 },
+    { category: 'Silver-Ware', item: 'Salad Forks', unit: 'pieces', quantity: 100 },
   ]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const handleInventoryQuantityChange = (itemName, newQuantity) => {
+    setInventory((prev) =>
+      prev.map((item) =>
+        item.item === itemName
+          ? { ...item, quantity: Number(newQuantity) || 0 }
+          : item
+      )
+    );
+  };
 
   // Loading state
   if (loading) {
@@ -431,7 +500,7 @@ const KitchenDashboard = () => {
 
               {/* Refresh Button */}
               <button
-                onClick={fetchActiveOrders}
+                onClick={fetchActiveOrdersFromApi}
                 className="bg-brand-orange text-white px-4 py-2 rounded-xl font-bold hover:bg-brand-orange/90 transition-all shadow-lg hover:shadow-brand-orange/30 flex items-center gap-2 border border-brand-orange/50"
               >
                 <svg
@@ -606,7 +675,7 @@ const KitchenDashboard = () => {
                 </p>
               </div>
               <button
-                onClick={fetchActiveOrders}
+                onClick={fetchActiveOrdersFromApi}
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-semibold transition-all border border-red-500/30"
               >
                 Retry
@@ -687,7 +756,6 @@ const KitchenDashboard = () => {
               <div className="p-6 text-white h-full flex flex-col">
                 <h2 className="text-2xl font-bold mb-4 text-center">Employee Overview</h2>
 
-                {/* This wrapper takes remaining height and centers the card */}
                 <div className="flex-1 flex items-center justify-center">
                   <div className="bg-dark-card/90 border-l-4 border-orange-400 rounded-2xl px-6 py-5 shadow-xl w-full max-w-2xl">
                     <div className="grid grid-cols-2 gap-y-2 text-sm">
@@ -697,44 +765,141 @@ const KitchenDashboard = () => {
 
                       <div className="col-span-2 border-t border-dark-surface my-1" />
 
-                      {/* Rows */}
-                      <div className="font-bold">Total Employees:</div>
-                      <div className="text-right">
-                        {totalEmployees}{' '}
-                        <span className="text-green-500">({totalOnDuty} on duty)</span>
-                      </div>
+                      {/* Total employees row */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('all')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'all' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold">Total Employees:</span>
+                        <span className="text-right">
+                          {totalEmployees}{' '}
+                          <span className="text-green-500">({totalOnDuty} on duty)</span>
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-orange-400">Managers:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyManagers} on duty
-                      </div>
+                      {/* Managers */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('manager')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'manager' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-orange-400">Managers:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyManagers} on duty
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-brand-orange">Bartenders:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyBartenders} on duty
-                      </div>
+                      {/* Bartenders */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('bartender')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'bartender' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-brand-orange">Bartenders:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyBartenders} on duty
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-yellow-400">Bar Backs:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyBarBacks} on duty
-                      </div>
+                      {/* Bar backs */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('bar_back')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'bar_back' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-yellow-400">Bar Backs:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyBarBacks} on duty
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-blue-400">Busboys:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyBusboys} on duty
-                      </div>
+                      {/* Busboys */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('busboy')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'busboy' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-blue-400">Busboys:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyBusboys} on duty
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-fuchsia-400">Waiters:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyWaiters} on duty
-                      </div>
+                      {/* Waiters */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('waiter')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'waiter' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-fuchsia-400">Waiters:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyWaiters} on duty
+                        </span>
+                      </button>
 
-                      <div className="font-bold text-pink-400">Hostess:</div>
-                      <div className="text-right text-green-500">
-                        {onDutyHostess} on duty
-                      </div>
+                      {/* Hostess */}
+                      <button
+                        type="button"
+                        onClick={() => handleRoleClick('hostess')}
+                        className={`col-span-2 flex items-center justify-between px-2 py-1 rounded-lg transition ${selectedRole === 'hostess' ? 'bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                      >
+                        <span className="font-bold text-pink-400">Hostess:</span>
+                        <span className="text-right text-green-500">
+                          {onDutyHostess} on duty
+                        </span>
+                      </button>
                     </div>
 
+                    {selectedRole && (
+                      <div className="mt-4 border-t border-dark-surface pt-3">
+                        <h3 className="text-sm font-semibold text-gray-300 mb-2">
+                          {selectedRole === 'all'
+                            ? 'All employees'
+                            : `Employees: ${selectedRole}`}
+                        </h3>
+
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {employees
+                            .filter((emp) =>
+                              selectedRole === 'all'
+                                ? true
+                                : emp.role === selectedRole
+                            )
+                            .map((emp) => (
+                              <label
+                                key={emp.id}
+                                className="flex items-center justify-between bg-black/40 rounded-lg px-3 py-2 text-xs"
+                              >
+                                <span className="font-medium text-gray-100">
+                                  {emp.name || 'Unnamed'}
+                                </span>
+                                <span className="flex items-center gap-2">
+                                  <span className="text-gray-400">On duty</span>
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 accent-brand-orange"
+                                    checked={!!emp.on_duty}
+                                    onChange={(e) =>
+                                      handleEmployeeOnDutyChange(
+                                        emp.id,
+                                        e.target.checked
+                                      )
+                                    }
+                                  />
+                                </span>
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -825,48 +990,147 @@ const KitchenDashboard = () => {
 
 
             {activePanel === 'occupancy' && (
-              <div className="p-6 text-white h-full flex flex-col">
-                <h2 className="text-2xl font-bold mb-4">Occupancy & Reservations</h2>
+              <div className="p-4 text-white h-full flex flex-col">
+                <h2 className="text-2xl font-bold mb-4 text-center">
+                  Occupancy & Reservations
+                </h2>
 
-                <div className="bg-dark-card/90 border-l-4 border-lime-400 rounded-xl px-5 py-4 shadow-xl max-w-2xl w-full">
-                  <ul className="text-sm space-y-2 mb-4">
-                    <li>
-                      <span className="font-semibold text-brand-lime">Current Occupancy:</span>{' '}
-                      {totalOccupancy}
-                    </li>
-                    <li>
-                      <span className="font-semibold text-brand-orange">To-Go Orders:</span>{' '}
-                      {totalToGo}
-                    </li>
-                    <li>
-                      <span className="font-semibold text-text-secondary">Today's Reservations:</span>{' '}
-                      {totalReservationsToday}
-                    </li>
-                  </ul>
-
-                  {/* New reservations list */}
-                  {todaysReservations.length > 0 && (
-                    <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                      {todaysReservations.map((res) => (
-                        <div
-                          key={res.id}
-                          className="flex items-center justify-between text-xs bg-black/40 rounded-lg px-3 py-2"
-                        >
-                          <span className="font-medium text-gray-100">
-                            {res.reservation_name || 'Unnamed Party'}
-                          </span>
-                          <span className="font-mono text-brand-lime">
-                            {res.number_of_guests || 0} guest{(res.number_of_guests || 0) === 1 ? '' : 's'}
-                          </span>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="bg-dark-card/90 border-l-4 border-lime-400 rounded-xl px-5 py-45 shadow-xl max-w-2xl w-full">
+                    {/* Circle graph + summary */}
+                    <div className="flex items-center justify-center">
+                      <div className="w-38 h-40 mr-16">
+                        <CircularProgressbar
+                          value={occupancyPercent}
+                          text={`${occupancyPercent}%`}
+                          styles={buildStyles({
+                            pathColor:
+                              occupancyPercent >= 100
+                                ? '#f87171' // red
+                                : occupancyPercent >= 90
+                                  ? '#facc15' // yellow
+                                  : '#22c55e', // green
+                            textColor: '#ffffff',
+                            trailColor: '#111827',
+                          })}
+                        />
+                      </div>
+                      <div className="text-lg text-gray-200">
+                        <div>
+                          {totalOccupancy} guests / {LEGAL_CAPACITY} legal capacity
                         </div>
-                      ))}
+                        <div
+                          className={
+                            occupancyPercent >= 100
+                              ? 'text-red-400 font-semibold'
+                              : 'text-brand-lime'
+                          }
+                        >
+                          {occupancyPercent >= 100
+                            ? 'At or over legal capacity'
+                            : 'Below legal capacity'}
+                        </div>
+                      </div>
                     </div>
-                  )}
 
+                    {/* Summary numbers */}
+                    <ul className="text-sm space-y-2 mb-4 text-center mt-16">
+                      <li>
+                        <span className="font-semibold text-brand-lime">Current Occupancy:</span>{' '}
+                        {totalOccupancy}
+                      </li>
+                      <li>
+                        <span className="font-semibold text-brand-orange">To-Go Orders:</span>{' '}
+                        {totalToGo}
+                      </li>
+                      <li>
+                        <span className="font-semibold text-text-secondary">Today's Reservations:</span>{' '}
+                        {totalReservationsToday}
+                      </li>
+                    </ul>
+
+                    {/* Reservations list */}
+                    {todaysReservations.length > 0 && (
+                      <div className="mb-4">
+                        <h3 className="text-xs font-semibold text-gray-300 mb-1">
+                          Today&apos;s Reservations
+                        </h3>
+                        <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                          {todaysReservations.map((res) => (
+                            <div
+                              key={res.id}
+                              className="flex items-center justify-between text-xs bg-black/40 rounded-lg px-3 py-2"
+                            >
+                              <span className="font-medium text-gray-100">
+                                {res.reservation_name || 'Unnamed Party'}
+                              </span>
+                              <span className="font-mono text-brand-lime">
+                                {res.number_of_guests || 0} guest
+                                {(res.number_of_guests || 0) === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Current dine-in guests list */}
+                    {activeDineIn.length > 0 && (
+                      <div className="mb-4">
+                        <h3 className="text-xs font-semibold text-gray-300 mb-1">
+                          Current Dine-In Guests
+                        </h3>
+                        <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                          {activeDineIn.map((order) => (
+                            <div
+                              key={order.id}
+                              className="flex items-center justify-between text-xs bg-black/40 rounded-lg px-3 py-2"
+                            >
+                              <span className="font-medium text-gray-100">
+                                {order.reservation_name ||
+                                  order.guest_name ||
+                                  `Table ${order.table_id || 'N/A'}`}
+                              </span>
+                              <span className="font-mono text-brand-lime">
+                                {order.number_of_guests || 0} guest
+                                {(order.number_of_guests || 0) === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* To-go orders list */}
+                    {activeToGo.length > 0 && (
+                      <div className="mb-2">
+                        <h3 className="text-xs font-semibold text-gray-300 mb-1">
+                          Active To-Go Orders
+                        </h3>
+                        <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                          {activeToGo.map((order) => (
+                            <div
+                              key={order.id}
+                              className="flex items-center justify-between text-xs bg-black/40 rounded-lg px-3 py-2"
+                            >
+                              <span className="font-medium text-gray-100">
+                                {order.guest_name ||
+                                  order.reservation_name ||
+                                  `Order #${order.id}`}
+                              </span>
+                              <span className="font-mono text-brand-orange">
+                                {order.number_of_guests || 0} item
+                                {(order.number_of_guests || 0) === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
-
 
 
             {activePanel === 'inventory' && (
@@ -874,7 +1138,7 @@ const KitchenDashboard = () => {
                 <h2 className="text-2xl font-bold mb-4">Inventory</h2>
 
                 <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-                  {['Grains', 'Spices', 'Veggies', 'Dairy', 'Meats', 'Liquor', 'Wine', 'Fine Dining'].map((cat) => (
+                  {['Grains', 'Spices', 'Veggies', 'Dairy', 'Meats', 'Liquor', 'Wine', 'Fine Dining', 'Silver-Ware'].map((cat) => (
                     <div key={cat}>
                       <h3 className="text-lg font-semibold text-brand-orange mb-2">{cat}</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
@@ -885,10 +1149,19 @@ const KitchenDashboard = () => {
                               key={item.item}
                               className="glass-panel rounded-2xl px-3 py-2 flex justify-between items-center"
                             >
-                              <span>{item.item}</span>
-                              <span className="font-mono text-gray-200">
-                                {item.quantity} {item.unit}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  className="w-16 px-2 py-1 rounded-md bg-black/60 text-lime-300 border border-cyan-500/60 text-left font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                                  value={item.quantity}
+                                  onChange={(e) =>
+                                    handleInventoryQuantityChange(item.item, e.target.value)
+                                  }
+                                />
+                                <span className="text-gray-300 text-xs">{item.unit}</span>
+                              </div>
+                              <span className="font-medium text-white">{item.item}</span>
                             </div>
                           ))}
                       </div>

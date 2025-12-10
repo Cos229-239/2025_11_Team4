@@ -82,7 +82,7 @@ const ReservationPage = () => {
         reservation_time: time,
         special_requests: notes
       };
-      const res = await fetch(`${API_URL}/api/reservations/intent`, {
+      const res = await fetch(`${API_URL}/api/v1/reservations/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(body)
