@@ -57,6 +57,7 @@ const RestaurantListPage = () => {
         const res = await fetch(url);
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
+
           setRestaurantsApi(data.data);
         }
       } catch (e) {

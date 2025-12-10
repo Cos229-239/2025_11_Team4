@@ -39,7 +39,7 @@ const CartPage = () => {
     } else if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
       // If we have pre-order context, skip ordering mode selection
       setOrderingMode('pre-order');
-      console.log('Cart detected pre-order context:', preOrderContext);
+
     } else if (orderContext?.orderType === 'dine-in' && orderContext.tableNumber) {
       // Dine-in context from menu (QR flow)
       setTableId(orderContext.tableNumber);
@@ -313,7 +313,7 @@ const CartPage = () => {
 
     // If we have pre-order context, VERIFY reservation before payment (per flowchart)
     if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
-      console.log('[CART] Pre-order detected - verifying reservation before payment');
+
       setIsVerifying(true);
 
       try {
@@ -384,7 +384,7 @@ const CartPage = () => {
         }
 
         // Step 3: Verification succeeded - proceed to payment
-        console.log('[CART] Verification successful - proceeding to payment');
+
         setIsVerifying(false);
 
         const paymentState = {
@@ -412,7 +412,7 @@ const CartPage = () => {
 
     } else if (orderContext?.orderType === 'takeout' || orderingMode === 'takeout') {
       // Takeout order
-      console.log('[CART] Takeout order - proceeding to payment');
+
       navigate('/payment', {
         state: {
           order_type: 'takeout',
@@ -422,7 +422,7 @@ const CartPage = () => {
       });
     } else {
       // Regular dine-in order - no verification needed
-      console.log('[CART] Dine-in order - proceeding directly to payment');
+
       const effectiveTableId = tableId || orderContext?.tableNumber;
       navigate('/payment', {
         state: {

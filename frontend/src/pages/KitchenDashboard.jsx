@@ -85,7 +85,7 @@ const KitchenDashboard = () => {
 
   // Handle new order event - adds order to state
   const handleNewOrder = useCallback((newOrder) => {
-    console.log('📥 New order received:', newOrder);
+
 
 
     setOrders((prevOrders) => {
@@ -114,16 +114,16 @@ const KitchenDashboard = () => {
     // Play sound notification (optional)
     try {
       const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => console.log('Audio play failed'));
+      audio.play().catch(() => { });
     } catch {
-      console.log('Audio not available');
+
     }
   }, []);
 
 
   // Handle order update event - updates order status
   const handleOrderUpdated = useCallback((updatedOrder) => {
-    console.log('🔄 Order updated:', updatedOrder);
+
 
 
     setOrders((prevOrders) => {

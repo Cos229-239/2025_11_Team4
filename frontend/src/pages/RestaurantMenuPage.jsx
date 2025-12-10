@@ -50,10 +50,7 @@ const RestaurantMenuPage = () => {
 
       // New intent-based flow
       if (reservation_intent && scheduled_for) {
-        console.log('Setting pre-order context from intent:', {
-          reservation_intent,
-          scheduled_for
-        });
+
         setPreOrderContext({
           reservation_intent,
           scheduled_for,
@@ -61,10 +58,7 @@ const RestaurantMenuPage = () => {
         });
       } else if (reservation_id && scheduled_for) {
         // Legacy reservation-id based flow
-        console.log('Setting pre-order context:', {
-          reservation_id,
-          scheduled_for
-        });
+
         setPreOrderContext({
           reservation_id,
           scheduled_for,

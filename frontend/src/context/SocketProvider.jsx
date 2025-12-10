@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         // Initialize Socket.IO connection
-        console.log('🔌 Connecting to Socket.IO server:', SOCKET_URL);
+
 
         const socketInstance = io(SOCKET_URL, {
             transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
@@ -28,7 +28,7 @@ export const SocketProvider = ({ children }) => {
 
         // Connection successful
         socketInstance.on('connect', () => {
-            console.log('✅ Connected to Socket.IO server:', socketInstance.id);
+
             setIsConnected(true);
             setConnectionError(null);
         });
@@ -42,18 +42,18 @@ export const SocketProvider = ({ children }) => {
 
         // Disconnected
         socketInstance.on('disconnect', (reason) => {
-            console.log('⚠️  Disconnected from Socket.IO server:', reason);
+
             setIsConnected(false);
         });
 
         // Reconnection attempt
         socketInstance.on('reconnect_attempt', (attemptNumber) => {
-            console.log(`🔄 Reconnection attempt ${attemptNumber}...`);
+
         });
 
         // Reconnection successful
         socketInstance.on('reconnect', (attemptNumber) => {
-            console.log(`✅ Reconnected after ${attemptNumber} attempts`);
+
             setIsConnected(true);
             setConnectionError(null);
         });
@@ -68,7 +68,7 @@ export const SocketProvider = ({ children }) => {
 
         // Cleanup on unmount
         return () => {
-            console.log('🔌 Disconnecting from Socket.IO server...');
+
             socketInstance.disconnect();
         };
     }, []);
