@@ -22,7 +22,7 @@ const OwnerDashboard = () => {
     // For now, we assume single restaurant or select the first one.
     const [restaurants, setRestaurants] = useState([]);
     const [restaurantId, setRestaurantId] = useState(null);
-    const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
         const fetchRestaurants = async () => {
@@ -39,12 +39,10 @@ const OwnerDashboard = () => {
                 }
             } catch (err) {
                 console.error("Failed to fetch restaurants", err);
-            } finally {
-                setLoading(false);
             }
         };
         if (user) fetchRestaurants();
-    }, [user]);
+    }, [user, token]);
 
     const menuItems = [
         { id: 'overview', label: 'Overview', icon: BarChart2 },

@@ -310,7 +310,7 @@ const MenuSection = ({ restaurantId }) => {
             });
             fetchModifierGroups();
             showToast.success('Modifier group deleted');
-        } catch (err) {
+        } catch {
             showToast.error('Failed to delete');
         }
     };

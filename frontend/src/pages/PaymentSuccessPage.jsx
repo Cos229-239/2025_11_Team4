@@ -137,7 +137,7 @@ const PaymentSuccessPage = () => {
                             navigate(`/confirmation/${existingOrderData.data.id}`, { replace: true });
                             return;
                         }
-                    } catch (e) {
+                    } catch {
                         // Fallback lookup failed
                     }
 

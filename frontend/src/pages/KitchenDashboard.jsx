@@ -261,14 +261,7 @@ const KitchenDashboard = () => {
       order.reservation_date.startsWith(todayStr),
     );
 
-  const activeToGoReservation = orders.filter(order =>
-    order.order_type === 'to-go' &&
-    ['pending', 'preparing', 'ready'].includes(order.status)
-  );
 
-  const activeDineInReservations = todaysReservations.filter(order =>
-    ['pending', 'preparing', 'ready'].includes(order.status)
-  );
   // LIVE EMPLOYEE MANAGEMENT DATA
 
   const [employees, setEmployees] = useState([]);
@@ -301,27 +294,13 @@ const KitchenDashboard = () => {
   // This is our example data, to be replaced with real API data in further production stages
   // Category lists
   // In production we will fetch() from our API, similar to how we did the orders.
-  const managerCount = employees.filter(e => e.role === "manager").length;
+
+
   const onDutyManagers = employees.filter(e => e.role === "manager" && e.on_duty).length;
-
-  const busboyCount = employees.filter(e => e.role === "busboy").length;
   const onDutyBusboys = employees.filter(e => e.role === "busboy" && e.on_duty).length;
-
-
-  const waiterCount = employees.filter(e => e.role === "waiter").length;
   const onDutyWaiters = employees.filter(e => e.role === "waiter" && e.on_duty).length;
-
-
-  const hostessCount = employees.filter(e => e.role === "hostess").length;
   const onDutyHostess = employees.filter(e => e.role === "hostess" && e.on_duty).length;
-
-  const bartenderCount = employees.filter(e => e.role === "bartender").length;
   const onDutyBartenders = employees.filter(e => e.role === "bartender" && e.on_duty).length;
-
-  const chefCount = employees.filter(e => e.role === "chef").length;
-  const onDutyChefs = employees.filter(e => e.role === "chef" && e.on_duty).length;
-
-  const barBackCount = employees.filter(e => e.role === "bar_back").length;
   const onDutyBarBacks = employees.filter(e => e.role === "bar_back" && e.on_duty).length;
 
   // Total

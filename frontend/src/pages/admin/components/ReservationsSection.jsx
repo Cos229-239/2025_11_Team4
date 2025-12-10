@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Search, Filter, CheckCircle, XCircle } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
 import { useUserAuth } from '../../../hooks/useUserAuth';
@@ -10,7 +10,7 @@ const ReservationsSection = ({ restaurantId }) => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
 
-    const fetchReservations = async () => {
+    const fetchReservations = useCallback(async () => {
         setLoading(true);
         if (!token) return;
         try {
@@ -30,11 +30,11 @@ const ReservationsSection = ({ restaurantId }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, restaurantId, filterStatus, filterDate]);
 
     useEffect(() => {
         fetchReservations();
-    }, [restaurantId, filterStatus, filterDate]);
+    }, [fetchReservations]);
 
     const updateStatus = async (id, newStatus) => {
         if (!token) return;

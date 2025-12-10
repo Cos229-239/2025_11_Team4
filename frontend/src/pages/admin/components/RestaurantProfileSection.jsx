@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Save, MapPin, Phone, Mail, Clock, Plus, Trash2, X, Edit2, ArrowLeft,
     Globe, DollarSign, Percent, Truck, UtensilsCrossed, Calendar,
@@ -36,7 +36,7 @@ const DeveloperRestaurantManager = ({ token }) => {
         name: '', description: '', email: '', phone: '', address: '', cuisine_type: '', logo_url: '', cover_image_url: ''
     });
 
-    const fetchRestaurants = async () => {
+    const fetchRestaurants = useCallback(async () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/my-restaurants`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -51,11 +51,11 @@ const DeveloperRestaurantManager = ({ token }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
     useEffect(() => {
         fetchRestaurants();
-    }, [token]);
+    }, [fetchRestaurants]);
 
     const handleAddRestaurant = async (e) => {
         e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ClipboardList, Search } from 'lucide-react';
 import { useUserAuth } from '../../../hooks/useUserAuth';
 
@@ -14,7 +14,7 @@ const OrdersSection = ({ restaurantId }) => {
         totalPages: 0
     });
 
-    const fetchOrders = async (page = 1) => {
+    const fetchOrders = useCallback(async (page = 1) => {
         if (!token) return;
         setLoading(true);
         try {
@@ -42,11 +42,11 @@ const OrdersSection = ({ restaurantId }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, pagination.limit, restaurantId]);
 
     useEffect(() => {
         fetchOrders(1); // Reset to page 1 on mount or restaurant change
-    }, [restaurantId]);
+    }, [restaurantId, fetchOrders]);
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= pagination.totalPages) {

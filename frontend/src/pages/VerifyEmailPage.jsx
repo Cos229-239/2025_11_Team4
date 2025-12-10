@@ -30,7 +30,7 @@ const VerifyEmailPage = () => {
                 } else {
                     setStatus(data.message || 'Verification failed.');
                 }
-            } catch (err) {
+            } catch {
                 setStatus('Failed to connect to server.');
             }
         };
