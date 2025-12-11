@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { timeAgo, formatTime } from '../utils/timeAgo';
 import { useConfirm } from '../hooks/useConfirm';
+import { ShoppingBagIcon, CalendarDaysIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -183,32 +184,46 @@ const OrderCard = ({ order, onStatusUpdate }) => {
 
   // Determine order type label and icon
   const getOrderTypeInfo = () => {
-    if (order.order_type === 'takeout') {
-      return { label: 'Takeout', icon: '🛍️', subLabel: `Order #${order.id}` };
-    } else if (order.order_type === 'pre-order') {
-      return { label: 'Pre-order', icon: '📅', subLabel: `Scheduled: ${formatTime(order.scheduled_for)}` };
-    } else {
-      return { label: `Table ${order.table_id || '?'}`, icon: '🍽️', subLabel: `Order #${order.id}` };
-    }
+  if (order.order_type === 'takeout') {
+    return { label: 'Takeout', Icon: ShoppingBagIcon, subLabel: `Order #${order.id}` };
+  } 
+  
+  if (order.order_type === 'pre-order') {
+    return { label: 'Pre-Order', Icon: CalendarDaysIcon, subLabel: `Scheduled: ${formatTime(order.scheduled_for)}` };
+  }
+
+  return { 
+    label: `Table ${order.table_id || '?'}`, 
+    Icon: UsersIcon, 
+    subLabel: `Order #${order.id}` 
   };
+};
+
 
   const typeInfo = getOrderTypeInfo();
 
   return (
-    <div
-      className={`relative group overflow-hidden rounded-3xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl flex flex-col h-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl`}
-    >
+    <div className="
+  relative group overflow-hidden rounded-2xl 
+  transition-all duration-300 hover:shadow-xl 
+  flex flex-col h-full 
+  bg-white/10 backdrop-blur-xl 
+  border border-white/15 
+  shadow-lg
+">
+
       {/* Status Accent Line (Left) */}
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${config.badgeColor} shadow-[0_0_15px_rgba(0,0,0,0.5)]`}></div>
 
       {/* Header */}
-      <div className="p-6 pb-4 border-b border-white/5 relative bg-gradient-to-r from-white/5 to-transparent">
+      <div className="p-6 pb-4 border-b border-white/5 relative bg-white/5 backdrop-blur-xl">
         <div className="flex justify-between items-start mb-4 pl-3">
           {/* Order Type & ID */}
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl ${config.bgColor} flex items-center justify-center text-2xl shadow-inner border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
-              {typeInfo.icon}
-            </div>
+            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+  <typeInfo.Icon className="w-8 h-8 text-white/90" />
+</div>
+
             <div>
               <h2 className="text-2xl font-bold text-white leading-tight tracking-tight">
                 {typeInfo.label}
