@@ -899,11 +899,12 @@ const KitchenDashboard = () => {
 
                 <div className="flex-1 flex items-end justify-center gap-6">
                   {[
-                    { label: 'Total', value: totalOrders, color: 'bg-white' },
-                    { label: 'Pending', value: totalPending, color: 'bg-yellow-400' },
-                    { label: 'Preparing', value: totalPreparing, color: 'bg-amber-300' },
-                    { label: 'Ready', value: totalReady, color: 'bg-green-400' },
-                    { label: 'Completed', value: totalCompleted, color: 'bg-emerald-400' },
+                    { label: 'Total', value: totalOrders, color: 'bg-white/80' },
+                    { label: 'Pending', value: totalPending, color: 'bg-[#FA6C01]' },
+                    { label: 'Preparing', value: totalPreparing, color: 'bg-[#FFA500]' },
+                    { label: 'Ready', value: totalReady, color: 'bg-[#B7EC2F]' },
+                    { label: 'Completed', value: totalCompleted, color: 'bg-[#5BE37E]' },
+
                   ].map((entry) => {
                     const maxVal =
                       Math.max(
@@ -944,7 +945,7 @@ const KitchenDashboard = () => {
                 <div className="mt-6 bg-dark-card/80 rounded-2xl px-5 py-4 border border-yellow-400/40 shadow-xl max-w-xl">
                   <ul className="text-sm space-y-2">
                     <li>
-                      <span className="font-semibold text-brand-orange">Total Orders:</span>{' '}
+                      <span className="font-semibold text-white">Total Orders:</span>{' '}
                       {totalOrders}
                     </li>
                     <li>
@@ -956,7 +957,7 @@ const KitchenDashboard = () => {
                       {totalPreparing}
                     </li>
                     <li>
-                      <span className="font-semibold text-green-500">Ready:</span>{' '}
+                      <span className="font-semibold text-brand-lime">Ready:</span>{' '}
                       {totalReady}
                     </li>
                     <li>
@@ -964,7 +965,7 @@ const KitchenDashboard = () => {
                       {totalCompleted}
                     </li>
                     <li className="pt-2 border-t border-dark-surface">
-                      <span className="font-semibold text-brand-lime">Avg Prep Time:</span>{' '}
+                      <span className="font-semibold text-blue-500">Avg Prep Time:</span>{' '}
                       {avgPreparingTime === '-' ? 'N/A' : avgPreparingTime + ' min'}
                     </li>
                   </ul>
@@ -995,7 +996,7 @@ const KitchenDashboard = () => {
                                   ? '#facc15' // yellow
                                   : '#22c55e', // green
                             textColor: '#ffffff',
-                            trailColor: '#111827',
+                            trailColor: '#0003A2',
                           })}
                         />
                       </div>
