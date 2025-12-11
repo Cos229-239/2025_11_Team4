@@ -3,6 +3,7 @@ import {
   QrCodeIcon,
   BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
+import orderEasyLogo from '../assets/order-easy-logo-transparent-2.png';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const LandingPage = () => {
       <div
         className="absolute inset-0 pointer-events-none moving-bg"
         style={{
-  background: `
+          background: `
     radial-gradient(circle at center,
       #E35504ff 0%,
       #E35504aa 15%,
@@ -31,36 +32,36 @@ const LandingPage = () => {
       #000000 100%
     )
   `,
-  filter: "blur(40px)",
-  backgroundSize: "180% 180%",
-  opacity: 0.55,
-}}
+          filter: "blur(40px)",
+          backgroundSize: "180% 180%",
+          opacity: 0.55,
+        }}
 
       ></div>
 
       {/* LOGO OFICIAL */}
       <div className="relative z-10 mb-10">
-  <img
-    src="/src/assets/order-easy-logo-transparent-2.png"
-    alt="OrderEasy Logo"
-    className="w-64 h-auto mx-auto
+        <img
+          src={orderEasyLogo}
+          alt="OrderEasy Logo"
+          className="w-64 h-auto mx-auto
       drop-shadow-[0_0_25px_rgba(0,0,0,0.45)]
       hover:scale-105 transition-transform duration-300
     "
-  />
-</div>
+        />
+      </div>
 
       {/* Tagline */}
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-center mb-16 text-text-primary/90 italic leading-relaxed">
-          Let's
-          <br />
-          <span className="font-normal not-italic text-text-primary">Dine without a whine</span>
-        </h1>
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-center mb-16 text-text-primary/90 italic leading-relaxed">
+        Let's
+        <br />
+        <span className="font-normal not-italic text-text-primary">Dine without a whine</span>
+      </h1>
 
-        {/* Customer Option Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
-          {/* Card 1: Dine In */}
-          <div className="
+      {/* Customer Option Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+        {/* Card 1: Dine In */}
+        <div className="
   bg-white/10
   backdrop-blur-xl
   border border-white/20
@@ -73,26 +74,26 @@ const LandingPage = () => {
   group
 ">
 
-            {/* Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="bg-brand-orange/10 p-6 rounded-2xl group-hover:bg-brand-orange/20 transition-colors duration-300">
-                <QrCodeIcon className="w-16 h-16 sm:w-20 sm:h-20 text-brand-orange" />
-              </div>
+          {/* Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-brand-orange/10 p-6 rounded-2xl group-hover:bg-brand-orange/20 transition-colors duration-300">
+              <QrCodeIcon className="w-16 h-16 sm:w-20 sm:h-20 text-brand-orange" />
             </div>
+          </div>
 
-            {/* Title */}
-            <h2 className="text-3xl sm:text-4xl font-bold text-text-primary text-center mb-3">
-              Dine In
-            </h2>
+          {/* Title */}
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary text-center mb-3">
+            Dine In
+          </h2>
 
-            {/* Description */}
-            <p className="text-text-secondary text-center mb-8 text-lg">
-              Order from your table
-            </p>
-            {/* CTA Button */}
-            <button
-              onClick={() => navigate('/qr-check')}
-              className="
+          {/* Description */}
+          <p className="text-text-secondary text-center mb-8 text-lg">
+            Order from your table
+          </p>
+          {/* CTA Button */}
+          <button
+            onClick={() => navigate('/qr-check')}
+            className="
                 w-full
                 bg-brand-orange text-white
                 px-8 py-4 rounded-full
@@ -102,13 +103,13 @@ const LandingPage = () => {
                 transition-all duration-200
                 shadow-xl shadow-brand-orange/30 hover:shadow-brand-orange/50
               "
-            >
-              Start Ordering
-            </button>
-          </div>
+          >
+            Start Ordering
+          </button>
+        </div>
 
-          {/* Card 2: Browse Restaurants */}
-          <div className="
+        {/* Card 2: Browse Restaurants */}
+        <div className="
           bg-white/10
           backdrop-blur-xl
           border border-white/20
@@ -121,27 +122,27 @@ const LandingPage = () => {
           group
         ">
 
-            {/* Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="bg-brand-lime/10 p-6 rounded-2xl group-hover:bg-brand-lime/20 transition-colors duration-300">
-                <BuildingStorefrontIcon className="w-16 h-16 sm:w-20 sm:h-20 text-brand-lime" />
-              </div>
+          {/* Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-brand-lime/10 p-6 rounded-2xl group-hover:bg-brand-lime/20 transition-colors duration-300">
+              <BuildingStorefrontIcon className="w-16 h-16 sm:w-20 sm:h-20 text-brand-lime" />
             </div>
+          </div>
 
-            {/* Title */}
-            <h2 className="text-3xl sm:text-4xl font-bold text-text-primary text-center mb-3">
-              Browse Restaurants
-            </h2>
+          {/* Title */}
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary text-center mb-3">
+            Browse Restaurants
+          </h2>
 
-            {/* Description */}
-            <p className="text-text-secondary text-center mb-8 text-lg">
-              Explore delivery & takeout
-            </p>
+          {/* Description */}
+          <p className="text-text-secondary text-center mb-8 text-lg">
+            Explore delivery & takeout
+          </p>
 
-            {/* CTA Button */}
-            <button
-              onClick={() => navigate('/restaurants')}
-              className="
+          {/* CTA Button */}
+          <button
+            onClick={() => navigate('/restaurants')}
+            className="
                 w-full
                 bg-brand-lime text-dark-bg
                 px-8 py-4 rounded-full
@@ -151,11 +152,11 @@ const LandingPage = () => {
                 transition-all duration-200
                 shadow-xl shadow-brand-lime/30 hover:shadow-brand-lime/50
               "
-            >
-              View Restaurants
-            </button>
-          </div>
+          >
+            View Restaurants
+          </button>
         </div>
+      </div>
     </div>
   );
 };

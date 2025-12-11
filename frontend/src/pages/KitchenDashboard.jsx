@@ -10,6 +10,7 @@ import yukonImage from '../assets/yukon.png';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { fetchActiveOrders } from '../api/orders';
+import YukonAssistant from '../components/YukonAssistant';
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -85,7 +86,7 @@ const KitchenDashboard = () => {
 
   // Handle new order event - adds order to state
   const handleNewOrder = useCallback((newOrder) => {
-    console.log('📥 New order received:', newOrder);
+
 
 
     setOrders((prevOrders) => {
@@ -114,16 +115,16 @@ const KitchenDashboard = () => {
     // Play sound notification (optional)
     try {
       const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => console.log('Audio play failed'));
-    } catch {
-      console.log('Audio not available');
+      audio.play().catch(() => { });
+    } catch (error) {
+      console.error('Audio playback failed', error);
     }
   }, []);
 
 
   // Handle order update event - updates order status
   const handleOrderUpdated = useCallback((updatedOrder) => {
-    console.log('🔄 Order updated:', updatedOrder);
+
 
 
     setOrders((prevOrders) => {
@@ -288,7 +289,14 @@ const KitchenDashboard = () => {
         emp.id === id ? { ...emp, on_duty: checked } : emp
       )
     );
-    // TODO: Call API to update status
+    try {
+      // Assuming there's an endpoint to update employee duty status
+      // You might need to import this function or use axios directly
+      // await updateEmployeeStatus(id, { on_duty: checked });
+      console.log(`Updated employee ${id} status to ${checked}`); // Keeping log until API is ready
+    } catch (err) {
+      console.error('Failed to update employee status', err);
+    }
   };
 
   // This is our example data, to be replaced with real API data in further production stages
@@ -421,10 +429,10 @@ const KitchenDashboard = () => {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#000000]">
+    <div className="h-full relative overflow-y-auto bg-[#000000]">
       {/* BACKGROUND GRADIENT */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none"
         style={{
           background: `
             radial-gradient(circle at center,
@@ -462,6 +470,9 @@ const KitchenDashboard = () => {
 
 
             <div className="flex items-center gap-4">
+              {/* Quick Nav Buttons */}
+
+
               {/* Connection Status */}
               <div className={`flex items-center gap-2 backdrop-blur-md rounded-xl px-4 py-2 border ${isConnected
                 ? 'bg-green-500/20 border-green-500/50 text-green-400'
@@ -567,66 +578,24 @@ const KitchenDashboard = () => {
         </div>
       </header>
 
-      {/* SIDEBAR WITH TOGGLE */}
-      <div
-        className={`fixed right-6 bottom-24 z-40 transition-all duration-300
-          ${sidebarOpen ? 'w-80 opacity-100' : 'w-12 opacity-80'}
-        `}
-      >
-        {/* Toggle button */}
-        <button
-          onClick={() => setSidebarOpen((open) => !open)}
-          className="mb-3 w-full flex items-center justify-center bg-black/60 rounded-2xl text-white py-2 shadow hover:bg-black/80"
-        >
-          {sidebarOpen ? '◀ Close' : '▶ Open'}
-        </button>
+      {/* SIDEBAR REMOVED (Moved to Header) */}
 
-        {/* Sidebar content only when open */}
-        {sidebarOpen && (
-          <div className="flex flex-col gap-3">
-            {/* Employees */}
-            <div>
-              <button
-                className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-brand-orange/90 transition"
-                onClick={() => setActivePanel('employees')}
-              >
-                🧑‍🍳 Employees
-              </button>
-            </div>
-
-            {/* Analytics */}
-            <div>
-              <button
-                className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-yellow-500/90 transition"
-                onClick={() => setActivePanel('analytics')}
-              >
-                📊 Analytics
-              </button>
-            </div>
-
-            {/* Occupancy */}
-            <div>
-              <button
-                className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-lime-500/90 transition"
-                onClick={() => setActivePanel('occupancy')}
-              >
-                🪑 Occupancy & Reservations
-              </button>
-            </div>
-
-            {/* Inventory */}
-            <div>
-              <button
-                className="w-full px-5 py-3 bg-dark-card rounded-2xl font-bold text-left text-white shadow hover:bg-cyan-500/90 transition"
-                onClick={() => setActivePanel('inventory')}
-              >
-                🗃️ Inventory
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
       {/* == END SIDEBAR == */}
+
+      <YukonAssistant
+        contextData={{
+          orders: orders,
+          inventory: inventory,
+          employees: employees,
+          stats: {
+            totalOrders,
+            pending: orderCounts.pending,
+            preparing: orderCounts.preparing,
+            ready: orderCounts.ready,
+            occupancy: totalOccupancy
+          }
+        }}
+      />
 
 
       {/* Main Content */}
@@ -664,15 +633,40 @@ const KitchenDashboard = () => {
         )}
 
         {/* Yukon hero header */}
-        <div className="glass-panel rounded-3xl p-6 mb-6 flex flex-col items-center gap-4">
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-            <img src={yukonImage} alt="Yukon kitchen assistant" className="w-full h-full object-cover" />
-          </div>
-          <div className="w-full text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-white">Yukon Kitchen Assistant</h2>
-            <p className="text-sm md:text-base text-gray-300">
-              Real-time overview of all active orders and kitchen activity in your toggleable sidebar.
-            </p>
+        {/* Quick Action Hero Section */}
+        <div className="glass-panel rounded-3xl p-6 mb-8 mt-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              onClick={() => setActivePanel('inventory')}
+              className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] hover:border-brand-orange/50 transition-all group"
+            >
+              <span className="text-4xl group-hover:scale-110 transition-transform">🗃️</span>
+              <span className="text-lg font-bold text-gray-200 group-hover:text-white">Inventory</span>
+            </button>
+
+            <button
+              onClick={() => setActivePanel('occupancy')}
+              className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] hover:border-lime-400/50 transition-all group"
+            >
+              <span className="text-4xl group-hover:scale-110 transition-transform">🪑</span>
+              <span className="text-lg font-bold text-gray-200 group-hover:text-white">Occupancy</span>
+            </button>
+
+            <button
+              onClick={() => setActivePanel('analytics')}
+              className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] hover:border-yellow-400/50 transition-all group"
+            >
+              <span className="text-4xl group-hover:scale-110 transition-transform">📊</span>
+              <span className="text-lg font-bold text-gray-200 group-hover:text-white">Analytics</span>
+            </button>
+
+            <button
+              onClick={() => setActivePanel('employees')}
+              className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] hover:border-cyan-400/50 transition-all group"
+            >
+              <span className="text-4xl group-hover:scale-110 transition-transform">🧑‍🍳</span>
+              <span className="text-lg font-bold text-gray-200 group-hover:text-white">Employees</span>
+            </button>
           </div>
         </div>
 
@@ -1158,35 +1152,7 @@ const KitchenDashboard = () => {
 
 
 
-      {/* Stats Footer */}
-      {orders.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-10 backdrop-blur-xl">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex gap-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-brand-orange drop-shadow-sm">{orderCounts.pending}</span>
-                  <span className="text-gray-300 text-sm font-medium">New</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-yellow-400 drop-shadow-sm">{orderCounts.preparing}</span>
-                  <span className="text-gray-300 text-sm font-medium">Preparing</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-400 drop-shadow-sm">{orderCounts.ready}</span>
-                  <span className="text-gray-300 text-sm font-medium">Ready</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-300 font-medium">Total Active:</span>
-                <span className="text-3xl font-bold text-brand-lime drop-shadow-sm">
-                  {orderCounts.all}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Stats Footer Removed (Moved to Yukon) */}
     </div>
   );
 };

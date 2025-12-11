@@ -3,8 +3,11 @@ import { useUserAuth } from '../hooks/useUserAuth';
 import { useNavigate } from 'react-router-dom';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import DateTimeDisplay from '../components/DateTimeDisplay';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const ProfilePage = () => {
   const [userId, setUserId] = useState(() => sessionStorage.getItem('ordereasy_user_id'));
@@ -428,27 +431,17 @@ const ProfilePage = () => {
 };
 
 const AddCardModal = ({ onClose, onAdd }) => {
-  const [cardData, setCardData] = useState({
-    number: '',
-    exp_month: '',
-    exp_year: '',
-    cvc: '',
-    name: ''
-  });
-  const [error, setError] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!cardData.number || !cardData.exp_month || !cardData.exp_year || !cardData.cvc || !cardData.name) {
-      setError('All fields are required');
-      return;
+  const options = {
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#FA6C01',
+        colorBackground: '#1a1a1a',
+        colorText: '#ffffff',
+        colorDanger: '#ef4444',
+        fontFamily: 'Lora, serif',
+      }
     }
-    // Basic validation
-    if (cardData.number.length < 13) {
-      setError('Invalid card number');
-      return;
-    }
-    onAdd(cardData);
   };
 
   return (
@@ -461,74 +454,106 @@ const AddCardModal = ({ onClose, onAdd }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">{error}</div>}
-
-          <div>
-            <label className="block text-sm font-bold text-gray-400 mb-1">Cardholder Name</label>
-            <input
-              type="text"
-              placeholder="John Doe"
-              value={cardData.name}
-              onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
-              className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-400 mb-1">Card Number</label>
-            <input
-              type="text"
-              placeholder="0000 0000 0000 0000"
-              maxLength="19"
-              value={cardData.number}
-              onChange={(e) => setCardData({ ...cardData, number: e.target.value.replace(/\D/g, '') })}
-              className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all font-mono"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-400 mb-1">Exp Month</label>
-              <input
-                type="text"
-                placeholder="MM"
-                maxLength="2"
-                value={cardData.exp_month}
-                onChange={(e) => setCardData({ ...cardData, exp_month: e.target.value.replace(/\D/g, '') })}
-                className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-center"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-400 mb-1">Exp Year</label>
-              <input
-                type="text"
-                placeholder="YY"
-                maxLength="2"
-                value={cardData.exp_year}
-                onChange={(e) => setCardData({ ...cardData, exp_year: e.target.value.replace(/\D/g, '') })}
-                className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-center"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-400 mb-1">CVC</label>
-              <input
-                type="text"
-                placeholder="123"
-                maxLength="4"
-                value={cardData.cvc}
-                onChange={(e) => setCardData({ ...cardData, cvc: e.target.value.replace(/\D/g, '') })}
-                className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all text-center"
-              />
-            </div>
-          </div>
-
-          <button type="submit" className="w-full bg-brand-orange text-white font-bold py-3 rounded-xl hover:bg-brand-orange/90 transition-all shadow-lg shadow-brand-orange/20 mt-4">
-            Add Card
-          </button>
-        </form>
+        <div className="p-6">
+          <Elements stripe={stripePromise} options={options}>
+            <AddCardForm onClose={onClose} onAdd={onAdd} />
+          </Elements>
+        </div>
       </div>
     </div>
+  );
+};
+
+const AddCardForm = ({ onClose, onAdd }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+    setError('');
+
+    const cardElement = elements.getElement(CardElement);
+
+    try {
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+          name: name,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        // Send paymentMethodId to backend
+        onAdd({
+          paymentMethodId: paymentMethod.id,
+          last4: paymentMethod.card.last4,
+          brand: paymentMethod.card.brand
+        });
+        // Modal will be closed by parent on success
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">{error}</div>}
+
+      <div>
+        <label className="block text-sm font-bold text-gray-400 mb-2">Cardholder Name</label>
+        <input
+          type="text"
+          placeholder="John Doe"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full bg-black/50 border border-white/20 rounded-xl p-3 text-white focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-bold text-gray-400 mb-2">Card Details</label>
+        <div className="bg-black/50 border border-white/20 rounded-xl p-3">
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#ffffff',
+                  '::placeholder': {
+                    color: '#aab7c4',
+                  },
+                },
+                invalid: {
+                  color: '#ef4444',
+                },
+              },
+            }}
+          />
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        disabled={!stripe || loading}
+        className="w-full bg-brand-orange text-white font-bold py-3 rounded-xl hover:bg-brand-orange/90 transition-all shadow-lg shadow-brand-orange/20 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? 'Processing...' : 'Save Card'}
+      </button>
+    </form>
   );
 };
 

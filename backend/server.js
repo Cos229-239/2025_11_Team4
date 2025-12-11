@@ -32,6 +32,9 @@ const ioCorsOptions = {
 const webhookRoutes = require('./routes/webhook.routes');
 app.use('/api/webhook', express.raw({ type: 'application/json' }), webhookRoutes);
 
+const yukonRoutes = require('./routes/yukon.routes');
+app.use('/api/yukon', yukonRoutes);
+
 // Import Crazy Otto's data for demo purposes
 const {
   crazyOttosRestaurant,

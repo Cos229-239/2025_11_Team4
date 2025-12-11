@@ -109,7 +109,7 @@ const QRScannerPage = () => {
    * Handle successful QR code scan
    */
   const onScanSuccess = async (decodedText) => {
-    console.log('QR Code scanned:', decodedText);
+
 
     // Stop scanning
     stopScanning();
@@ -163,7 +163,7 @@ const QRScannerPage = () => {
    */
   const onScanError = () => {
     // We don't show per-frame errors to the user; just log if needed.
-    // console.log('QR Scan error:', errorMessage);
+
   };
 
   return (

@@ -73,11 +73,16 @@ exports.getPaymentMethods = async (req, res) => {
 
 exports.addPaymentMethod = async (req, res) => {
     try {
-        // Mock implementation - in real app, would exchange token with Stripe
-        const { stripe_token, last4, brand } = req.body;
+        const { paymentMethodId, last4, brand } = req.body;
+        // In a real production app, we would:
+        // 1. Attach paymentMethodId to the customer in Stripe:
+        //    await stripe.paymentMethods.attach(paymentMethodId, { customer: user.stripe_customer_id });
+        // 2. Validate the card details are correct via Stripe API.
+
+        // For now, we store the token reference and metadata securely.
         const result = await pool.query(
             'INSERT INTO payment_methods (user_id, stripe_payment_method_id, last4, brand) VALUES ($1, $2, $3, $4) RETURNING *',
-            [req.params.id, `pm_${Math.random().toString(36).substr(2, 9)}`, last4 || '4242', brand || 'Visa']
+            [req.params.id, paymentMethodId, last4, brand]
         );
         res.status(201).json({ success: true, data: result.rows[0] });
     } catch (error) {
