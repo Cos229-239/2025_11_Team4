@@ -430,25 +430,27 @@ const KitchenDashboard = () => {
 
   return (
     <div className="h-full relative overflow-y-auto bg-[#000000]">
-      {/* BACKGROUND GRADIENT */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle at center,
-              #E35504ff 0%,
-              #E35504aa 15%,
-              #000000 35%,
-              #5F2F14aa 55%,
-              #B5FF00ff 80%,
-              #000000 100%
-            )
-          `,
-          filter: "blur(40px)",
-          backgroundSize: "180% 180%",
-          opacity: 0.55,
-        }}
-      ></div>
+      {/* CLEAN DARK BACKGROUND */}
+<div
+  className="fixed inset-0 pointer-events-none"
+  style={{
+    background: `
+      #111
+    `,
+  }}
+></div>
+
+<div
+  className="fixed inset-0 pointer-events-none opacity-20"
+  style={{
+    background: `
+      radial-gradient(circle at 50% 110%, rgba(181,255,0,0.15), transparent 70%)
+    `,
+    filter: "blur(60px)",
+  }}
+></div>
+
+
 
 
       {/* Header */}
