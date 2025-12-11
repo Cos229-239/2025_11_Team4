@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
 );
 
 CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
+CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine_type ON restaurants(cuisine_type);
 
 
 CREATE TABLE IF NOT EXISTS user_restaurants (
@@ -630,6 +631,26 @@ CREATE POLICY "employee_schedules_select" ON public.employee_schedules
 CREATE POLICY "employee_schedules_insert" ON public.employee_schedules FOR INSERT WITH CHECK (public.is_restaurant_owner(restaurant_id));
 CREATE POLICY "employee_schedules_update" ON public.employee_schedules FOR UPDATE USING (public.is_restaurant_owner(restaurant_id));
 CREATE POLICY "employee_schedules_delete" ON public.employee_schedules FOR DELETE USING (public.is_restaurant_owner(restaurant_id));
+
+-- RESTAURANTS
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "restaurants_select" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "restaurants_manage" ON restaurants FOR ALL 
+  USING (public.is_restaurant_owner(id));
+
+-- MENU_ITEMS (Re-enabling explicit RLS if not already covered)
+-- Note: menu_items refers to direct table. Prior checks used constraints? 
+-- Migration added these specifically.
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;  
+CREATE POLICY "menu_items_select" ON menu_items FOR SELECT USING (true);
+CREATE POLICY "menu_items_manage" ON menu_items FOR ALL 
+  USING (public.is_restaurant_owner(restaurant_id));
+
+-- TABLES
+ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "tables_select" ON tables FOR SELECT USING (true);
+CREATE POLICY "tables_manage" ON tables FOR ALL 
+  USING (public.is_restaurant_owner(restaurant_id));
 
 -- Legacy/Convenience function to seed a developer by email
 CREATE OR REPLACE FUNCTION public.seed_developer(dev_email VARCHAR)
