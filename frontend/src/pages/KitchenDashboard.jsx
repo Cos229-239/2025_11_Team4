@@ -11,6 +11,8 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { fetchActiveOrders } from '../api/orders';
 import YukonAssistant from '../components/YukonAssistant';
+import KitchenBg from '../assets/kitchen-bg.png';
+
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -429,16 +431,21 @@ const KitchenDashboard = () => {
 
 
   return (
+    
     <div className="h-full relative overflow-y-auto bg-[#000000]">
       {/* CLEAN DARK BACKGROUND */}
 <div
   className="fixed inset-0 pointer-events-none"
   style={{
-    background: `
-      #111
-    `,
+    backgroundImage: `url(${KitchenBg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    opacity: 0.35, // puedes ajustar esto
+    filter: "blur(6px)", // si quieres el efecto glassy
   }}
 ></div>
+
+
 
 <div
   className="fixed inset-0 pointer-events-none opacity-20"
@@ -454,7 +461,8 @@ const KitchenDashboard = () => {
 
 
       {/* Header */}
-      <header className="glass-panel sticky top-0 z-20 border-b border-white/10 shadow-2xl backdrop-blur-xl">
+     <header className="sticky top-0 z-20 bg-[#E5E5E5]/20 backdrop-blur-xl border-b border-white/20 shadow-lg">
+
         <div className="container mx-auto px-6 py-3">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-4">
@@ -636,7 +644,8 @@ const KitchenDashboard = () => {
 
         {/* Yukon hero header */}
         {/* Quick Action Hero Section */}
-        <div className="glass-panel rounded-3xl p-6 mb-8 mt-2">
+       <div className="p-6 mb-8 mt-2">
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => setActivePanel('inventory')}
