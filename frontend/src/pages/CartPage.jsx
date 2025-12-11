@@ -39,7 +39,7 @@ const CartPage = () => {
     } else if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
       // If we have pre-order context, skip ordering mode selection
       setOrderingMode('pre-order');
-      console.log('Cart detected pre-order context:', preOrderContext);
+
     } else if (orderContext?.orderType === 'dine-in' && orderContext.tableNumber) {
       // Dine-in context from menu (QR flow)
       setTableId(orderContext.tableNumber);
@@ -313,7 +313,7 @@ const CartPage = () => {
 
     // If we have pre-order context, VERIFY reservation before payment (per flowchart)
     if (preOrderContext?.reservation_intent || preOrderContext?.reservation_id) {
-      console.log('[CART] Pre-order detected - verifying reservation before payment');
+
       setIsVerifying(true);
 
       try {
@@ -384,7 +384,7 @@ const CartPage = () => {
         }
 
         // Step 3: Verification succeeded - proceed to payment
-        console.log('[CART] Verification successful - proceeding to payment');
+
         setIsVerifying(false);
 
         const paymentState = {
@@ -412,7 +412,7 @@ const CartPage = () => {
 
     } else if (orderContext?.orderType === 'takeout' || orderingMode === 'takeout') {
       // Takeout order
-      console.log('[CART] Takeout order - proceeding to payment');
+
       navigate('/payment', {
         state: {
           order_type: 'takeout',
@@ -422,7 +422,7 @@ const CartPage = () => {
       });
     } else {
       // Regular dine-in order - no verification needed
-      console.log('[CART] Dine-in order - proceeding directly to payment');
+
       const effectiveTableId = tableId || orderContext?.tableNumber;
       navigate('/payment', {
         state: {
@@ -537,7 +537,7 @@ const CartPage = () => {
         </div >
 
         {/* Cart Items */}
-        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-6 shadow-2xl" >
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <div className="p-2 border-b border-white/10 mb-4">
             <h2 className="text-xl font-bold text-white drop-shadow-md">
               Cart Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
@@ -642,7 +642,7 @@ const CartPage = () => {
         </div >
 
         {/* Special Instructions for Order */}
-        < div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 mb-6" >
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <label className="block text-sm font-bold text-white mb-3 drop-shadow-sm">
             Special Instructions (Optional)
           </label>
@@ -720,7 +720,7 @@ const CartPage = () => {
         }
 
         {/* Order Summary - Desktop */}
-        <div className="hidden md:block bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8">
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 mb-6 shadow-xl">
           <h2 className="text-xl font-bold text-white mb-6 drop-shadow-md">Order Summary</h2>
 
           <div className="space-y-4 mb-8">
