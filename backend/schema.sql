@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
   PRIMARY KEY (user_id, role_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
+
 -- ============================================================================
 -- RESTAURANTS
 -- ============================================================================
@@ -88,11 +90,14 @@ CREATE TABLE IF NOT EXISTS restaurants (
 CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
 CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine_type ON restaurants(cuisine_type);
 
+
 CREATE TABLE IF NOT EXISTS user_restaurants (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, restaurant_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_restaurants_restaurant_id ON user_restaurants(restaurant_id);
 
 -- ============================================================================
 -- MENUS & MODIFIERS
@@ -163,6 +168,8 @@ CREATE TABLE IF NOT EXISTS menu_items (
   UNIQUE(restaurant_id, name)
 );
 
+CREATE INDEX IF NOT EXISTS idx_menu_items_category_id ON menu_items(category_id);
+
 CREATE TABLE IF NOT EXISTS menu_item_modifier_groups (
   id SERIAL PRIMARY KEY,
   menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
@@ -170,6 +177,8 @@ CREATE TABLE IF NOT EXISTS menu_item_modifier_groups (
   sort_order INTEGER DEFAULT 0,
   UNIQUE(menu_item_id, modifier_group_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_menu_item_modifier_groups_modifier_group_id ON menu_item_modifier_groups(modifier_group_id);
 
 -- ============================================================================
 -- TABLES & RESERVATIONS
@@ -252,6 +261,9 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_reservation_id ON orders(reservation_id);
+
 CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
@@ -271,6 +283,9 @@ CREATE TABLE IF NOT EXISTS favorite_orders (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_favorite_orders_user_id ON favorite_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorite_orders_order_id ON favorite_orders(order_id);
+
 CREATE TABLE IF NOT EXISTS payment_methods (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -279,6 +294,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   brand VARCHAR(50),
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_payment_methods_user_id ON payment_methods(user_id);
 
 -- ============================================================================
 -- SCHEDULING & WEBHOOKS
@@ -297,21 +314,365 @@ CREATE TABLE IF NOT EXISTS employee_schedules (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_employee_schedules_restaurant_id ON employee_schedules(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_employee_schedules_user_id ON employee_schedules(user_id);
+
 CREATE TABLE IF NOT EXISTS webhook_events (
   id VARCHAR(255) PRIMARY KEY,
   processed_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================================================
--- RLS POLICIES (Examples)
 -- ============================================================================
+-- RLS POLICIES & SECURITY
+-- ============================================================================
+
+-- 1. Helper Functions
+-- ----------------------------------------------------------------------------
+
+-- Get current authenticated user's ID
+CREATE OR REPLACE FUNCTION public.current_user_id()
+RETURNS UUID
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT auth.uid();
+$$;
+
+-- Check if user is a global owner (owns any restaurant)
+CREATE OR REPLACE FUNCTION public.is_global_owner()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    JOIN public.roles r ON ur.role_id = r.id
+    WHERE ur.user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    AND r.name = 'owner'
+  );
+$$;
+
+-- Check if user owns a specific restaurant
+CREATE OR REPLACE FUNCTION public.is_restaurant_owner(restaurant_uuid INTEGER)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_restaurants ur
+    WHERE ur.restaurant_id = restaurant_uuid
+    AND ur.user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+  );
+$$;
+
+-- Check reservation expiration (used by cron job)
+CREATE OR REPLACE FUNCTION public.check_reservation_expiration()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  UPDATE public.reservations
+  SET status = 'expired', updated_at = NOW()
+  WHERE status = 'tentative'
+  AND expires_at < NOW();
+END;
+$$;
+
+-- Seed developer function (if needed for testing)
+CREATE OR REPLACE FUNCTION public.seed_developer()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  -- Your seed logic here
+  NULL;
+END;
+$$;
+
+-- 2. Extension Mv 
+-- Note: 'ALTER EXTENSION' commands not typically kept in schema dump unless strictly needed, 
+-- but ensuring 'extensions' schema is good practice.
+CREATE SCHEMA IF NOT EXISTS extensions;
+
+-- 3. RLS Policies (Complete)
+-- ----------------------------------------------------------------------------
+
+-- USERS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "users_select_own" ON public.users
+  FOR SELECT USING (
+    email = (SELECT auth.email())  -- Optimization: wrap auth call
+    OR public.is_global_owner()
+  );
+
+CREATE POLICY "users_update_own" ON public.users
+  FOR UPDATE USING (email = (SELECT auth.email()));
+
+-- ORDERS
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "orders_select" ON public.orders
+  FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_restaurant_owner(restaurant_id)
+  );
+
+CREATE POLICY "orders_insert" ON public.orders
+  FOR INSERT WITH CHECK (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+  );
+
+CREATE POLICY "orders_update" ON public.orders
+  FOR UPDATE USING (
+    public.is_restaurant_owner(restaurant_id)
+  );
+
+-- ORDER_ITEMS
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "order_items_select" ON public.order_items
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_id
+      AND (
+        o.user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+        OR public.is_restaurant_owner(o.restaurant_id)
+      )
+    )
+  );
+
+CREATE POLICY "order_items_insert" ON public.order_items
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_id
+      AND o.user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    )
+  );
+
+-- RESERVATIONS
+ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "reservations_select" ON public.reservations
+  FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_restaurant_owner(restaurant_id)
+  );
+
+CREATE POLICY "reservations_insert" ON public.reservations
+  FOR INSERT WITH CHECK (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+  );
+
+CREATE POLICY "reservations_update" ON public.reservations
+  FOR UPDATE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_restaurant_owner(restaurant_id)
+  );
+
+CREATE POLICY "reservations_delete" ON public.reservations
+  FOR DELETE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_restaurant_owner(restaurant_id)
+  );
+
+-- WEBHOOK_EVENTS (backend only - no client access)
+ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "webhook_events_deny_all" ON public.webhook_events
+  FOR ALL USING (false);
+
+
+-- ROLES
+ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "roles_select_authenticated" ON public.roles
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "roles_insert" ON public.roles FOR INSERT WITH CHECK (public.is_global_owner());
+CREATE POLICY "roles_update" ON public.roles FOR UPDATE USING (public.is_global_owner());
+CREATE POLICY "roles_delete" ON public.roles FOR DELETE USING (public.is_global_owner());
+
+-- USER_ROLES
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_roles_select" ON public.user_roles
+  FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_global_owner()
+  );
+CREATE POLICY "user_roles_insert" ON public.user_roles FOR INSERT WITH CHECK (public.is_global_owner());
+CREATE POLICY "user_roles_update" ON public.user_roles FOR UPDATE USING (public.is_global_owner());
+CREATE POLICY "user_roles_delete" ON public.user_roles FOR DELETE USING (public.is_global_owner());
+
+-- USER_RESTAURANTS
+ALTER TABLE user_restaurants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_restaurants_select" ON public.user_restaurants
+  FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_global_owner()
+  );
+CREATE POLICY "user_restaurants_insert" ON public.user_restaurants FOR INSERT WITH CHECK (public.is_global_owner());
+CREATE POLICY "user_restaurants_update" ON public.user_restaurants FOR UPDATE USING (public.is_global_owner());
+CREATE POLICY "user_restaurants_delete" ON public.user_restaurants FOR DELETE USING (public.is_global_owner());
+
+-- FAVORITE_ORDERS
+ALTER TABLE favorite_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "favorite_orders_select" ON public.favorite_orders FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "favorite_orders_insert" ON public.favorite_orders FOR INSERT WITH CHECK (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "favorite_orders_update" ON public.favorite_orders FOR UPDATE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "favorite_orders_delete" ON public.favorite_orders FOR DELETE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+
+-- PAYMENT_METHODS
+ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "payment_methods_select" ON public.payment_methods FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "payment_methods_insert" ON public.payment_methods FOR INSERT WITH CHECK (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "payment_methods_update" ON public.payment_methods FOR UPDATE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+CREATE POLICY "payment_methods_delete" ON public.payment_methods FOR DELETE USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+);
+
+-- MENU_CATEGORIES
+ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "menu_categories_select" ON public.menu_categories
+  FOR SELECT USING (true);
+CREATE POLICY "menu_categories_insert" ON public.menu_categories FOR INSERT WITH CHECK (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "menu_categories_update" ON public.menu_categories FOR UPDATE USING (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "menu_categories_delete" ON public.menu_categories FOR DELETE USING (public.is_restaurant_owner(restaurant_id));
+
+-- MODIFIER_GROUPS
+ALTER TABLE modifier_groups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "modifier_groups_select" ON public.modifier_groups
+  FOR SELECT USING (true);
+CREATE POLICY "modifier_groups_insert" ON public.modifier_groups FOR INSERT WITH CHECK (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "modifier_groups_update" ON public.modifier_groups FOR UPDATE USING (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "modifier_groups_delete" ON public.modifier_groups FOR DELETE USING (public.is_restaurant_owner(restaurant_id));
+
+-- MODIFIERS
+ALTER TABLE modifiers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "modifiers_select" ON public.modifiers
+  FOR SELECT USING (true);
+CREATE POLICY "modifiers_insert" ON public.modifiers FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.modifier_groups mg
+      WHERE mg.id = group_id
+      AND public.is_restaurant_owner(mg.restaurant_id)
+    )
+);
+CREATE POLICY "modifiers_update" ON public.modifiers FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.modifier_groups mg
+      WHERE mg.id = group_id
+      AND public.is_restaurant_owner(mg.restaurant_id)
+    )
+);
+CREATE POLICY "modifiers_delete" ON public.modifiers FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.modifier_groups mg
+      WHERE mg.id = group_id
+      AND public.is_restaurant_owner(mg.restaurant_id)
+    )
+);
+
+-- MENU_ITEM_MODIFIER_GROUPS
+ALTER TABLE menu_item_modifier_groups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "menu_item_modifier_groups_select" ON public.menu_item_modifier_groups
+  FOR SELECT USING (true);
+CREATE POLICY "menu_item_modifier_groups_insert" ON public.menu_item_modifier_groups FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.menu_items mi
+      WHERE mi.id = menu_item_id
+      AND public.is_restaurant_owner(mi.restaurant_id)
+    )
+);
+CREATE POLICY "menu_item_modifier_groups_update" ON public.menu_item_modifier_groups FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.menu_items mi
+      WHERE mi.id = menu_item_id
+      AND public.is_restaurant_owner(mi.restaurant_id)
+    )
+);
+CREATE POLICY "menu_item_modifier_groups_delete" ON public.menu_item_modifier_groups FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.menu_items mi
+      WHERE mi.id = menu_item_id
+      AND public.is_restaurant_owner(mi.restaurant_id)
+    )
+);
+
+-- EMPLOYEE_SCHEDULES
+ALTER TABLE employee_schedules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "employee_schedules_select" ON public.employee_schedules
+  FOR SELECT USING (
+    user_id = (SELECT id FROM public.users WHERE email = (SELECT auth.email()))
+    OR public.is_restaurant_owner(restaurant_id)
+  );
+CREATE POLICY "employee_schedules_insert" ON public.employee_schedules FOR INSERT WITH CHECK (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "employee_schedules_update" ON public.employee_schedules FOR UPDATE USING (public.is_restaurant_owner(restaurant_id));
+CREATE POLICY "employee_schedules_delete" ON public.employee_schedules FOR DELETE USING (public.is_restaurant_owner(restaurant_id));
+
+-- RESTAURANTS
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read access" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "restaurants_select" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "restaurants_manage" ON restaurants FOR ALL 
+  USING (public.is_restaurant_owner(id));
 
-ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read access" ON menu_items FOR SELECT USING (true);
+-- MENU_ITEMS (Re-enabling explicit RLS if not already covered)
+-- Note: menu_items refers to direct table. Prior checks used constraints? 
+-- Migration added these specifically.
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;  
+CREATE POLICY "menu_items_select" ON menu_items FOR SELECT USING (true);
+CREATE POLICY "menu_items_manage" ON menu_items FOR ALL 
+  USING (public.is_restaurant_owner(restaurant_id));
 
+-- TABLES
 ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read access" ON tables FOR SELECT USING (true);
+CREATE POLICY "tables_select" ON tables FOR SELECT USING (true);
+CREATE POLICY "tables_manage" ON tables FOR ALL 
+  USING (public.is_restaurant_owner(restaurant_id));
 
--- Additional policies should be applied as needed for other tables.
+-- Legacy/Convenience function to seed a developer by email
+CREATE OR REPLACE FUNCTION public.seed_developer(dev_email VARCHAR)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  dev_user_id INT;
+  dev_role_id INT;
+BEGIN
+  -- Ensure user exists (you must signup first or insert here)
+  SELECT id INTO dev_user_id FROM public.users WHERE email = dev_email;
+  
+  IF dev_user_id IS NOT NULL THEN
+    SELECT id INTO dev_role_id FROM public.roles WHERE name = 'developer';
+    -- Assign role
+    INSERT INTO public.user_roles (user_id, role_id) VALUES (dev_user_id, dev_role_id)
+    ON CONFLICT DO NOTHING;
+    -- Update legacy role column for backward compatibility
+    UPDATE public.users SET role = 'developer' WHERE id = dev_user_id;
+  END IF;
+END;
+$$;

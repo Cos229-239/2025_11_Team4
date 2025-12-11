@@ -116,8 +116,8 @@ const KitchenDashboard = () => {
     try {
       const audio = new Audio('/notification.mp3');
       audio.play().catch(() => { });
-    } catch {
-
+    } catch (error) {
+      console.error('Audio playback failed', error);
     }
   }, []);
 
@@ -289,7 +289,14 @@ const KitchenDashboard = () => {
         emp.id === id ? { ...emp, on_duty: checked } : emp
       )
     );
-    // TODO: Call API to update status
+    try {
+      // Assuming there's an endpoint to update employee duty status
+      // You might need to import this function or use axios directly
+      // await updateEmployeeStatus(id, { on_duty: checked });
+      console.log(`Updated employee ${id} status to ${checked}`); // Keeping log until API is ready
+    } catch (err) {
+      console.error('Failed to update employee status', err);
+    }
   };
 
   // This is our example data, to be replaced with real API data in further production stages
