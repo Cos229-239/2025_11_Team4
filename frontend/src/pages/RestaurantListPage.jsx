@@ -13,7 +13,9 @@ import Logo from '../components/Logo';
 import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
 import SakuraImg from '../assets/sakurarestaurant.jpeg';
 import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
+import McFoodImg from '../assets/mcfood.jpeg';
 
+import backgroundImg from '../assets/background.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -94,7 +96,22 @@ const RestaurantListPage = () => {
     ? SakuraImg
     : r.name === 'Bella Italia'
     ? BellaItaliaImg
+    : r.name === 'McFood'
+    ? McFoodImg
     : '',
+
+imagePosition:
+  r.name === 'OrderEasy Restaurant'
+    ? 'bottom'
+    : r.name === 'Sakura Sushi Bar'
+    ? 'bottom'
+    : r.name === 'Bella Italia'
+    ? 'bottom'
+    : r.name === 'McFood'
+    ? 'center' 
+    : 'center',
+
+
 
       source: 'api',
       priceRange: '$$'
@@ -151,23 +168,11 @@ const RestaurantListPage = () => {
     <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 pb-28">
       {/* BACKGROUND GRADIENT */}
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle at center,
-              #E35504ff 0%,
-              #E35504aa 15%,
-              #000000 35%,
-              #5F2F14aa 55%,
-              #B5FF00ff 80%,
-              #000000 100%
-            )
-          `,
-          filter: "blur(40px)",
-          backgroundSize: "180% 180%",
-          opacity: 0.55,
-        }}
-      ></div>
+  className="absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-60"
+  style={{
+    backgroundImage: `url(${backgroundImg})`,
+  }}
+></div>
 
       {/* Header integrated into page flow */}
       <div className="container mx-auto px-4 mb-8 relative z-10">
@@ -350,10 +355,10 @@ const RestaurantListPage = () => {
                 {/* Image Section */}
                 <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
                   <img
-        src={restaurant.image}
-        alt={restaurant.name}
-        className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
-      />
+                src={restaurant.image}
+                alt={restaurant.name}
+                className={`w-full h-full object-cover object-${restaurant.imagePosition} transform group-hover:scale-110 transition-transform duration-300`}
+              />
 
 <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
 
