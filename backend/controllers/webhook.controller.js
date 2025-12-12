@@ -1,10 +1,10 @@
-const stripeKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeKey) {
     logger.warn('⚠️ STRIPE_SECRET_KEY missing. Webhooks disabled.');
 }
 const stripe = stripeKey ? require('stripe')(stripeKey) : null;
 const paymentService = require('../services/payment.service');
 const logger = require('../utils/logger');
+const stripeKey = process.env.STRIPE_SECRET_KEY;
 
 exports.handleStripeWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature'];
