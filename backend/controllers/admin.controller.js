@@ -3,7 +3,6 @@ const logger = require('../utils/logger');
 
 class AdminController {
 
-    // Employees
     async listEmployees(req, res) {
         try {
             const { restaurant_id } = req.query;
@@ -12,6 +11,19 @@ class AdminController {
         } catch (error) {
             logger.error('Error fetching employees', { error });
             res.status(500).json({ success: false, message: 'Failed to fetch employees' });
+        }
+    }
+
+    async createEmployee(req, res) {
+        try {
+            const employee = await adminService.createEmployee(req.body);
+            res.status(201).json({ success: true, employee });
+        } catch (error) {
+            logger.error('Error creating employee', { error });
+            if (error.code === '23505') { // Unique violation
+                return res.status(400).json({ success: false, message: 'Email already exists' });
+            }
+            res.status(500).json({ success: false, message: 'Failed to create employee' });
         }
     }
 

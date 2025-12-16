@@ -281,7 +281,7 @@ const PaymentPage = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
             </div>
           ) : clientSecret ? (
-            <Elements stripe={stripePromise} options={options}>
+            <Elements stripe={stripePromise} options={options} key={clientSecret}>
               <CheckoutForm
                 amount={cartTotal + tipAmount}
                 onSuccess={handlePaymentSuccess}

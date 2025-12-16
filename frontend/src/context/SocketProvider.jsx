@@ -19,7 +19,6 @@ export const SocketProvider = ({ children }) => {
 
 
         const socketInstance = io(SOCKET_URL, {
-            transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
@@ -68,8 +67,13 @@ export const SocketProvider = ({ children }) => {
 
         // Cleanup on unmount
         return () => {
-
-            socketInstance.disconnect();
+            if (socketInstance) {
+                // Remove listeners to prevent memory leaks
+                socketInstance.off('connect');
+                socketInstance.off('connect_error');
+                socketInstance.off('disconnect');
+                socketInstance.disconnect();
+            }
         };
     }, []);
 

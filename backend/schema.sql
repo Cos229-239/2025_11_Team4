@@ -676,3 +676,20 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- Media Assets for Scalable Storage (Supabase 50MB Limit)
+CREATE TABLE IF NOT EXISTS public.media_assets (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    restaurant_id INTEGER REFERENCES public.restaurants(id) ON DELETE CASCADE,
+    uploader_id UUID REFERENCES public.users(id), -- Changed to public.users as auth.users isn't visible here
+    file_path TEXT NOT NULL,
+    public_url TEXT NOT NULL,
+    bucket_name TEXT DEFAULT 'assets-01',
+    size_bytes BIGINT,
+    mime_type TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_restaurant ON public.media_assets(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_media_bucket ON public.media_assets(bucket_name);

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
 import { useUserAuth } from '../../../hooks/useUserAuth';
+import imageCompression from 'browser-image-compression';
 
 const SERVICE_TYPES = [
     { value: 'dine-in', label: 'Dine-in', icon: UtensilsCrossed },
@@ -310,15 +311,28 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
         if (restaurantId) fetchProfile();
     }, [restaurantId]);
 
-    const handleImageUpload = async (e, type) => {
-        const file = e.target.files[0];
+    const handleImageUpload = async (file, type) => {
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('image', file);
 
         try {
             setSaving(true);
+
+            // Compression options for 50MB bucket limit strategy
+            // Target very small file sizes (< 50KB)
+            const options = {
+                maxSizeMB: 0.05, // 50KB strict target
+                maxWidthOrHeight: 1080, // Reasonable HD limit
+                useWebWorker: true,
+                fileType: 'image/webp' // Force WebP for better compression
+            };
+
+            console.log(`Compressing ${type}... Original size: ${file.size / 1024}KB`);
+            const compressedFile = await imageCompression(file, options);
+            console.log(`Compressed ${type}: ${compressedFile.size / 1024}KB`);
+
+            const formData = new FormData();
+            formData.append('image', compressedFile);
+
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
                 method: 'POST',
                 headers: {
