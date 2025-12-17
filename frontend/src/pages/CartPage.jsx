@@ -481,7 +481,7 @@ const CartPage = () => {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `
+          backgroundImage: `
             radial-gradient(circle at center,
               #E35504ff 0%,
               #E35504aa 15%,
