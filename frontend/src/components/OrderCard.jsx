@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { timeAgo, formatTime } from '../utils/timeAgo';
 import { useConfirm } from '../hooks/useConfirm';
+import { fetchWithAuth } from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -117,13 +118,11 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     setIsUpdating(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${API_URL}/api/orders/${order.id}/status`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: config.nextStatus }),
         }
       );
@@ -154,13 +153,11 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     setIsUpdating(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${API_URL}/api/orders/${order.id}/status`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
         }
       );

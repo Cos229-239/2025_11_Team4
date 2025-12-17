@@ -1,6 +1,13 @@
 const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
+const ALLOWED_USER_UPDATE_FIELDS = new Set([
+    'name',
+    'email',
+    'phone',
+    'on_duty',
+]);
+
 class UserModel {
     static async create({ name, email, phone, password, role = 'customer' }) {
         const passwordHash = await bcrypt.hash(password, 10);
@@ -29,6 +36,7 @@ class UserModel {
         let idx = 1;
 
         for (const [key, value] of Object.entries(updates)) {
+            if (!ALLOWED_USER_UPDATE_FIELDS.has(key)) continue;
             if (value !== undefined) {
                 fields.push(`${key} = $${idx++}`);
                 values.push(value);

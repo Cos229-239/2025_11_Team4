@@ -90,7 +90,6 @@ router.post('/signup', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (name, phone, email, password_hash, role, created_at, updated_at)
        VALUES ($1,$2,$3,$4,'customer',NOW(),NOW())
-       ON CONFLICT (email) DO UPDATE SET name=EXCLUDED.name, phone=EXCLUDED.phone, updated_at=NOW()
        RETURNING id, name, phone, email, role`,
       [name || null, phone || null, email, pwHash]
     );
@@ -98,6 +97,9 @@ router.post('/signup', async (req, res) => {
     const token = signToken({ sub: user.id, email: user.email, role: user.role });
     res.status(201).json({ success: true, token, user });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'An account with this email already exists' });
+    }
     res.status(500).json({ success: false, message: 'Failed to sign up', error: error.message });
   }
 });

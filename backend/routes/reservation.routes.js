@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth.middleware');
+const { authenticateToken, requireRole } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validation.middleware');
 const { createReservationSchema } = require('../utils/validationSchemas');
 const reservationController = require('../controllers/reservation.controller');
@@ -110,25 +110,25 @@ router.get('/me', authenticateToken, reservationController.getMe);
  * GET /api/reservations/:id
  * Get a specific reservation by ID
  */
-router.get('/:id', reservationController.get);
+router.get('/:id', authenticateToken, reservationController.get);
 
 /**
  * GET /api/reservations
  * Get all reservations with filters
  */
-router.get('/', reservationController.list);
+router.get('/', authenticateToken, requireRole(['developer', 'owner', 'employee']), reservationController.list);
 
 /**
  * PATCH /api/reservations/:id/status
  * Update reservation status
  */
-router.patch('/:id/status', reservationController.updateStatus);
+router.patch('/:id/status', authenticateToken, reservationController.updateStatus);
 
 /**
  * DELETE /api/reservations/:id
  * Cancel a reservation
  */
-router.delete('/:id', reservationController.cancel);
+router.delete('/:id', authenticateToken, reservationController.cancel);
 
 /**
  * POST /api/reservations/:id/verify
@@ -141,13 +141,13 @@ router.post('/:id/verify', reservationController.verify);
  * POST /api/reservations/:id/checkin
  * Customer marks "I'm Here" - triggers kitchen to start preparing pre-order
  */
-router.post('/:id/checkin', reservationController.checkIn);
+router.post('/:id/checkin', authenticateToken, reservationController.checkIn);
 
 /**
  * GET /api/reservations/restaurant/:restaurant_id/today
  * Get today's reservations for a specific restaurant
  */
-router.get('/restaurant/:restaurant_id/today', reservationController.getToday);
+router.get('/restaurant/:restaurant_id/today', authenticateToken, requireRole(['developer', 'owner', 'employee']), reservationController.getToday);
 
 
 

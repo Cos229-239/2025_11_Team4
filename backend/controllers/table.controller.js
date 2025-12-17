@@ -7,6 +7,9 @@ const tableModel = require('../models/table.model');
 const logger = require('../utils/logger');
 const qrCodeUtil = require('../utils/qrcode.util');
 const TableDTO = require('../dtos/table.dto');
+const PublicTableDTO = require('../dtos/table.public.dto');
+
+const isStaffRequest = (req) => ['developer', 'owner', 'employee'].includes(req.user?.role);
 
 /**
  * Get all tables
@@ -58,7 +61,7 @@ const getTableById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: new TableDTO(table),
+      data: isStaffRequest(req) ? new TableDTO(table) : new PublicTableDTO(table),
     });
   } catch (error) {
     logger.error('Error in getTableById controller:', error);

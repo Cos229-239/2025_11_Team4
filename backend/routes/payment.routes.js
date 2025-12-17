@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payment.controller');
-const { authenticateToken } = require('../middleware/auth.middleware');
+const { authenticateToken, requireRole } = require('../middleware/auth.middleware');
 
 // Create payment intent
 router.post('/create-intent', paymentController.createPaymentIntent);
@@ -10,9 +10,9 @@ router.post('/create-intent', paymentController.createPaymentIntent);
 router.post('/confirm', paymentController.confirmPayment);
 
 // Refund payment
-router.post('/refund', paymentController.refundPayment);
+router.post('/refund', authenticateToken, requireRole(['developer', 'owner']), paymentController.refundPayment);
 
 // Get payment intent details
-router.get('/:id', paymentController.getPaymentIntent);
+router.get('/:id', authenticateToken, requireRole(['developer', 'owner']), paymentController.getPaymentIntent);
 
 module.exports = router;

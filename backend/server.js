@@ -5,6 +5,7 @@ const compression = require('compression');
 const http = require('http');
 
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { validateEnv } = require('./utils/env.validation');
 validateEnv();
@@ -168,6 +169,29 @@ const startServer = (port) => {
   // Create a fresh HTTP server and Socket.IO for this attempt
   server = http.createServer(app);
   io = new Server(server, { cors: ioCorsOptions });
+
+  // Attach user context to sockets when a JWT is provided.
+  io.use((socket, next) => {
+    try {
+      const token =
+        socket.handshake?.auth?.token ||
+        (() => {
+          const authHeader = socket.handshake?.headers?.authorization || '';
+          return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        })();
+
+      if (!token) return next();
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return next(new Error('Unauthorized'));
+        const sub = decoded?.sub ?? decoded?.id ?? decoded?.user_id;
+        socket.user = sub ? { ...decoded, sub, id: sub } : decoded;
+        next();
+      });
+    } catch (e) {
+      next(new Error('Unauthorized'));
+    }
+  });
 
   // Expose io to routes and jobs
   app.set('io', io);

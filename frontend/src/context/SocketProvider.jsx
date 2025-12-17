@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import SocketContext from './SocketContext';
+import { useUserAuth } from '../hooks/useUserAuth';
 
 // Socket server URL from environment or default
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -13,12 +14,14 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
+    const { token } = useUserAuth();
 
     useEffect(() => {
         // Initialize Socket.IO connection
 
 
         const socketInstance = io(SOCKET_URL, {
+            auth: token ? { token } : {},
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
@@ -40,19 +43,16 @@ export const SocketProvider = ({ children }) => {
         });
 
         // Disconnected
-        socketInstance.on('disconnect', (reason) => {
-
+        socketInstance.on('disconnect', () => {
             setIsConnected(false);
         });
 
         // Reconnection attempt
-        socketInstance.on('reconnect_attempt', (attemptNumber) => {
-
+        socketInstance.on('reconnect_attempt', () => {
         });
 
         // Reconnection successful
-        socketInstance.on('reconnect', (attemptNumber) => {
-
+        socketInstance.on('reconnect', () => {
             setIsConnected(true);
             setConnectionError(null);
         });
@@ -75,7 +75,7 @@ export const SocketProvider = ({ children }) => {
                 socketInstance.disconnect();
             }
         };
-    }, []);
+    }, [token]);
 
     const value = {
         socket,

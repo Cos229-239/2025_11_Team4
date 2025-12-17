@@ -4,6 +4,8 @@ const emailService = require('../services/email.service');
 const emailTemplates = require('../utils/email.templates');
 const { getReservationDurationMinutes } = require('../utils/settings.service');
 
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+
 const STATUS_TRANSITIONS = {
     'pending': ['preparing', 'cancelled'],
     'preparing': ['ready', 'cancelled'],
@@ -38,6 +40,7 @@ class OrderService {
         // 1. Validation Logic
         this._validateOrderType(order_type);
         this._validatePayment(payment_status, payment_intent_id, payment_amount);
+        await this._verifyStripePayment(payment_intent_id, payment_amount, tip_amount);
         await this._validateIdempotency(payment_intent_id);
 
         if (order_type === 'dine-in' || order_type === 'walk-in') {
@@ -231,6 +234,33 @@ class OrderService {
     _validatePayment(status, id, amount) {
         if (status !== 'completed') throw new Error('Payment must be completed before creating order');
         if (!id || !amount) throw new Error('Payment intent ID and amount are required');
+    }
+
+    async _verifyStripePayment(paymentIntentId, paymentAmount, tipAmount) {
+        const expectedTotalCents = Math.round((Number(paymentAmount || 0) + Number(tipAmount || 0)) * 100);
+
+        if (!stripe) {
+            if (process.env.NODE_ENV === 'production') {
+                const err = new Error('Stripe is not configured (missing STRIPE_SECRET_KEY)');
+                err.statusCode = 500;
+                throw err;
+            }
+            logger.warn('Stripe verification skipped (missing STRIPE_SECRET_KEY)');
+            return;
+        }
+
+        const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (intent.status !== 'succeeded') {
+            const err = new Error(`Payment not successful (status: ${intent.status})`);
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (expectedTotalCents > 0 && intent.amount !== expectedTotalCents) {
+            const err = new Error('Payment amount mismatch');
+            err.statusCode = 400;
+            throw err;
+        }
     }
 
     async _validateIdempotency(paymentIntentId) {
