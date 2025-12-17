@@ -1,0 +1,11 @@
+--- DIAGNOSTIC RESULT ---
+Users count: 6
+Restaurants count: 3
+User-Restaurant links count: 4
+Orders count: 25
+Reservations count: 11
+User Roles distribution:
+  customer: 1
+  employee: 1
+  developer: 4
+--- END RESULT ---

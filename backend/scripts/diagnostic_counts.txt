@@ -1,0 +1,11 @@
+--- DIAGNOSTIC PER RESTAURANT ---
+Restaurant [1] OrderEasy Restaurant:
+  Orders: 9
+  Reservations: 6
+Restaurant [2] Bella Italia:
+  Orders: 0
+  Reservations: 0
+Restaurant [3] Sakura Sushi Bar:
+  Orders: 10
+  Reservations: 5
+--- END DETAIL ---

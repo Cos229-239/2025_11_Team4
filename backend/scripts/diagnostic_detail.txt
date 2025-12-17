@@ -1,0 +1,20 @@
+--- DIAGNOSTIC DATA DETAIL ---
+USERS:
+  [1] Eric Joel Reyes Rivera (OrderEasy@gmail.com) - developer
+  [2] Dauntai Thompson (DThompson7@student.fullsail.edu) - developer
+  [3] Eric J. Reyes Rivera (test_test_123@example.com) - customer
+  [4] Admin (ordereasycustomer@gmail.com) - developer
+  [5] Eric Reyes Rivera (RaikodYuki@gmail.com) - developer
+  [7] Pedro (Pedro@OrderEasy.com) - employee
+
+RESTAURANTS:
+  [1] OrderEasy Restaurant
+  [2] Bella Italia
+  [3] Sakura Sushi Bar
+
+LINKS (Who owns what):
+  ordereasycustomer@gmail.com -> OrderEasy Restaurant [1]
+  Pedro@OrderEasy.com -> Bella Italia [2]
+  DThompson7@student.fullsail.edu -> Sakura Sushi Bar [3]
+  ordereasycustomer@gmail.com -> Sakura Sushi Bar [3]
+--- END DATA DETAIL ---
