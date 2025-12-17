@@ -1,6 +1,9 @@
 const request = require('supertest');
 const express = require('express');
 
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_unit_dummy_key';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_must_be_longer_than_32_chars_1234567890';
+
 // Mock dependencies
 const mockCreate = jest.fn();
 const mockRetrieve = jest.fn();

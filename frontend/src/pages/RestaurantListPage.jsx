@@ -10,14 +10,9 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Logo from '../components/Logo';
 
-import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
-import SakuraImg from '../assets/sakurarestaurant.jpeg';
-import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
-
+// Hardcoded images removed
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-
 
 /**
  * RestaurantListPage Component
@@ -87,15 +82,9 @@ const RestaurantListPage = () => {
       rating: Number(r.rating || 0).toFixed(1),
       deliveryTime: '',
       distance: typeof r.distance_km === 'number' ? `${Number(r.distance_km).toFixed(1)} km` : '',
-      image:
-  r.name === 'OrderEasy Restaurant'
-    ? OrderEasyImg
-    : r.name === 'Sakura Sushi Bar'
-    ? SakuraImg
-    : r.name === 'Bella Italia'
-    ? BellaItaliaImg
-    : '',
-
+      image: r.cover_image_url
+        ? (r.cover_image_url.startsWith('http') ? r.cover_image_url : `${API_URL}${r.cover_image_url}`)
+        : '',
       source: 'api',
       priceRange: '$$'
     }));
@@ -349,13 +338,19 @@ const RestaurantListPage = () => {
               >
                 {/* Image Section */}
                 <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
-                  <img
-        src={restaurant.image}
-        alt={restaurant.name}
-        className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
-      />
+                  {restaurant.image ? (
+                    <img
+                      src={restaurant.image}
+                      alt={restaurant.name}
+                      className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                      <span className="text-4xl">🍽️</span>
+                    </div>
+                  )}
 
-<div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
 
 
 

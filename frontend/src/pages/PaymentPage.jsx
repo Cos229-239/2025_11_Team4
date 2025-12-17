@@ -111,7 +111,21 @@ const PaymentPage = () => {
         body: JSON.stringify({
           paymentIntentId: paymentIntent.id,
           reservationId: order_type === 'pre-order' && reservation_id ? parseInt(reservation_id, 10) : null,
-          reservationIntent: order_type === 'pre-order' && !reservation_id && reservation_intent ? reservation_intent : null
+          reservationIntent: order_type === 'pre-order' && !reservation_id && reservation_intent ? reservation_intent : null,
+          order: {
+            table_id: order_type === 'dine-in' ? parseInt(table_id) : null,
+            restaurant_id: restaurant_id ? parseInt(restaurant_id) : null,
+            order_type,
+            reservation_id: order_type === 'pre-order' && reservation_id ? parseInt(reservation_id, 10) : null,
+            scheduled_for: order_type === 'pre-order' ? scheduled_for : null,
+            customer_notes,
+            items: cart.map((item) => ({
+              menu_item_id: item.id,
+              quantity: item.quantity,
+              special_instructions: item.special_instructions || '',
+            })),
+            tip_amount: tipAmount
+          }
         }),
       });
 
@@ -120,41 +134,39 @@ const PaymentPage = () => {
         throw new Error(confirmData.message || 'Payment confirmed but failed to finalize reservation');
       }
 
-      // Create Order
-      const confirmedReservation = confirmData.data && confirmData.data.id ? confirmData.data : null;
-      const finalReservationId = order_type === 'pre-order'
-        ? (confirmedReservation?.id || (reservation_id ? parseInt(reservation_id, 10) : null))
-        : null;
+      // Prefer server-created order (more secure); fallback to legacy flow if needed.
+      let createdOrder = confirmData.order || null;
+      if (!createdOrder) {
+        const legacyOrderData = {
+          table_id: order_type === 'dine-in' ? parseInt(table_id) : null,
+          restaurant_id: restaurant_id ? parseInt(restaurant_id) : null,
+          order_type,
+          reservation_id: order_type === 'pre-order' && reservation_id ? parseInt(reservation_id, 10) : null,
+          scheduled_for: order_type === 'pre-order' ? scheduled_for : null,
+          customer_notes,
+          items: cart.map((item) => ({
+            menu_item_id: item.id,
+            quantity: item.quantity,
+            special_instructions: item.special_instructions || '',
+          })),
+          payment_status: 'completed',
+          payment_method: 'stripe',
+          payment_intent_id: paymentIntent.id,
+          payment_amount: (paymentIntent.amount / 100) - tipAmount, // store subtotal; backend will add tip_amount
+          tip_amount: tipAmount
+        };
 
-      const orderData = {
-        table_id: order_type === 'dine-in' ? parseInt(table_id) : null,
-        restaurant_id: restaurant_id ? parseInt(restaurant_id) : null,
-        order_type,
-        reservation_id: order_type === 'pre-order' ? finalReservationId : null,
-        scheduled_for: order_type === 'pre-order' ? scheduled_for : null,
-        customer_notes,
-        items: cart.map((item) => ({
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          special_instructions: item.special_instructions || '',
-        })),
-        payment_status: 'completed',
-        payment_method: 'stripe',
-        payment_intent_id: paymentIntent.id,
-        payment_amount: paymentIntent.amount / 100, // Convert cents back to dollars
-        user_id: sessionStorage.getItem('ordereasy_user_id'),
-        tip_amount: tipAmount
-      };
+        const orderResponse = await fetchWithAuth(`${API_URL}/api/orders`, {
+          method: 'POST',
+          body: JSON.stringify(legacyOrderData),
+        });
 
-      const orderResponse = await fetchWithAuth(`${API_URL}/api/orders`, {
-        method: 'POST',
-        body: JSON.stringify(orderData),
-      });
+        const orderResponseData = await orderResponse.json();
 
-      const orderResponseData = await orderResponse.json();
-
-      if (!orderResponseData.success) {
-        throw new Error(orderResponseData.error || 'Failed to create order');
+        if (!orderResponseData.success) {
+          throw new Error(orderResponseData.error || 'Failed to create order');
+        }
+        createdOrder = orderResponseData.data;
       }
 
       // Success! Clear cart and navigate
@@ -162,7 +174,7 @@ const PaymentPage = () => {
       clearPreOrderContext();
 
       setTimeout(() => {
-        navigate(`/confirmation/${orderResponseData.data.id}`, {
+        navigate(`/confirmation/${createdOrder.id}`, {
           state: { order_type, paid: true },
           replace: true
         });
@@ -281,7 +293,7 @@ const PaymentPage = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
             </div>
           ) : clientSecret ? (
-            <Elements stripe={stripePromise} options={options}>
+            <Elements stripe={stripePromise} options={options} key={clientSecret}>
               <CheckoutForm
                 amount={cartTotal + tipAmount}
                 onSuccess={handlePaymentSuccess}

@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const logger = require('../utils/logger');
+const bcrypt = require('bcryptjs');
 
 class AdminService {
 
@@ -27,6 +28,53 @@ class AdminService {
 
         const result = await pool.query(query, params);
         return result.rows;
+    }
+
+    async createEmployee(data) {
+        const {
+            name, email, phone, password, restaurant_id,
+            position, hourly_rate, hire_date, emergency_contact,
+            role = 'employee'
+        } = data;
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const pwHash = await bcrypt.hash(password, 10);
+
+            // 1. Create User
+            const userRes = await client.query(
+                `INSERT INTO users (
+                    name, email, phone, password_hash, role, 
+                    position, hourly_rate, hire_date, emergency_contact,
+                    created_at, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                RETURNING id, name, email, role`,
+                [
+                    name, email, phone, pwHash, role,
+                    position, hourly_rate ? parseFloat(hourly_rate) : null,
+                    hire_date || null, emergency_contact
+                ]
+            );
+            const user = userRes.rows[0];
+
+            // 2. Link to Restaurant
+            if (restaurant_id) {
+                await client.query(
+                    `INSERT INTO user_restaurants (user_id, restaurant_id) VALUES ($1, $2)`,
+                    [user.id, restaurant_id]
+                );
+            }
+
+            await client.query('COMMIT');
+            return user;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     async updateEmployee(id, data) {
@@ -72,9 +120,11 @@ class AdminService {
     // Restaurants
     // ========================
 
-    async getMyRestaurants(user_id, user_role) {
+    async getMyRestaurants(user_id, user_role_or_roles) {
+        const roles = Array.isArray(user_role_or_roles) ? user_role_or_roles : [user_role_or_roles].filter(Boolean);
+
         // Super Admin access for developers
-        if (user_role === 'developer') {
+        if (roles.includes('developer')) {
             const result = await pool.query('SELECT * FROM restaurants ORDER BY name');
             return result.rows;
         }

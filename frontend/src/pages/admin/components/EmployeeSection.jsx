@@ -418,7 +418,7 @@ const EmployeeSection = ({ restaurantId }) => {
                                             type="number"
                                             step="0.01"
                                             min="0"
-                                            value={currentEmployee.hourly_rate}
+                                            value={currentEmployee.hourly_rate || ''}
                                             onChange={e => setCurrentEmployee({ ...currentEmployee, hourly_rate: e.target.value })}
                                             className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 focus:border-brand-lime outline-none"
                                             placeholder="15.00"
@@ -433,7 +433,7 @@ const EmployeeSection = ({ restaurantId }) => {
                                     <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                                     <input
                                         type="date"
-                                        value={currentEmployee.hire_date}
+                                        value={currentEmployee.hire_date || ''}
                                         onChange={e => setCurrentEmployee({ ...currentEmployee, hire_date: e.target.value })}
                                         className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 focus:border-brand-lime outline-none"
                                     />

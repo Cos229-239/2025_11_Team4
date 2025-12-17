@@ -23,4 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: cd backend && npm ci
+      - run: cd backend && npm ci && npm test
+        env:
+          JWT_SECRET: "test_jwt_secret_must_be_longer_than_32_chars_1234567890"
+          STRIPE_SECRET_KEY: "sk_test_ci_dummy_key"

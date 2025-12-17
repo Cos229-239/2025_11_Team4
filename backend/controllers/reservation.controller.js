@@ -8,6 +8,37 @@ const { buildReservationICS } = require('../utils/ics');
 
 class ReservationController {
 
+    async _getEffectiveRoles(userId, legacyRole) {
+        const roles = new Set();
+        if (legacyRole) roles.add(legacyRole);
+        try {
+            const result = await pool.query(`
+                SELECT r.name
+                FROM roles r
+                JOIN user_roles ur ON r.id = ur.role_id
+                WHERE ur.user_id = $1
+            `, [userId]);
+            result.rows.forEach(row => roles.add(row.name));
+        } catch (e) {
+            // If roles tables are not present/migrated in some environments, fall back to legacy JWT role.
+            logger.warn('RBAC role lookup failed', { error: e.message });
+        }
+        return Array.from(roles);
+    }
+
+    async _assertCanAccessReservation(req, reservation) {
+        const requesterId = req.user?.sub ? parseInt(req.user.sub, 10) : null;
+        if (!requesterId) throw { status: 401, message: 'Unauthorized' };
+
+        const roles = await this._getEffectiveRoles(requesterId, req.user?.role);
+        const isStaff = roles.some(r => ['developer', 'owner', 'employee'].includes(r));
+        if (isStaff) return;
+
+        if (reservation.user_id && parseInt(reservation.user_id, 10) === requesterId) return;
+
+        throw { status: 403, message: 'Access denied' };
+    }
+
     async create(req, res) {
         try {
             const user_id = req.user.sub;
@@ -85,6 +116,7 @@ class ReservationController {
         try {
             const { id } = req.params;
             const reservation = await reservationService.getReservationById(id);
+            await this._assertCanAccessReservation(req, reservation);
             res.json({ success: true, data: new ReservationDTO(reservation) });
         } catch (error) {
             logger.error('Error fetching reservation', { error });
@@ -118,6 +150,12 @@ class ReservationController {
         try {
             const { id } = req.params;
             const { status } = req.body;
+
+            // Customers can only modify their own reservations (RBAC-enforced here).
+            // Staff are allowed by role.
+            const existing = await reservationService.getReservationById(id);
+            await this._assertCanAccessReservation(req, existing);
+
             const result = await reservationService.updateStatus(id, status);
             res.json({ success: true, message: 'Status updated', data: new ReservationDTO(result) });
         } catch (error) {
@@ -185,6 +223,10 @@ class ReservationController {
         try {
             const { id } = req.params;
             const io = req.app.get('io');
+
+            const existing = await reservationService.getReservationById(id);
+            await this._assertCanAccessReservation(req, existing);
+
             const { reservation, kitchenNotified } = await reservationService.checkInReservation(id, io);
 
             res.json({
@@ -212,6 +254,8 @@ class ReservationController {
     async cancel(req, res) {
         try {
             const { id } = req.params;
+            const existing = await reservationService.getReservationById(id);
+            await this._assertCanAccessReservation(req, existing);
             const result = await reservationService.updateStatus(id, 'cancelled');
             res.json({ success: true, message: 'Reservation cancelled successfully', data: new ReservationDTO(result) });
         } catch (error) {

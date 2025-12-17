@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   party_size INTEGER NOT NULL CHECK (party_size > 0),
   reservation_date DATE NOT NULL,
   reservation_time TIME NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending',
+  status VARCHAR(50) DEFAULT 'tentative',
   special_requests TEXT,
   payment_id VARCHAR(255),
   confirmed_at TIMESTAMP,
@@ -382,6 +382,52 @@ BEGIN
   WHERE status = 'tentative'
   AND expires_at < NOW();
 END;
+$$;
+
+-- Check for reservation conflicts within a duration window (minutes).
+-- Returns any conflicting reservation IDs for the given table/date/time, excluding the provided reservation ID.
+CREATE OR REPLACE FUNCTION public.check_reservation_conflicts(
+  reservation_uuid INTEGER,
+  table_uuid INTEGER,
+  reservation_day DATE,
+  reservation_clock TIME,
+  duration_minutes INTEGER
+)
+RETURNS TABLE(conflict_id INTEGER)
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT r.id AS conflict_id
+  FROM public.reservations r
+  WHERE r.table_id = table_uuid
+    AND r.reservation_date = reservation_day
+    AND r.status IN ('confirmed', 'seated')
+    AND r.id <> reservation_uuid
+    AND abs(extract(epoch from (r.reservation_time - reservation_clock))) < (duration_minutes * 60);
+$$;
+
+-- Expire tentative reservations that are past expires_at.
+-- Returns both a count and the IDs updated for easier monitoring.
+CREATE OR REPLACE FUNCTION public.cleanup_expired_reservations()
+RETURNS TABLE(expired_count INTEGER, expired_ids INTEGER[])
+LANGUAGE sql
+VOLATILE
+SET search_path = ''
+AS $$
+  WITH updated AS (
+    UPDATE public.reservations
+    SET status = 'expired',
+        updated_at = NOW()
+    WHERE status = 'tentative'
+      AND expires_at IS NOT NULL
+      AND expires_at < NOW()
+    RETURNING id
+  )
+  SELECT
+    COUNT(*)::INTEGER AS expired_count,
+    COALESCE(array_agg(id), ARRAY[]::INTEGER[]) AS expired_ids
+  FROM updated;
 $$;
 
 -- Seed developer function (if needed for testing)
@@ -676,3 +722,20 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- Media Assets for Scalable Storage (Supabase 50MB Limit)
+CREATE TABLE IF NOT EXISTS public.media_assets (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    restaurant_id INTEGER REFERENCES public.restaurants(id) ON DELETE CASCADE,
+    uploader_id UUID REFERENCES public.users(id), -- Changed to public.users as auth.users isn't visible here
+    file_path TEXT NOT NULL,
+    public_url TEXT NOT NULL,
+    bucket_name TEXT DEFAULT 'assets-01',
+    size_bytes BIGINT,
+    mime_type TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_restaurant ON public.media_assets(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_media_bucket ON public.media_assets(bucket_name);

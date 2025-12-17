@@ -129,10 +129,27 @@ class ReservationService {
 
             // Conflict Check
             const buffer1 = await getReservationDurationMinutes(reservation.restaurant_id);
-            const conflictCheck = await client.query(
-                `SELECT * FROM check_reservation_conflicts($1, $2, $3, $4, $5)`,
-                [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer1]
-            );
+            let conflictCheck = { rows: [] };
+            if (reservation.table_id) {
+                try {
+                    conflictCheck = await client.query(
+                        `SELECT * FROM check_reservation_conflicts($1, $2, $3, $4, $5)`,
+                        [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer1]
+                    );
+                } catch (e) {
+                    // Fallback for environments without the helper function.
+                    conflictCheck = await client.query(
+                        `SELECT r.id AS conflict_id
+                         FROM reservations r
+                         WHERE r.table_id = $2
+                           AND r.reservation_date = $3
+                           AND r.status IN ('confirmed', 'seated')
+                           AND r.id <> $1
+                           AND abs(extract(epoch from (r.reservation_time - $4::time))) < ($5 * 60)`,
+                        [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer1]
+                    );
+                }
+            }
 
             if (conflictCheck.rows.length > 0) {
                 await client.query("UPDATE reservations SET status = 'expired', updated_at = NOW() WHERE id = $1", [id]);
@@ -255,7 +272,7 @@ class ReservationService {
     }
 
     async updateStatus(id, status) {
-        const validStatuses = ['tentative', 'confirmed', 'seated', 'completed', 'cancelled', 'no-show'];
+        const validStatuses = ['tentative', 'confirmed', 'seated', 'completed', 'cancelled', 'no-show', 'expired'];
         if (!validStatuses.includes(status)) {
             throw { status: 400, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
         }
@@ -396,10 +413,26 @@ class ReservationService {
 
             // Conflict check
             const buffer = await getReservationDurationMinutes(reservation.restaurant_id);
-            const conflictCheck = await client.query(
-                `SELECT * FROM check_reservation_conflicts($1, $2, $3, $4, $5)`,
-                [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer]
-            );
+            let conflictCheck = { rows: [] };
+            if (reservation.table_id) {
+                try {
+                    conflictCheck = await client.query(
+                        `SELECT * FROM check_reservation_conflicts($1, $2, $3, $4, $5)`,
+                        [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer]
+                    );
+                } catch (e) {
+                    conflictCheck = await client.query(
+                        `SELECT r.id AS conflict_id
+                         FROM reservations r
+                         WHERE r.table_id = $2
+                           AND r.reservation_date = $3
+                           AND r.status IN ('confirmed', 'seated')
+                           AND r.id <> $1
+                           AND abs(extract(epoch from (r.reservation_time - $4::time))) < ($5 * 60)`,
+                        [id, reservation.table_id, reservation.reservation_date, reservation.reservation_time, buffer]
+                    );
+                }
+            }
 
             if (conflictCheck.rows.length > 0) {
                 await client.query("UPDATE reservations SET status = 'expired', updated_at = NOW() WHERE id = $1", [id]);

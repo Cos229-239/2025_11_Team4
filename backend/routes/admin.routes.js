@@ -39,6 +39,9 @@ router.use(requireRole(['developer', 'owner']));
 // GET /api/admin/employees
 router.get('/employees', adminController.listEmployees);
 
+// POST /api/admin/employees
+router.post('/employees', adminController.createEmployee);
+
 // PUT /api/admin/employees/:id
 router.put('/employees/:id', adminController.updateEmployee);
 

@@ -6,9 +6,11 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       onClick={onClick}
       className="text-left bg-dark-card rounded-2xl border border-dark-surface hover:border-brand-orange/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 overflow-hidden"
     >
-      {restaurant.image_url ? (
+      {restaurant.cover_image_url ? (
         <img
-          src={restaurant.image_url}
+          src={restaurant.cover_image_url.startsWith('http')
+            ? restaurant.cover_image_url
+            : `${import.meta.env.VITE_API_URL}${restaurant.cover_image_url}`}
           alt={restaurant.name}
           className="w-full h-40 object-cover"
         />

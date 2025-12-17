@@ -1,8 +1,18 @@
 /**
  * Custom API wrapper to handle authentication and session expiration
  */
+const getToken = () => {
+    // Prefer sessionStorage (short-lived, safer); fall back to legacy localStorage key if present.
+    return (
+        sessionStorage.getItem('ordereasy_token') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('ordereasy_token') ||
+        null
+    );
+};
+
 export const fetchWithAuth = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
 
     const headers = {
         'Content-Type': 'application/json',

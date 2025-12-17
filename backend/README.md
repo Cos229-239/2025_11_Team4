@@ -5,7 +5,7 @@ Backend server for the OrderEasy restaurant ordering application. Built with Nod
 ## 🛠️ Tech Stack
 
 - **Runtime:** Node.js v18+
-- **Framework:** Express 5
+- **Framework:** Express 4
 - **Database:** PostgreSQL 14+ (via `pg` driver)
 - **Real-Time:** Socket.IO 4.8
 - **Authentication:** JWT with bcrypt password hashing
@@ -23,7 +23,7 @@ Backend server for the OrderEasy restaurant ordering application. Built with Nod
   "compression": "^1.7.4",        // Response compression
   "cors": "^2.8.5",               // Cross-origin resource sharing
   "dotenv": "^17.2.3",            // Environment variables
-  "express": "^5.1.0",            // Web framework
+  "express": "^4.21.2",           // Web framework
   "express-rate-limit": "^8.2.1", // Rate limiting
   "helmet": "^7.1.0",             // Security headers
   "jsonwebtoken": "^9.0.2",       // JWT authentication

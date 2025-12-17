@@ -42,20 +42,22 @@ if (wantsSSL) {
 }
 
 // Optional debug of DB config (without secrets)
-try {
-  const usingUrl = !!process.env.DATABASE_URL;
-  let host = process.env.DB_HOST || 'localhost';
-  if (usingUrl) {
-    try {
-      const u = new URL(process.env.DATABASE_URL);
-      host = u.hostname;
-    } catch (_) {
-      // ignore parse errors
+if (process.env.DB_DEBUG === 'true') {
+  try {
+    const usingUrl = !!process.env.DATABASE_URL;
+    let host = process.env.DB_HOST || 'localhost';
+    if (usingUrl) {
+      try {
+        const u = new URL(process.env.DATABASE_URL);
+        host = u.hostname;
+      } catch (_) {
+        // ignore parse errors
+      }
     }
-  }
-  const sslState = poolConfig.ssl ? (poolConfig.ssl.rejectUnauthorized === false ? 'enabled-no-verify' : 'enabled') : 'disabled';
-  console.log(`DB init: usingUrl=${usingUrl} host=${host} ssl=${sslState}`);
-} catch (_) { }
+    const sslState = poolConfig.ssl ? (poolConfig.ssl.rejectUnauthorized === false ? 'enabled-no-verify' : 'enabled') : 'disabled';
+    console.log(`DB init: usingUrl=${usingUrl} host=${host} ssl=${sslState}`);
+  } catch (_) { }
+}
 
 const pool = new Pool(poolConfig);
 
@@ -75,7 +77,9 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
+    if (process.env.DB_LOG_QUERIES === 'true') {
+      console.log('Executed query', { duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
     console.error('Database query error:', error);

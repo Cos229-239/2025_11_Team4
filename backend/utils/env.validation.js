@@ -19,8 +19,15 @@ const envSchema = z.object({
     // External Services (Optional but warned if missing)
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
-    EMAIL_USER: z.string().email().optional(),
-    EMAIL_PASS: z.string().optional(),
+
+    // Email
+    SEND_EMAILS: z.string().optional(),
+    EMAIL_FROM: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.string().optional(),
+    SMTP_SECURE: z.string().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
 });
 
 function validateEnv() {
@@ -45,7 +52,14 @@ function validateEnv() {
 
     // Warnings for optional but important configurations
     if (!env.STRIPE_SECRET_KEY) logger.warn('STRIPE_SECRET_KEY is missing. Payments will fail.');
-    if (!env.EMAIL_USER) logger.warn('EMAIL_USER is missing. Emails will not be sent.');
+
+    const sendEmails = String(process.env.SEND_EMAILS || 'false').toLowerCase() === 'true';
+    if (sendEmails) {
+        if (!process.env.SMTP_HOST) logger.warn('SMTP_HOST is missing. Emails will not be sent.');
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            logger.warn('SMTP_USER/SMTP_PASS missing. Emails may fail depending on SMTP configuration.');
+        }
+    }
 
     return env;
 }

@@ -15,7 +15,9 @@ const apiLimiter = rateLimit({
 
     // Long-term strategy: never throttle cheap, high-frequency reads
     // such as kitchen dashboards or customer status checks.
-    const path = req.path || '';
+    const rawPath = req.path || '';
+    // When mounted at /api, v1 routes look like /v1/...; normalize to match legacy checks.
+    const path = rawPath.startsWith('/v1') ? rawPath.slice(3) || '/' : rawPath;
 
     // Allow order status reads / QR checks
     if (
