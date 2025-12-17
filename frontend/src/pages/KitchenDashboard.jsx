@@ -440,8 +440,8 @@ const KitchenDashboard = () => {
     backgroundImage: `url(${KitchenBg})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    opacity: 0.35, // puedes ajustar esto
-    filter: "blur(6px)", // si quieres el efecto glassy
+    opacity: 0.35, 
+    filter: "blur(6px)", 
   }}
 ></div>
 
