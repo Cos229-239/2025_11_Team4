@@ -133,7 +133,7 @@ class AdminService {
             SELECT r.* 
             FROM restaurants r
             JOIN user_restaurants ur ON r.id = ur.restaurant_id
-            WHERE ur.user_id = $1
+            WHERE ur.user_id = $1 AND r.status != 'archived'
             ORDER BY r.name
         `;
         const result = await pool.query(query, [user_id]);
@@ -203,7 +203,8 @@ class AdminService {
     }
 
     async deleteRestaurant(id) {
-        const result = await pool.query('DELETE FROM restaurants WHERE id = $1 RETURNING id', [id]);
+        // Soft Delete: Set status to 'archived'
+        const result = await pool.query("UPDATE restaurants SET status = 'archived', updated_at = NOW() WHERE id = $1 RETURNING id", [id]);
         return result.rows.length > 0;
     }
 
@@ -249,78 +250,105 @@ class AdminService {
     // Analytics
     // ========================
 
-    async getAnalytics(restaurantId, range = '7d') {
-        // 1. Revenue & Orders
+    async getAnalytics(restaurantId, range = 'week') {
+        let dateTrunc, interval;
+
+        switch (range) {
+            case 'today':
+                dateTrunc = "hour"; // Group by hour
+                interval = "1 day";
+                break;
+            case 'week':
+                dateTrunc = "day"; // Group by day
+                interval = "7 days";
+                break;
+            case 'month':
+                dateTrunc = "day"; // Group by day
+                interval = "30 days";
+                break;
+            case 'year':
+                dateTrunc = "month"; // Group by month
+                interval = "1 year";
+                break;
+            default:
+                dateTrunc = "day";
+                interval = "7 days";
+        }
+
+        // 1. Revenue (Orders)
         const revenueQuery = `
-            SELECT 
-                DATE(created_at) as date, 
-                COUNT(*) as order_count, 
+            SELECT
+                DATE_TRUNC($2, created_at) as date,
+                COUNT(*) as order_count,
                 SUM(total_amount) as revenue
             FROM orders
             WHERE restaurant_id = $1
               AND status != 'cancelled'
-              AND created_at > NOW() - INTERVAL '7 days'
-            GROUP BY DATE(created_at)
-            ORDER BY DATE(created_at)
+              AND created_at > NOW() - $3::INTERVAL
+            GROUP BY date
+            ORDER BY date
         `;
-        const revenueRes = await pool.query(revenueQuery, [restaurantId]);
 
-        // 2. Guest Flow
-        const guestFlowQuery = `
-            SELECT 
-                EXTRACT(HOUR FROM reservation_time) as hour,
+        // 2. Guests (Reservations)
+        const guestsQuery = `
+            SELECT
+                DATE_TRUNC($2, reservation_start) as date,
                 SUM(party_size) as guests
             FROM reservations
             WHERE restaurant_id = $1
-              AND reservation_date = CURRENT_DATE
               AND status IN ('confirmed', 'seated', 'completed')
-            GROUP BY EXTRACT(HOUR FROM reservation_time)
-            ORDER BY hour
+              AND reservation_start > NOW() - $3::INTERVAL
+            GROUP BY date
+            ORDER BY date
         `;
-        const guestFlowRes = await pool.query(guestFlowQuery, [restaurantId]);
 
-        // 3. Top Items
-        const topItemsQuery = `
-            SELECT 
-                mi.name, 
-                COUNT(oi.id) as quantity_sold
+        const [revRes, guestRes] = await Promise.all([
+            pool.query(revenueQuery, [restaurantId, dateTrunc, interval]),
+            pool.query(guestsQuery, [restaurantId, dateTrunc, interval])
+        ]);
+
+        // Merge Data
+        const mergedData = {};
+
+        revRes.rows.forEach(r => {
+            const key = new Date(r.date).toISOString();
+            if (!mergedData[key]) mergedData[key] = { date: key, revenue: 0, guests: 0, order_count: 0 };
+            mergedData[key].revenue = parseFloat(r.revenue);
+            mergedData[key].order_count = parseInt(r.order_count);
+        });
+
+        guestRes.rows.forEach(r => {
+            const key = new Date(r.date).toISOString();
+            if (!mergedData[key]) mergedData[key] = { date: key, revenue: 0, guests: 0 };
+            mergedData[key].guests = parseInt(r.guests);
+        });
+
+        const chartData = Object.values(mergedData).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // 3. Summaries (Keep existing logic for top cards)
+        const resCountRes = await pool.query(`SELECT COUNT(*) FROM reservations WHERE restaurant_id = $1 AND reservation_date = CURRENT_DATE AND status != 'cancelled'`, [restaurantId]);
+        const activeTablesRes = await pool.query(`SELECT COUNT(*) FROM tables WHERE restaurant_id = $1 AND status = 'occupied'`, [restaurantId]);
+
+        const topItemsRes = await pool.query(`
+            SELECT mi.name, COUNT(oi.id) as quantity_sold
             FROM order_items oi
             JOIN menu_items mi ON oi.menu_item_id = mi.id
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.restaurant_id = $1
-              AND o.status != 'cancelled'
-            GROUP BY mi.id, mi.name
-            ORDER BY quantity_sold DESC
-            LIMIT 5
-        `;
-        const topItemsRes = await pool.query(topItemsQuery, [restaurantId]);
+            WHERE o.restaurant_id = $1 AND o.status != 'cancelled'
+            GROUP BY mi.id, mi.name ORDER BY quantity_sold DESC LIMIT 5
+        `, [restaurantId]);
 
-        // 4. Counts
-        const resCountQuery = `
-            SELECT COUNT(*) 
-            FROM reservations 
-            WHERE restaurant_id = $1 
-              AND reservation_date = CURRENT_DATE 
-              AND status != 'cancelled'
-        `;
-        const resCountRes = await pool.query(resCountQuery, [restaurantId]);
 
-        const activeTablesQuery = `
-            SELECT COUNT(*) 
-            FROM tables 
-            WHERE restaurant_id = $1 
-              AND status = 'occupied'
-        `;
-        const activeTablesRes = await pool.query(activeTablesQuery, [restaurantId]);
 
         return {
-            revenueByDay: revenueRes.rows,
-            guestFlowToday: guestFlowRes.rows,
+            chartData,
             topItems: topItemsRes.rows,
             summary: {
                 reservationsToday: parseInt(resCountRes.rows[0].count),
                 activeTables: parseInt(activeTablesRes.rows[0].count)
-            }
+            },
+            // Legacy support if needed, but chartData replaces them
+            revenueByDay: revRes.rows
         };
     }
 }

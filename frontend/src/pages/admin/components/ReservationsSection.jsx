@@ -88,7 +88,8 @@ const ReservationsSection = ({ restaurantId }) => {
                             <tr>
                                 <th className="px-6 py-4">Customer</th>
                                 <th className="px-6 py-4">Time</th>
-                                <th className="px-6 py-4">Party</th>
+                                <th className="px-6 py-4">Party Size</th>
+                                <th className="px-6 py-4">Party Type</th>
                                 <th className="px-6 py-4">Table</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
@@ -111,6 +112,9 @@ const ReservationsSection = ({ restaurantId }) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             {r.party_size} ppl
+                                        </td>
+                                        <td className="px-6 py-4 capitalize text-zinc-400">
+                                            {r.special_requests ? 'Special' : 'Standard'}
                                         </td>
                                         <td className="px-6 py-4">
                                             {r.table_number ? `T-${r.table_number}` : '-'}

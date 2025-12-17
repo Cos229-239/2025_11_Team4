@@ -27,8 +27,11 @@ const OwnerDashboard = () => {
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
-                // Use the new endpoint we just created
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/my-restaurants`, {
+                // Fetch owned restaurants
+
+                // Fix possible double slash in URL
+                const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+                const res = await fetch(`${baseUrl}/api/admin/my-restaurants`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -78,7 +81,7 @@ const OwnerDashboard = () => {
     };
 
     return (
-        <div className="flex h-screen bg-black text-white overflow-hidden">
+        <div className="flex h-screen bg-[#141414] text-white overflow-hidden">
             {/* Sidebar */}
             <div className="w-64 bg-zinc-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
                 <div className="p-6">
