@@ -6,6 +6,25 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error('JWT_SECRET must be set in production');
 }
 
+async function fetchRoles(userId, legacyRole) {
+  if (!userId) return legacyRole ? [legacyRole] : [];
+  const roles = new Set();
+  if (legacyRole) roles.add(legacyRole);
+  try {
+    const result = await pool.query(`
+          SELECT r.name
+          FROM roles r
+          JOIN user_roles ur ON r.id = ur.role_id
+          WHERE ur.user_id = $1
+        `, [userId]);
+    result.rows.forEach(row => roles.add(row.name));
+  } catch (e) {
+    // Backward-compatible fallback for environments without RBAC tables.
+    console.error('RBAC role lookup failed:', e);
+  }
+  return Array.from(roles);
+}
+
 function normalizeJwtPayload(decoded) {
   if (!decoded || typeof decoded !== 'object') return null;
   const sub = decoded.sub ?? decoded.id ?? decoded.user_id;
@@ -41,6 +60,19 @@ const optionalAuthenticateToken = (req, res, next) => {
   });
 };
 
+// Optional role attachment: if a token is present, fetch DB roles and attach to req.userRoles.
+const optionalAttachRoles = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.sub) return next();
+    if (Array.isArray(req.userRoles) && req.userRoles.length > 0) return next();
+    req.userRoles = await fetchRoles(req.user.sub, req.user.role);
+    next();
+  } catch (error) {
+    console.error('RBAC Role Attach Error:', error);
+    next();
+  }
+};
+
 // 2. Require Role (RBAC)
 // Usage: router.get('/admin', authenticateToken, requireRole(['developer', 'owner']), controller)
 const requireRole = (allowedRoles) => {
@@ -48,18 +80,7 @@ const requireRole = (allowedRoles) => {
     if (!req.user || !req.user.sub) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
     try {
-      // Check roles in DB (more secure than relying solely on JWT payload which might be stale)
-      const result = await pool.query(`
-        SELECT r.name 
-        FROM roles r
-        JOIN user_roles ur ON r.id = ur.role_id
-        WHERE ur.user_id = $1
-      `, [req.user.sub]);
-
-      const userRoles = result.rows.map(row => row.name);
-
-      // Also check legacy role column for compatibility if it exists in your JWT
-      if (req.user.role) userRoles.push(req.user.role);
+      const userRoles = await fetchRoles(req.user.sub, req.user.role);
 
       const hasRole = userRoles.some(role => allowedRoles.includes(role));
 
@@ -92,14 +113,7 @@ const requireSelfOrRole = (allowedRoles) => {
     // Otherwise, fetch roles from DB.
     if (userRoles.length === 0) {
       try {
-        const result = await pool.query(`
-          SELECT r.name
-          FROM roles r
-          JOIN user_roles ur ON r.id = ur.role_id
-          WHERE ur.user_id = $1
-        `, [req.user.sub]);
-        userRoles = result.rows.map(row => row.name);
-        if (req.user.role) userRoles.push(req.user.role);
+        userRoles = await fetchRoles(req.user.sub, req.user.role);
         req.userRoles = userRoles;
       } catch (error) {
         console.error('RBAC Error:', error);
@@ -146,4 +160,4 @@ const authorizeRestaurant = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticateToken, optionalAuthenticateToken, requireRole, requireSelfOrRole, authorizeRestaurant };
+module.exports = { authenticateToken, optionalAuthenticateToken, optionalAttachRoles, requireRole, requireSelfOrRole, authorizeRestaurant };

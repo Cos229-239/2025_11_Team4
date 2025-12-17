@@ -20,6 +20,7 @@ class ReservationCleanupJob {
 
     this.task = null;
     this.isRunning = false;
+    this.io = null;
     this.stats = {
       totalRuns: 0,
       totalExpired: 0,
@@ -27,6 +28,10 @@ class ReservationCleanupJob {
       lastDuration: null,
       errors: 0
     };
+  }
+
+  setIo(io) {
+    this.io = io;
   }
 
   /**
@@ -91,10 +96,26 @@ class ReservationCleanupJob {
       }
 
       // 1) Call the database function that marks expired tentative reservations
-      const result = await pool.query('SELECT * FROM cleanup_expired_reservations()');
-
-      const expiredCount = result.rows[0]?.expired_count || 0;
-      const expiredIds = result.rows[0]?.expired_ids || [];
+      let expiredCount = 0;
+      let expiredIds = [];
+      try {
+        const result = await pool.query('SELECT * FROM public.cleanup_expired_reservations()');
+        expiredCount = result.rows[0]?.expired_count || 0;
+        expiredIds = result.rows[0]?.expired_ids || [];
+      } catch (e) {
+        // Fallback for environments that haven't applied the migration yet.
+        const fallback = await pool.query(
+          `UPDATE reservations
+             SET status = 'expired',
+                 updated_at = NOW()
+           WHERE status = 'tentative'
+             AND expires_at IS NOT NULL
+             AND expires_at < NOW()
+           RETURNING id`
+        );
+        expiredCount = fallback.rowCount || 0;
+        expiredIds = fallback.rows.map((r) => r.id);
+      }
 
       // 2) Additional decay: mark past confirmed/seated reservations as expired
       // once they are more than 1 hour past their scheduled time.
@@ -104,11 +125,26 @@ class ReservationCleanupJob {
                updated_at = NOW()
          WHERE status IN ('confirmed', 'seated')
            AND (reservation_date::timestamp + reservation_time + INTERVAL '1 hour') < NOW()
-         RETURNING id`
+         RETURNING id, table_id`
       );
 
       const decayedCount = decayResult.rowCount || 0;
       const decayedIds = decayResult.rows.map((r) => r.id);
+      const decayedTableIds = Array.from(
+        new Set(decayResult.rows.map((r) => r.table_id).filter((id) => id != null))
+      );
+
+      // Free tables that were only reserved for now-expired reservations.
+      if (decayedTableIds.length > 0) {
+        await pool.query(
+          `UPDATE tables
+             SET status = 'available',
+                 updated_at = NOW()
+           WHERE id = ANY($1::int[])
+             AND status = 'reserved'`,
+          [decayedTableIds]
+        );
+      }
 
       // Update statistics
       const totalMarked = expiredCount + decayedCount;
@@ -127,9 +163,8 @@ class ReservationCleanupJob {
         }
 
         // Emit socket event to notify admins of expired reservations
-        const io = global.io;
-        if (io) {
-          io.to('admin').emit('reservations-expired', {
+        if (this.io) {
+          this.io.to('admin').emit('reservations-expired', {
             count: totalMarked,
             ids: [...expiredIds, ...decayedIds],
             timestamp: new Date().toISOString()

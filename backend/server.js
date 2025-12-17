@@ -195,6 +195,7 @@ const startServer = (port) => {
 
   // Expose io to routes and jobs
   app.set('io', io);
+  cleanupJob.setIo(io);
 
 
   // Wire up socket handlers for this io instance
@@ -210,9 +211,12 @@ const startServer = (port) => {
     cleanupJob.start();
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error(`Port ${port} is already in use; refusing to auto-increment in production`);
+        process.exit(1);
+      }
       logger.info(`Port ${port} is already in use, trying ${port + 1}...`);
       const next = port + 1;
-      // Try next port with a fresh server instance
       startServer(next);
     } else {
       logger.error('Server error:', err);

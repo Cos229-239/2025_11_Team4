@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/order.controller');
-const { authenticateToken, optionalAuthenticateToken, requireRole } = require('../middleware/auth.middleware');
+const { authenticateToken, optionalAuthenticateToken, optionalAttachRoles, requireRole } = require('../middleware/auth.middleware');
 
 // GET /api/orders/active - Get active orders (must be before /:id route)
 router.get('/active', authenticateToken, requireRole(['developer', 'owner', 'employee']), orderController.getActiveOrders);
 
 // GET /api/orders/by-number/:orderNumber - Lookup order by human-facing number
 // This must be defined before the generic "/:id" route.
-router.get('/by-number/:orderNumber', optionalAuthenticateToken, orderController.getOrderByNumber);
+router.get('/by-number/:orderNumber', optionalAuthenticateToken, optionalAttachRoles, orderController.getOrderByNumber);
 
 // GET /api/orders/table/:tableId - Get orders by table
 router.get('/table/:tableId', authenticateToken, requireRole(['developer', 'owner', 'employee']), orderController.getOrdersByTable);
@@ -72,7 +72,7 @@ router.post('/', validate(createOrderSchema), orderController.createOrder);
 router.get('/', authenticateToken, requireRole(['developer', 'owner', 'employee']), orderController.getAllOrders);
 
 // GET /api/orders/:id - Get single order by ID
-router.get('/:id', optionalAuthenticateToken, orderController.getOrderById);
+router.get('/:id', optionalAuthenticateToken, optionalAttachRoles, orderController.getOrderById);
 
 // PATCH /api/orders/:id/status - Update order status
 router.patch('/:id/status', authenticateToken, requireRole(['developer', 'owner', 'employee']), orderController.updateOrderStatus);

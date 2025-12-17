@@ -1,9 +1,11 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeKey ? require('stripe')(stripeKey) : null;
 const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 const jwtLib = require('jsonwebtoken');
 const orderService = require('../services/order.service');
 const OrderDTO = require('../dtos/order.dto');
+const { computeItemsHash, toCents } = require('../utils/paymentHash');
 
 
 /**
@@ -35,6 +37,9 @@ const calculateOrderAmount = async (items) => {
 };
 
 exports.createPaymentIntent = async (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ success: false, message: 'Stripe is not configured' });
+    }
     const client = await pool.connect();
     try {
         const { items, currency = 'usd', metadata, reservationId, tipAmount = 0 } = req.body;
@@ -43,13 +48,13 @@ exports.createPaymentIntent = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No items provided' });
         }
 
-        let amount = await calculateOrderAmount(items);
+        const subtotalCents = await calculateOrderAmount(items);
+        let amount = subtotalCents;
 
         const tip = Math.max(0, Number(tipAmount) || 0);
+        const tipCents = toCents(tip);
         // Add tip if provided
-        if (tip > 0) {
-            amount += Math.round(tip * 100);
-        }
+        if (tipCents > 0) amount += tipCents;
 
         if (amount <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid order amount' });
@@ -88,13 +93,31 @@ exports.createPaymentIntent = async (req, res) => {
         }
 
         // Create a PaymentIntent with the order amount and currency
+        const baseMetadata = metadata && typeof metadata === 'object' ? metadata : {};
+        const safeMetadata = {};
+        for (const [k, v] of Object.entries(baseMetadata)) {
+            if (v == null) continue;
+            safeMetadata[String(k)] = String(v);
+        }
         const paymentIntent = await stripe.paymentIntents.create({
             amount,
             currency,
             automatic_payment_methods: {
                 enabled: true,
             },
-            metadata: { ...(metadata || {}), tipAmount: tip },
+            metadata: {
+                ...safeMetadata,
+                // Backward-compatible keys used by webhook handlers / edge functions.
+                tipAmount: String(tip),
+                reservationId: reservationId ? String(reservationId) : '',
+
+                // Canonical keys used by backend verification.
+                tip_amount: String(tip),
+                tip_cents: String(tipCents),
+                subtotal_cents: String(subtotalCents),
+                items_hash: computeItemsHash(items),
+                reservation_id: reservationId ? String(reservationId) : '',
+            },
         });
 
         res.send({
@@ -116,6 +139,9 @@ exports.createPaymentIntent = async (req, res) => {
 const paymentService = require('../services/payment.service');
 
 exports.confirmPayment = async (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ success: false, message: 'Stripe is not configured' });
+    }
     try {
         const { paymentIntentId, reservationId, reservationIntent, order } = req.body;
 
@@ -152,12 +178,11 @@ exports.confirmPayment = async (req, res) => {
 
         // Optionally create the associated order in the same trusted server-side step.
         if (result.success && order) {
-            const rawTip = paymentIntent.metadata?.tipAmount ?? order.tip_amount ?? 0;
-            const tipCents = Math.max(0, Math.round(Number(rawTip) * 100));
+            const rawTip = paymentIntent.metadata?.tip_amount ?? paymentIntent.metadata?.tipAmount ?? order.tip_amount ?? 0;
+            const tipCents = Math.max(0, toCents(rawTip));
             const expectedSubtotalCents = await calculateOrderAmount(
                 (order.items || []).map(i => ({ id: i.menu_item_id, quantity: i.quantity }))
             );
-
             const expectedTotalCents = expectedSubtotalCents + tipCents;
             if (expectedTotalCents !== paymentIntent.amount) {
                 return res.status(400).json({
@@ -165,8 +190,6 @@ exports.confirmPayment = async (req, res) => {
                     message: 'Payment amount mismatch. Please refresh and try again.'
                 });
             }
-
-            const baseCents = Math.max(0, paymentIntent.amount - tipCents);
 
             const confirmedReservation = result.data && result.data.id ? result.data : null;
             const finalReservationId = order.order_type === 'pre-order'
@@ -181,10 +204,7 @@ exports.confirmPayment = async (req, res) => {
                 scheduled_for: order.scheduled_for ?? null,
                 customer_notes: order.customer_notes ?? '',
                 items: order.items || [],
-                payment_status: 'completed',
-                payment_method: 'stripe',
                 payment_intent_id: paymentIntentId,
-                payment_amount: baseCents / 100,
                 tip_amount: tipCents / 100,
                 user_id: userId ? parseInt(userId, 10) : null,
             });
@@ -207,6 +227,9 @@ exports.confirmPayment = async (req, res) => {
 };
 
 exports.refundPayment = async (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ success: false, message: 'Stripe is not configured' });
+    }
     const client = await pool.connect();
     try {
         const { paymentIntentId, amount, reason, reservationId } = req.body;
@@ -244,6 +267,9 @@ exports.refundPayment = async (req, res) => {
 };
 
 exports.getPaymentIntent = async (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ success: false, message: 'Stripe is not configured' });
+    }
     try {
         const { id } = req.params;
 

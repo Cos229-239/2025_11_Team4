@@ -35,7 +35,9 @@ exports.handleStripeWebhook = async (req, res) => {
                 logger.info(`PaymentIntent was successful: ${paymentIntent.id}`);
 
                 // Extract metadata
-                const { reservationId, reservationIntent } = paymentIntent.metadata || {};
+                const md = paymentIntent.metadata || {};
+                const reservationId = md.reservationId ?? md.reservation_id;
+                const reservationIntent = md.reservationIntent ?? md.reservation_intent;
 
                 await paymentService.confirmPaymentLogic({
                     paymentIntentId: paymentIntent.id,

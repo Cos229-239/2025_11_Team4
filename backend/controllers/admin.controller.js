@@ -61,7 +61,7 @@ class AdminController {
     // Restaurants
     async getMyRestaurants(req, res) {
         try {
-            const restaurants = await adminService.getMyRestaurants(req.user.id, req.user.role);
+            const restaurants = await adminService.getMyRestaurants(req.user.id, req.userRoles || req.user.role);
             res.json({ success: true, restaurants });
         } catch (error) {
             logger.error('Error fetching restaurants', { error });

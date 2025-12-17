@@ -4,8 +4,10 @@ const OrderDTO = require('../dtos/order.dto');
 const PublicOrderDTO = require('../dtos/order.public.dto');
 
 function isStaffRequest(req) {
-  const role = req.user?.role;
-  return ['developer', 'owner', 'employee'].includes(role);
+  const roles = Array.isArray(req.userRoles) && req.userRoles.length > 0
+    ? req.userRoles
+    : (req.user?.role ? [req.user.role] : []);
+  return roles.some((r) => ['developer', 'owner', 'employee'].includes(r));
 }
 
 function isOrderOwner(req, order) {
