@@ -14,7 +14,6 @@ const tableRoutes = require('../table.routes');
 const restaurantRoutes = require('../restaurant.routes');
 const userRoutes = require('../user.routes');
 const paymentRoutes = require('../payment.routes');
-const settingsRoutes = require('../settings.routes');
 const uploadRoutes = require('../upload.routes');
 const modifierRoutes = require('../modifier.routes');
 
@@ -31,13 +30,5 @@ router.use('/users', userRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/modifiers', modifierRoutes);
-
-// Protected Nested Admin Routes (Settings)
-// In server.js this was mounted as /api/admin/settings
-// Here we can mount it under /admin/settings if adminRoutes doesn't handle it, 
-// OR keep it separate if it's distinct. 
-// Server.js had: app.use('/api/v1/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
-// We'll preserve that structure.
-router.use('/admin/settings', authenticateToken, requireRole(['developer', 'owner']), settingsRoutes);
 
 module.exports = router;
