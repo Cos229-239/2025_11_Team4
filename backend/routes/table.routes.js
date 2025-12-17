@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const tableController = require('../controllers/table.controller');
+const { authenticateToken, optionalAuthenticateToken, requireRole } = require('../middleware/auth.middleware');
 
 /**
  * @route   GET /api/tables
@@ -33,14 +34,14 @@ const tableController = require('../controllers/table.controller');
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.get('/', tableController.getAllTables);
+router.get('/', authenticateToken, requireRole(['developer', 'owner', 'employee']), tableController.getAllTables);
 
 /**
  * @route   GET /api/tables/:id
  * @desc    Get single table by ID
  * @access  Public
  */
-router.get('/:id', tableController.getTableById);
+router.get('/:id', optionalAuthenticateToken, tableController.getTableById);
 
 /**
  * @route   POST /api/tables
@@ -53,7 +54,7 @@ const { createTableSchema } = require('../utils/validationSchemas');
 
 // ...
 
-router.post('/', validate(createTableSchema), tableController.createTable);
+router.post('/', authenticateToken, requireRole(['developer', 'owner']), validate(createTableSchema), tableController.createTable);
 
 /**
  * @route   PATCH /api/tables/:id
@@ -61,14 +62,14 @@ router.post('/', validate(createTableSchema), tableController.createTable);
  * @access  Public (should be protected in production)
  * @body    {table_number?: number, capacity?: number, status?: string}
  */
-router.patch('/:id', tableController.updateTable);
+router.patch('/:id', authenticateToken, requireRole(['developer', 'owner']), tableController.updateTable);
 
 /**
  * @route   DELETE /api/tables/:id
  * @desc    Delete table
  * @access  Public (should be protected in production)
  */
-router.delete('/:id', tableController.deleteTable);
+router.delete('/:id', authenticateToken, requireRole(['developer', 'owner']), tableController.deleteTable);
 
 /**
  * @route   GET /api/tables/:id/qrcode
@@ -76,13 +77,13 @@ router.delete('/:id', tableController.deleteTable);
  * @access  Public
  * @query   {format: 'png' | 'dataurl'} - Response format (default: 'png')
  */
-router.get('/:id/qrcode', tableController.getTableQRCode);
+router.get('/:id/qrcode', authenticateToken, requireRole(['developer', 'owner']), tableController.getTableQRCode);
 
 /**
  * @route   POST /api/tables/:id/qrcode/regenerate
  * @desc    Regenerate QR code for a table
  * @access  Public (should be protected in production)
  */
-router.post('/:id/qrcode/regenerate', tableController.regenerateQRCode);
+router.post('/:id/qrcode/regenerate', authenticateToken, requireRole(['developer', 'owner']), tableController.regenerateQRCode);
 
 module.exports = router;

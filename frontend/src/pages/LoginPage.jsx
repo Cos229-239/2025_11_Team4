@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserAuth } from '../hooks/useUserAuth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -57,7 +57,9 @@ const LoginPage = () => {
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 text-red-400 text-sm text-center backdrop-blur-sm">
-            {error}
+            <p className="font-bold">Error: {error}</p>
+            <p className="text-xs mt-2 text-white/50">Attempted: {API_URL}/api/auth/login</p>
+            <p className="text-xs text-white/50">Ensure backend is running at this URL.</p>
           </div>
         )}
 

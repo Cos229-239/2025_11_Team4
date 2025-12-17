@@ -6,7 +6,6 @@ import { useUserAuth } from '../hooks/useUserAuth';
 import OrderCard from '../components/OrderCard';
 import Logo from '../components/Logo';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
-import yukonImage from '../assets/yukon.png';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { fetchActiveOrders } from '../api/orders';
@@ -402,7 +401,6 @@ const KitchenDashboard = () => {
     { category: 'Silver-Ware', item: 'Steak Knives', unit: 'pieces', quantity: 150 },
     { category: 'Silver-Ware', item: 'Salad Forks', unit: 'pieces', quantity: 100 },
   ]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleInventoryQuantityChange = (itemName, newQuantity) => {
     setInventory((prev) =>
@@ -1169,5 +1167,6 @@ const KitchenDashboard = () => {
   );
 };
 
+//Beta changes 12.11.25
 
 export default KitchenDashboard;

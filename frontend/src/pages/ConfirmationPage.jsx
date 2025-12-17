@@ -35,9 +35,11 @@ const ConfirmationPage = () => {
     try {
       setLoading(true);
       setError(null);
+      const token = sessionStorage.getItem('ordereasy_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // Try fetching as an order first
-      const orderRes = await fetch(`${API_URL}/api/orders/${orderId}`);
+      const orderRes = await fetch(`${API_URL}/api/orders/${orderId}`, { headers });
       const orderData = await orderRes.json();
 
       if (orderData.success) {
@@ -48,7 +50,7 @@ const ConfirmationPage = () => {
       }
 
       // If order fetch fails, try fetching as a reservation
-      const reservationRes = await fetch(`${API_URL}/api/reservations/${orderId}`);
+      const reservationRes = await fetch(`${API_URL}/api/reservations/${orderId}`, { headers });
       const reservationData = await reservationRes.json();
 
       if (reservationData.success) {

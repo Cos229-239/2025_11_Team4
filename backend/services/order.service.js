@@ -3,6 +3,9 @@ const logger = require('../utils/logger');
 const emailService = require('../services/email.service');
 const emailTemplates = require('../utils/email.templates');
 const { getReservationDurationMinutes } = require('../utils/settings.service');
+const { computeItemsHash, toCents } = require('../utils/paymentHash');
+
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 const STATUS_TRANSITIONS = {
     'pending': ['preparing', 'cancelled'],
@@ -27,17 +30,14 @@ class OrderService {
             restaurant_id,
             reservation_id,
             scheduled_for,
-            payment_status,
-            payment_method,
             payment_intent_id,
-            payment_amount,
             user_id,
             tip_amount = 0
         } = orderData;
 
         // 1. Validation Logic
         this._validateOrderType(order_type);
-        this._validatePayment(payment_status, payment_intent_id, payment_amount);
+        this._validatePayment(payment_intent_id);
         await this._validateIdempotency(payment_intent_id);
 
         if (order_type === 'dine-in' || order_type === 'walk-in') {
@@ -56,7 +56,20 @@ class OrderService {
         try {
             await client.query('BEGIN');
 
-            const totalAmount = await this._calculateTotalAndVerifyItems(client, items);
+            const subtotalAmount = await this._calculateTotalAndVerifyItems(client, items);
+            const tipAmount = Math.max(0, Number(tip_amount) || 0);
+            const totalAmount = Number((subtotalAmount + tipAmount).toFixed(2));
+
+            await this._verifyStripePayment({
+                paymentIntentId: payment_intent_id,
+                expectedTotalCents: toCents(totalAmount),
+                expectedSubtotalCents: toCents(subtotalAmount),
+                expectedTipCents: toCents(tipAmount),
+                items,
+                restaurant_id,
+                table_id,
+                order_type,
+            });
 
             // Insert Order
             const orderResult = await client.query(
@@ -70,7 +83,7 @@ class OrderService {
                 [
                     table_id, restaurant_id, user_id, 0, customer_notes || '',
                     'pending', order_type, reservation_id, scheduled_for,
-                    payment_status, payment_method, payment_intent_id, payment_amount, tip_amount
+                    'completed', 'stripe', payment_intent_id, subtotalAmount, tipAmount
                 ]
             );
             const order = orderResult.rows[0];
@@ -228,9 +241,84 @@ class OrderService {
         if (!valid.includes(type)) throw new Error(`Invalid order_type. Must be: ${valid.join(', ')}`);
     }
 
-    _validatePayment(status, id, amount) {
-        if (status !== 'completed') throw new Error('Payment must be completed before creating order');
-        if (!id || !amount) throw new Error('Payment intent ID and amount are required');
+    _validatePayment(paymentIntentId) {
+        if (!paymentIntentId) throw new Error('Payment intent ID is required');
+    }
+
+    async _verifyStripePayment({
+        paymentIntentId,
+        expectedTotalCents,
+        expectedSubtotalCents,
+        expectedTipCents,
+        items,
+        restaurant_id,
+        table_id,
+        order_type,
+    }) {
+        if (!stripe) {
+            if (process.env.NODE_ENV === 'production') {
+                const err = new Error('Stripe is not configured (missing STRIPE_SECRET_KEY)');
+                err.statusCode = 500;
+                throw err;
+            }
+            logger.warn('Stripe verification skipped (missing STRIPE_SECRET_KEY)');
+            return;
+        }
+
+        const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (intent.status !== 'succeeded') {
+            const err = new Error(`Payment not successful (status: ${intent.status})`);
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (Number.isFinite(expectedTotalCents) && expectedTotalCents > 0 && intent.amount !== expectedTotalCents) {
+            const err = new Error('Payment amount mismatch');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const md = intent.metadata || {};
+
+        // If metadata exists, enforce best-effort consistency checks (backward compatible).
+        if (md.items_hash) {
+            const actualHash = computeItemsHash(items);
+            if (md.items_hash !== actualHash) {
+                const err = new Error('Payment metadata mismatch (items)');
+                err.statusCode = 400;
+                throw err;
+            }
+        }
+
+        if (md.subtotal_cents && String(md.subtotal_cents) !== String(expectedSubtotalCents)) {
+            const err = new Error('Payment metadata mismatch (subtotal)');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (md.tip_cents && String(md.tip_cents) !== String(expectedTipCents)) {
+            const err = new Error('Payment metadata mismatch (tip)');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (md.order_type && String(md.order_type) !== String(order_type)) {
+            const err = new Error('Payment metadata mismatch (order_type)');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (md.restaurant_id && restaurant_id != null && String(md.restaurant_id) !== String(restaurant_id)) {
+            const err = new Error('Payment metadata mismatch (restaurant)');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (md.table_id && table_id != null && String(md.table_id) !== String(table_id)) {
+            const err = new Error('Payment metadata mismatch (table)');
+            err.statusCode = 400;
+            throw err;
+        }
     }
 
     async _validateIdempotency(paymentIntentId) {
@@ -250,7 +338,7 @@ class OrderService {
         const existing = await pool.query(`
             SELECT id FROM reservations 
             WHERE table_id = $1 
-              AND status IN ('pending','confirmed')
+              AND status IN ('tentative','confirmed','seated')
               AND (reservation_date::timestamp + reservation_time) BETWEEN NOW() AND (NOW() + ($2 || ' minutes')::interval)
             LIMIT 1
         `, [tableId, buffer]);

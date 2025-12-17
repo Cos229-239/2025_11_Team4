@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
 import { useUserAuth } from '../../../hooks/useUserAuth';
+import imageCompression from 'browser-image-compression';
 
 const SERVICE_TYPES = [
     { value: 'dine-in', label: 'Dine-in', icon: UtensilsCrossed },
@@ -18,7 +19,7 @@ const RestaurantProfileSection = ({ restaurantId }) => {
     const { user, token } = useUserAuth();
 
     if (user?.role === 'developer') {
-        return <DeveloperRestaurantManager token={token} />;
+        return <DeveloperRestaurantManager token={token} selectedRestaurantId={restaurantId} />;
     }
 
     return <OwnerProfileEditor restaurantId={restaurantId} token={token} />;
@@ -27,18 +28,57 @@ const RestaurantProfileSection = ({ restaurantId }) => {
 // ==========================================
 // Developer View: Manage Logic
 // ==========================================
-const DeveloperRestaurantManager = ({ token }) => {
+const DeveloperRestaurantManager = ({ token, selectedRestaurantId }) => {
     const [restaurants, setRestaurants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isaddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [selectedIds, setSelectedIds] = useState(new Set());
     const [newRestaurant, setNewRestaurant] = useState({
         name: '', description: '', email: '', phone: '', address: '', cuisine_type: '', logo_url: '', cover_image_url: ''
     });
 
+    // Validates if we should show a restaurant based on selection
+    const displayedRestaurants = restaurants.filter(r =>
+        !selectedRestaurantId || r.id === selectedRestaurantId
+    );
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === displayedRestaurants.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(displayedRestaurants.map(r => r.id)));
+    };
+
+    const toggleSelect = (id) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Delete ${selectedIds.size} restaurants? This cannot be undone.`)) return;
+
+        try {
+            const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+            await Promise.all(Array.from(selectedIds).map(id =>
+                fetch(`${baseUrl}/api/admin/restaurants/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ));
+            showToast.success("Restaurants deleted");
+            setSelectedIds(new Set());
+            fetchRestaurants();
+        } catch (err) {
+            console.error(err);
+            showToast.error("Error deleting restaurants");
+        }
+    };
+
     const fetchRestaurants = useCallback(async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/my-restaurants`, {
+            const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+            const res = await fetch(`${baseUrl}/api/admin/my-restaurants`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -60,7 +100,8 @@ const DeveloperRestaurantManager = ({ token }) => {
     const handleAddRestaurant = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/restaurants`, {
+            const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+            const res = await fetch(`${baseUrl}/api/admin/restaurants`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -87,7 +128,8 @@ const DeveloperRestaurantManager = ({ token }) => {
         if (!window.confirm("Are you sure you want to delete this restaurant? This cannot be undone.")) return;
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/restaurants/${id}`, {
+            const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+            const res = await fetch(`${baseUrl}/api/admin/restaurants/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -132,7 +174,9 @@ const DeveloperRestaurantManager = ({ token }) => {
                 </button>
             </div>
 
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden">
+
+
+            <div className="glass-panel border border-white/10 rounded-2xl overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-white/5 text-zinc-400">
                         <tr>
@@ -140,26 +184,17 @@ const DeveloperRestaurantManager = ({ token }) => {
                             <th className="p-4">Cuisine</th>
                             <th className="p-4">Status</th>
                             <th className="p-4">Address</th>
-                            <th className="p-4 text-right">Actions</th>
+                            <th className="p-4 text-right">Edit</th>
+                            <th className="p-4 text-right">Delete</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {restaurants.map(r => (
+                        {displayedRestaurants.map(r => (
                             <tr key={r.id} className="hover:bg-white/5 transition-colors">
                                 <td className="p-4">
                                     <div className="flex items-center gap-3">
-                                        {r.logo_url ? (
-                                            <img
-                                                src={r.logo_url.startsWith('/') ? `${import.meta.env.VITE_API_URL}${r.logo_url}` : r.logo_url}
-                                                alt={r.name}
-                                                className="w-10 h-10 rounded-lg object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-zinc-500">
-                                                <UtensilsCrossed size={20} />
-                                            </div>
-                                        )}
-                                        <span className="font-medium">{r.name}</span>
+                                        <RestaurantLogo url={r.logo_url} name={r.name} />
+                                        <span className="font-medium text-white">{r.name}</span>
                                     </div>
                                 </td>
                                 <td className="p-4 text-zinc-400">{r.cuisine_type || '-'}</td>
@@ -180,20 +215,26 @@ const DeveloperRestaurantManager = ({ token }) => {
                                         >
                                             <Edit2 size={18} />
                                         </button>
-                                        <button
-                                            onClick={() => handleDeleteRestaurant(r.id)}
-                                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                            title="Delete Restaurant"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
                                     </div>
+                                </td>
+                                <td className="p-4 text-right">
+                                    <button
+                                        onClick={() => handleDeleteRestaurant(r.id)}
+                                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors inline-flex"
+                                        title="Delete Restaurant"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}
-                        {restaurants.length === 0 && (
+                        {displayedRestaurants.length === 0 && (
                             <tr>
-                                <td colSpan="5" className="p-8 text-center text-zinc-500">No restaurants found.</td>
+                                <td colSpan="5" className="p-8 text-center text-zinc-500">
+                                    {restaurants.length > 0 && selectedRestaurantId
+                                        ? 'Restaurant filters active. Switch to "All" to see others.'
+                                        : 'No restaurants found.'}
+                                </td>
                             </tr>
                         )}
                     </tbody>
@@ -201,77 +242,79 @@ const DeveloperRestaurantManager = ({ token }) => {
             </div>
 
             {/* Add Modal */}
-            {isaddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
-                        <button
-                            onClick={() => setIsAddModalOpen(false)}
-                            className="absolute top-4 right-4 text-zinc-400 hover:text-white"
-                        >
-                            <X size={20} />
-                        </button>
-                        <h3 className="text-xl font-bold mb-4">Add New Restaurant</h3>
-                        <form onSubmit={handleAddRestaurant} className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-zinc-400 mb-1">Name *</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={newRestaurant.name}
-                                    onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-zinc-400 mb-1">Cuisine Type</label>
-                                <input
-                                    type="text"
-                                    value={newRestaurant.cuisine_type}
-                                    onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
-                                    placeholder="e.g., Italian, Mexican, American"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+            {
+                isaddModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
+                            <button
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                            <h3 className="text-xl font-bold mb-4">Add New Restaurant</h3>
+                            <form onSubmit={handleAddRestaurant} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm text-zinc-400 mb-1">Email</label>
+                                    <label className="block text-sm text-zinc-400 mb-1">Name *</label>
                                     <input
-                                        type="email"
-                                        value={newRestaurant.email}
-                                        onChange={e => setNewRestaurant({ ...newRestaurant, email: e.target.value })}
+                                        required
+                                        type="text"
+                                        value={newRestaurant.name}
+                                        onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
                                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-zinc-400 mb-1">Phone</label>
+                                    <label className="block text-sm text-zinc-400 mb-1">Cuisine Type</label>
                                     <input
                                         type="text"
-                                        value={newRestaurant.phone}
-                                        onChange={e => setNewRestaurant({ ...newRestaurant, phone: e.target.value })}
+                                        value={newRestaurant.cuisine_type}
+                                        onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
+                                        placeholder="e.g., Italian, Mexican, American"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-zinc-400 mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            value={newRestaurant.email}
+                                            onChange={e => setNewRestaurant({ ...newRestaurant, email: e.target.value })}
+                                            className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-zinc-400 mb-1">Phone</label>
+                                        <input
+                                            type="text"
+                                            value={newRestaurant.phone}
+                                            onChange={e => setNewRestaurant({ ...newRestaurant, phone: e.target.value })}
+                                            className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Address</label>
+                                    <input
+                                        type="text"
+                                        value={newRestaurant.address}
+                                        onChange={e => setNewRestaurant({ ...newRestaurant, address: e.target.value })}
                                         className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
                                     />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm text-zinc-400 mb-1">Address</label>
-                                <input
-                                    type="text"
-                                    value={newRestaurant.address}
-                                    onChange={e => setNewRestaurant({ ...newRestaurant, address: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-brand-lime"
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full bg-brand-lime text-black font-bold py-2 rounded-lg hover:bg-opacity-90 mt-4"
-                            >
-                                Create Restaurant
-                            </button>
-                        </form>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-brand-lime text-black font-bold py-2 rounded-lg hover:bg-opacity-90 mt-4"
+                                >
+                                    Create Restaurant
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
@@ -310,15 +353,28 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
         if (restaurantId) fetchProfile();
     }, [restaurantId]);
 
-    const handleImageUpload = async (e, type) => {
-        const file = e.target.files[0];
+    const handleImageUpload = async (file, type) => {
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('image', file);
 
         try {
             setSaving(true);
+
+            // Compression options for 50MB bucket limit strategy
+            // Target very small file sizes (< 50KB)
+            const options = {
+                maxSizeMB: 0.05, // 50KB strict target
+                maxWidthOrHeight: 1080, // Reasonable HD limit
+                useWebWorker: true,
+                fileType: 'image/webp' // Force WebP for better compression
+            };
+
+            console.log(`Compressing ${type}... Original size: ${file.size / 1024}KB`);
+            const compressedFile = await imageCompression(file, options);
+            console.log(`Compressed ${type}: ${compressedFile.size / 1024}KB`);
+
+            const formData = new FormData();
+            formData.append('image', compressedFile);
+
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
                 method: 'POST',
                 headers: {
@@ -939,6 +995,32 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
                 </div>
             )}
         </div>
+    );
+};
+
+// ==========================================
+// Helper Components
+// ==========================================
+const RestaurantLogo = ({ url, name }) => {
+    const [error, setError] = useState(false);
+    const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const cleanUrl = url && url.startsWith('/') ? `${apiBase}${url}` : url;
+
+    if (error || !url) {
+        return (
+            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-zinc-500 shrink-0">
+                <UtensilsCrossed size={20} />
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={cleanUrl}
+            alt={name}
+            className="w-10 h-10 rounded-lg object-cover shrink-0 bg-white/5"
+            onError={() => setError(true)}
+        />
     );
 };
 

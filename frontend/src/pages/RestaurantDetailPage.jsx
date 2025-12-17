@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
-import SakuraImg from '../assets/sakurarestaurant.jpeg';
-import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
+
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -46,14 +44,10 @@ const RestaurantDetailPage = () => {
   if (!restaurant) {
     return <div className="min-h-screen bg-dark-bg flex items-center justify-center text-text-secondary">Not found</div>;
   }
-// Select proper image for this restaurant
-const restaurantImage =
-  restaurant.name === 'OrderEasy Restaurant'
-    ? OrderEasyImg
-    : restaurant.name === 'Sakura Sushi Bar'
-    ? SakuraImg
-    : restaurant.name === 'Bella Italia'
-    ? BellaItaliaImg
+
+  // Construct image URL or use placeholder
+  const imageUrl = restaurant.cover_image_url
+    ? (restaurant.cover_image_url.startsWith('http') ? restaurant.cover_image_url : `${API_URL}${restaurant.cover_image_url}`)
     : null;
 
   return (
@@ -62,7 +56,7 @@ const restaurantImage =
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `
+          backgroundImage: `
             radial-gradient(circle at center,
               #E35504ff 0%,
               #E35504aa 15%,
@@ -96,11 +90,17 @@ const restaurantImage =
 
           {/* Hero Image with Text Overlay */}
           <div className="relative">
-           <img
-            src={restaurantImage}
-            alt={restaurant.name}
-            className="w-full h-60 object-cover object-center"
-          />
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={restaurant.name}
+                className="w-full h-60 object-cover object-center"
+              />
+            ) : (
+              <div className="w-full h-60 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                <span className="text-4xl">🍽️</span>
+              </div>
+            )}
 
 
             {/* Dark gradient overlay for text readability */}
@@ -172,9 +172,9 @@ const restaurantImage =
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {menuPreview.map((item) => (
-                   <div
-                    key={item.id}
-                    className="
+                    <div
+                      key={item.id}
+                      className="
                       bg-white/10
                       backdrop-blur-xl
                       border border-white/20
@@ -185,7 +185,7 @@ const restaurantImage =
                       hover:border-brand-lime/40
                       transition-all
                     "
-                  >
+                    >
 
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-text-primary">{item.name}</h3>

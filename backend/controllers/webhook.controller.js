@@ -1,16 +1,19 @@
+const logger = require('../utils/logger');
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeKey) {
     logger.warn('⚠️ STRIPE_SECRET_KEY missing. Webhooks disabled.');
 }
-const stripe = stripeKey ? require('stripe')(stripeKey) : null;
+// Webhook signature verification uses Stripe's webhook helpers and does not require live API access.
+// In production, we still require STRIPE_SECRET_KEY to be configured to avoid misconfiguration.
+const stripe = require('stripe')(stripeKey || 'sk_test_dummy_key');
 const paymentService = require('../services/payment.service');
-const logger = require('../utils/logger');
+
 
 exports.handleStripeWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!stripe) {
+    if (process.env.NODE_ENV === 'production' && !stripeKey) {
         logger.error('Webhook Error: Stripe not configured');
         return res.status(503).send('Stripe not configured');
     }
@@ -33,7 +36,9 @@ exports.handleStripeWebhook = async (req, res) => {
                 logger.info(`PaymentIntent was successful: ${paymentIntent.id}`);
 
                 // Extract metadata
-                const { reservationId, reservationIntent } = paymentIntent.metadata || {};
+                const md = paymentIntent.metadata || {};
+                const reservationId = md.reservationId ?? md.reservation_id;
+                const reservationIntent = md.reservationIntent ?? md.reservation_intent;
 
                 await paymentService.confirmPaymentLogic({
                     paymentIntentId: paymentIntent.id,

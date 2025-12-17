@@ -1,5 +1,24 @@
 const db = require('../config/database');
 
+const ALLOWED_MENU_UPDATE_FIELDS = new Set([
+  'name',
+  'description',
+  'price',
+  'category',
+  'category_id',
+  'image_url',
+  'available',
+  'restaurant_id',
+  'dietary_tags',
+  'allergens',
+  'calories',
+  'prep_time_minutes',
+  'spice_level',
+  'is_featured',
+  'is_new',
+  'sort_order',
+]);
+
 // Get all menu items with optional category filter (uses menu_items.category)
 const getAllMenuItems = async (category = null, restaurantId = null) => {
   try {
@@ -109,6 +128,7 @@ const updateMenuItem = async (id, updates) => {
 
     // Build dynamic UPDATE query based on provided fields
     Object.keys(updates).forEach(key => {
+      if (!ALLOWED_MENU_UPDATE_FIELDS.has(key)) return;
       if (updates[key] !== undefined && key !== 'id') {
         fields.push(`${key} = $${paramCount}`);
         values.push(updates[key]);

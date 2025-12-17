@@ -53,7 +53,9 @@ const ReservationPage = () => {
     const loadUser = async () => {
       try {
         if (!userId) return;
-        const res = await fetch(`${API_URL}/api/users/${userId}`);
+        const res = await fetch(`${API_URL}/api/users/${userId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         const data = await res.json();
         if (data.success) {
           setName(data.data.name || '');
@@ -65,7 +67,7 @@ const ReservationPage = () => {
       }
     };
     loadUser();
-  }, [userId]);
+  }, [userId, token]);
 
   const createReservation = async () => {
     try {

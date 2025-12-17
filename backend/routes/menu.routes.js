@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const menuController = require('../controllers/menu.controller');
+const { authenticateToken, requireRole } = require('../middleware/auth.middleware');
 const {
   crazyOttosMenuItems,
   crazyOttosMenuCategories
@@ -64,12 +65,12 @@ const { createMenuItemSchema } = require('../utils/validationSchemas');
 // ...
 
 // POST /api/menu - Create new menu item
-router.post('/', validate(createMenuItemSchema), menuController.createMenuItem);
+router.post('/', authenticateToken, requireRole(['developer', 'owner']), validate(createMenuItemSchema), menuController.createMenuItem);
 
 // PUT /api/menu/:id - Update menu item
-router.put('/:id', menuController.updateMenuItem);
+router.put('/:id', authenticateToken, requireRole(['developer', 'owner']), menuController.updateMenuItem);
 
 // DELETE /api/menu/:id - Delete menu item
-router.delete('/:id', menuController.deleteMenuItem);
+router.delete('/:id', authenticateToken, requireRole(['developer', 'owner']), menuController.deleteMenuItem);
 
 module.exports = router;

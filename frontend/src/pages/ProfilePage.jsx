@@ -456,7 +456,7 @@ const AddCardModal = ({ onClose, onAdd }) => {
 
         <div className="p-6">
           <Elements stripe={stripePromise} options={options}>
-            <AddCardForm onClose={onClose} onAdd={onAdd} />
+            <AddCardForm onAdd={onAdd} />
           </Elements>
         </div>
       </div>
@@ -464,7 +464,7 @@ const AddCardModal = ({ onClose, onAdd }) => {
   );
 };
 
-const AddCardForm = ({ onClose, onAdd }) => {
+const AddCardForm = ({ onAdd }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState('');

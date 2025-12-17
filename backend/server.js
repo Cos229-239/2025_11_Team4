@@ -5,6 +5,7 @@ const compression = require('compression');
 const http = require('http');
 
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { validateEnv } = require('./utils/env.validation');
 validateEnv();
@@ -45,10 +46,20 @@ const {
 
 // Middleware
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(compression());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'];
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS Error: Origin not allowed'), false);
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -65,7 +76,7 @@ app.use('/api/', apiLimiter); // Apply general rate limiting to all API routes
 
 // Request logging middleware
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`);
+  logger.info(`Incoming Request: ${req.method} ${req.path} from Origin: ${req.headers.origin}`);
   next();
 });
 
@@ -167,8 +178,32 @@ const startServer = (port) => {
   server = http.createServer(app);
   io = new Server(server, { cors: ioCorsOptions });
 
+  // Attach user context to sockets when a JWT is provided.
+  io.use((socket, next) => {
+    try {
+      const token =
+        socket.handshake?.auth?.token ||
+        (() => {
+          const authHeader = socket.handshake?.headers?.authorization || '';
+          return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        })();
+
+      if (!token) return next();
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return next(new Error('Unauthorized'));
+        const sub = decoded?.sub ?? decoded?.id ?? decoded?.user_id;
+        socket.user = sub ? { ...decoded, sub, id: sub } : decoded;
+        next();
+      });
+    } catch (e) {
+      next(new Error('Unauthorized'));
+    }
+  });
+
   // Expose io to routes and jobs
   app.set('io', io);
+  cleanupJob.setIo(io);
 
 
   // Wire up socket handlers for this io instance
@@ -184,9 +219,12 @@ const startServer = (port) => {
     cleanupJob.start();
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error(`Port ${port} is already in use; refusing to auto-increment in production`);
+        process.exit(1);
+      }
       logger.info(`Port ${port} is already in use, trying ${port + 1}...`);
       const next = port + 1;
-      // Try next port with a fresh server instance
       startServer(next);
     } else {
       logger.error('Server error:', err);

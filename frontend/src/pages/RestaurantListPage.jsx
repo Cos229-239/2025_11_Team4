@@ -19,8 +19,6 @@ import backgroundImg from '../assets/background.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-
-
 /**
  * RestaurantListPage Component
  * Browse restaurants for delivery/takeout with search and filters
@@ -89,30 +87,9 @@ const RestaurantListPage = () => {
       rating: Number(r.rating || 0).toFixed(1),
       deliveryTime: '',
       distance: typeof r.distance_km === 'number' ? `${Number(r.distance_km).toFixed(1)} km` : '',
-      image:
-  r.name === 'OrderEasy Restaurant'
-    ? OrderEasyImg
-    : r.name === 'Sakura Sushi Bar'
-    ? SakuraImg
-    : r.name === 'Bella Italia'
-    ? BellaItaliaImg
-    : r.name === 'McFood'
-    ? McFoodImg
-    : '',
-
-imagePosition:
-  r.name === 'OrderEasy Restaurant'
-    ? 'bottom'
-    : r.name === 'Sakura Sushi Bar'
-    ? 'bottom'
-    : r.name === 'Bella Italia'
-    ? 'bottom'
-    : r.name === 'McFood'
-    ? 'center' 
-    : 'center',
-
-
-
+      image: r.cover_image_url
+        ? (r.cover_image_url.startsWith('http') ? r.cover_image_url : `${API_URL}${r.cover_image_url}`)
+        : '',
       source: 'api',
       priceRange: '$$'
     }));
@@ -168,11 +145,11 @@ imagePosition:
     <div className="min-h-screen relative overflow-hidden bg-[#000000] pt-24 pb-28">
       {/* BACKGROUND GRADIENT */}
       <div
-  className="absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-60"
-  style={{
-    backgroundImage: `url(${backgroundImg})`,
-  }}
-></div>
+        className="absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-60"
+        style={{
+          backgroundImage: `url(${backgroundImg})`,
+        }}
+      ></div>
 
       {/* Header integrated into page flow */}
       <div className="container mx-auto px-4 mb-8 relative z-10">
@@ -354,58 +331,66 @@ imagePosition:
               >
                 {/* Image Section */}
                 <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
-                  <img
-                src={restaurant.image}
-                alt={restaurant.name}
-                className={`w-full h-full object-cover object-${restaurant.imagePosition} transform group-hover:scale-110 transition-transform duration-300`}
-              />
-
-<div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
-
-
-
-                  {/* Distance badge (when Near Me filter used) */}
-                  {restaurant.distance && (
-                    <div className="absolute top-3 left-3 bg-dark-card/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-text-primary">
-                      {restaurant.distance}
+                  {restaurant.image ? (
+                    <img
+                      src={restaurant.image}
+                      alt={restaurant.name}
+                      className="w-full h-full object-cover object-top transform group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                      <span className="text-4xl">🍽️</span>
                     </div>
                   )}
 
-                  {/* Rating badge */}
-                  <div className="absolute top-3 right-3 bg-dark-card/90 backdrop-blur-sm px-3 py-2 rounded-full flex items-center gap-1">
-                    <StarIconSolid className="w-4 h-4 text-brand-lime" />
-                    <span className="text-text-primary font-semibold text-sm">
-                      {restaurant.rating}
-                    </span>
-                  </div>
-                </div>
+                  <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
 
-                {/* Content Section */}
-                <div className="p-6">
-                  {/* Name & Price Range */}
-                  <div className="flex items-start justify-between mb-2">
+
+
+  {/* Distance badge (when Near Me filter used) */ }
+  {
+    restaurant.distance && (
+      <div className="absolute top-3 left-3 bg-dark-card/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-text-primary">
+        {restaurant.distance}
+      </div>
+    )
+  }
+
+  {/* Rating badge */ }
+  <div className="absolute top-3 right-3 bg-dark-card/90 backdrop-blur-sm px-3 py-2 rounded-full flex items-center gap-1">
+    <StarIconSolid className="w-4 h-4 text-brand-lime" />
+    <span className="text-text-primary font-semibold text-sm">
+      {restaurant.rating}
+    </span>
+  </div>
+                </div >
+
+  {/* Content Section */ }
+  < div className = "p-6" >
+    {/* Name & Price Range */ }
+    < div className = "flex items-start justify-between mb-2" >
                     <h3 className="text-xl font-bold text-text-primary group-hover:text-brand-lime transition-colors">
                       {restaurant.name}
                     </h3>
                     <span className="text-text-secondary font-semibold text-sm">
                       {restaurant.priceRange}
                     </span>
-                  </div>
+                  </div >
 
-                  {/* Description */}
-                  <p className="text-text-secondary text-sm mb-3 line-clamp-2">
-                    {restaurant.description}
-                  </p>
+  {/* Description */ }
+  < p className = "text-text-secondary text-sm mb-3 line-clamp-2" >
+    { restaurant.description }
+                  </p >
 
-                  {/* Cuisine Badge */}
-                  <div className="mb-4">
-                    <span className="inline-block bg-brand-orange/10 text-brand-orange px-3 py-1 rounded-full text-xs font-semibold">
-                      {restaurant.cuisine}
-                    </span>
-                  </div>
+  {/* Cuisine Badge */ }
+  < div className = "mb-4" >
+    <span className="inline-block bg-brand-orange/10 text-brand-orange px-3 py-1 rounded-full text-xs font-semibold">
+      {restaurant.cuisine}
+    </span>
+                  </div >
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 text-sm text-text-secondary mb-4">
+  {/* Stats */ }
+  < div className = "flex items-center gap-4 text-sm text-text-secondary mb-4" >
                     <div className="flex items-center gap-1">
                       <ClockIcon className="w-4 h-4" />
                       <span>{restaurant.deliveryTime}</span>
@@ -413,34 +398,34 @@ imagePosition:
                     <div className="flex items-center gap-1">
                       <MapPinIcon className="w-4 h-4" />
                     </div>
-                  </div>
+                  </div >
 
-                  {/* View Details Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/restaurant/${restaurant.id}`);
-                    }}
-                    className="
-                      w-full
-                      bg-brand-lime text-dark-bg
-                      px-6 py-3 rounded-full
-                      font-bold
-                      hover:bg-brand-lime/90
-                      transform group-hover:scale-105
-                      transition-all duration-200
-                      shadow-lg shadow-brand-lime/20
-                    "
-                  >
-                    View Details
-                  </button>
-                </div>
-              </div>
+  {/* View Details Button */ }
+  < button
+onClick = {(e) => {
+  e.stopPropagation();
+  navigate(`/restaurant/${restaurant.id}`);
+}}
+className = "
+w - full
+bg - brand - lime text - dark - bg
+px - 6 py - 3 rounded - full
+font - bold
+hover: bg - brand - lime / 90
+                      transform group - hover: scale - 105
+transition - all duration - 200
+shadow - lg shadow - brand - lime / 20
+"
+  >
+  View Details
+                  </button >
+                </div >
+              </div >
             ))}
-          </div>
+          </div >
         )}
 
-      </div>
+      </div >
     </div >
   );
 };

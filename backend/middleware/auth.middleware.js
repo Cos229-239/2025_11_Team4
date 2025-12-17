@@ -6,6 +6,32 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error('JWT_SECRET must be set in production');
 }
 
+async function fetchRoles(userId, legacyRole) {
+  if (!userId) return legacyRole ? [legacyRole] : [];
+  const roles = new Set();
+  if (legacyRole) roles.add(legacyRole);
+  try {
+    const result = await pool.query(`
+          SELECT r.name
+          FROM roles r
+          JOIN user_roles ur ON r.id = ur.role_id
+          WHERE ur.user_id = $1
+        `, [userId]);
+    result.rows.forEach(row => roles.add(row.name));
+  } catch (e) {
+    // Backward-compatible fallback for environments without RBAC tables.
+    console.error('RBAC role lookup failed:', e);
+  }
+  return Array.from(roles);
+}
+
+function normalizeJwtPayload(decoded) {
+  if (!decoded || typeof decoded !== 'object') return null;
+  const sub = decoded.sub ?? decoded.id ?? decoded.user_id;
+  if (!sub) return { ...decoded };
+  return { ...decoded, sub, id: sub };
+}
+
 // 1. Authenticate Token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -13,11 +39,38 @@ const authenticateToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ success: false, message: 'Invalid token.' });
-    req.user = user; // payload should contain { sub, email, role }
+    req.user = normalizeJwtPayload(decoded); // payload should contain { sub, email, role }
     next();
   });
+};
+
+// Optional authentication: attaches req.user if token is present, otherwise continues unauthenticated.
+const optionalAuthenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) return next();
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ success: false, message: 'Invalid token.' });
+    req.user = normalizeJwtPayload(decoded);
+    next();
+  });
+};
+
+// Optional role attachment: if a token is present, fetch DB roles and attach to req.userRoles.
+const optionalAttachRoles = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.sub) return next();
+    if (Array.isArray(req.userRoles) && req.userRoles.length > 0) return next();
+    req.userRoles = await fetchRoles(req.user.sub, req.user.role);
+    next();
+  } catch (error) {
+    console.error('RBAC Role Attach Error:', error);
+    next();
+  }
 };
 
 // 2. Require Role (RBAC)
@@ -27,18 +80,7 @@ const requireRole = (allowedRoles) => {
     if (!req.user || !req.user.sub) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
     try {
-      // Check roles in DB (more secure than relying solely on JWT payload which might be stale)
-      const result = await pool.query(`
-        SELECT r.name 
-        FROM roles r
-        JOIN user_roles ur ON r.id = ur.role_id
-        WHERE ur.user_id = $1
-      `, [req.user.sub]);
-
-      const userRoles = result.rows.map(row => row.name);
-
-      // Also check legacy role column for compatibility if it exists in your JWT
-      if (req.user.role) userRoles.push(req.user.role);
+      const userRoles = await fetchRoles(req.user.sub, req.user.role);
 
       const hasRole = userRoles.some(role => allowedRoles.includes(role));
 
@@ -53,6 +95,38 @@ const requireRole = (allowedRoles) => {
       console.error('RBAC Error:', error);
       res.status(500).json({ success: false, message: 'Internal server error' });
     }
+  };
+};
+
+// Require authenticated user matching :id OR an allowed role.
+// Usage: router.get('/users/:id', authenticateToken, requireSelfOrRole(['developer', 'owner', 'employee']), ...)
+const requireSelfOrRole = (allowedRoles) => {
+  return async (req, res, next) => {
+    if (!req.user || !req.user.sub) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const paramId = req.params.id;
+    if (paramId && String(req.user.sub) === String(paramId)) return next();
+
+    // If roles already attached (e.g., requireRole ran earlier), use them.
+    let userRoles = Array.isArray(req.userRoles) ? req.userRoles.slice() : [];
+
+    // Otherwise, fetch roles from DB.
+    if (userRoles.length === 0) {
+      try {
+        userRoles = await fetchRoles(req.user.sub, req.user.role);
+        req.userRoles = userRoles;
+      } catch (error) {
+        console.error('RBAC Error:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error' });
+      }
+    }
+
+    const hasRole = userRoles.some(role => allowedRoles.includes(role));
+    if (!hasRole) {
+      return res.status(403).json({ success: false, message: 'Access denied. Insufficient permissions.' });
+    }
+
+    next();
   };
 };
 
@@ -86,4 +160,4 @@ const authorizeRestaurant = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticateToken, requireRole, authorizeRestaurant };
+module.exports = { authenticateToken, optionalAuthenticateToken, optionalAttachRoles, requireRole, requireSelfOrRole, authorizeRestaurant };

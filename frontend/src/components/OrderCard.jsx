@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { timeAgo, formatTime } from '../utils/timeAgo';
 import { useConfirm } from '../hooks/useConfirm';
 import { ShoppingBagIcon, CalendarDaysIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { fetchWithAuth } from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -31,17 +32,17 @@ const STATUS_CONFIG = {
     actionColor: 'bg-brand-lime hover:bg-brand-lime/90 text-dark-bg',
     icon: '👨‍🍳',
   },
-ready: {
-  label: 'Ready',
-  bgColor: 'bg-[#B7EC2F20]',           
-  borderColor: 'border-[#B7EC2F]',    
-  textColor: 'text-[#B7EC2F]',       
-  badgeColor: 'bg-[#B7EC2F]',        
-  nextStatus: 'completed',
-  actionLabel: 'Mark Completed',
-  actionColor: 'bg-[#B7EC2F] hover:bg-[#a2d72b]', 
-  icon: '✓',
-},
+  ready: {
+    label: 'Ready',
+    bgColor: 'bg-[#B7EC2F20]',
+    borderColor: 'border-[#B7EC2F]',
+    textColor: 'text-[#B7EC2F]',
+    badgeColor: 'bg-[#B7EC2F]',
+    nextStatus: 'completed',
+    actionLabel: 'Mark Completed',
+    actionColor: 'bg-[#B7EC2F] hover:bg-[#a2d72b]',
+    icon: '✓',
+  },
 
   completed: {
     label: 'Completed',
@@ -119,13 +120,11 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     setIsUpdating(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${API_URL}/api/orders/${order.id}/status`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: config.nextStatus }),
         }
       );
@@ -156,13 +155,11 @@ const OrderCard = ({ order, onStatusUpdate }) => {
     setIsUpdating(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${API_URL}/api/orders/${order.id}/status`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
         }
       );
@@ -185,20 +182,20 @@ const OrderCard = ({ order, onStatusUpdate }) => {
 
   // Determine order type label and icon
   const getOrderTypeInfo = () => {
-  if (order.order_type === 'takeout') {
-    return { label: 'Takeout', Icon: ShoppingBagIcon, subLabel: `Order #${order.id}` };
-  } 
-  
-  if (order.order_type === 'pre-order') {
-    return { label: 'Pre-Order', Icon: CalendarDaysIcon, subLabel: `Scheduled: ${formatTime(order.scheduled_for)}` };
-  }
+    if (order.order_type === 'takeout') {
+      return { label: 'Takeout', Icon: ShoppingBagIcon, subLabel: `Order #${order.id}` };
+    }
 
-  return { 
-    label: `Table ${order.table_id || '?'}`, 
-    Icon: UsersIcon, 
-    subLabel: `Order #${order.id}` 
+    if (order.order_type === 'pre-order') {
+      return { label: 'Pre-Order', Icon: CalendarDaysIcon, subLabel: `Scheduled: ${formatTime(order.scheduled_for)}` };
+    }
+
+    return {
+      label: `Table ${order.table_id || '?'}`,
+      Icon: UsersIcon,
+      subLabel: `Order #${order.id}`
+    };
   };
-};
 
 
   const typeInfo = getOrderTypeInfo();
@@ -222,8 +219,8 @@ const OrderCard = ({ order, onStatusUpdate }) => {
           {/* Order Type & ID */}
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-  <typeInfo.Icon className="w-8 h-8 text-white/90" />
-</div>
+              <typeInfo.Icon className="w-8 h-8 text-white/90" />
+            </div>
 
             <div>
               <h2 className="text-2xl font-bold text-white leading-tight tracking-tight">
