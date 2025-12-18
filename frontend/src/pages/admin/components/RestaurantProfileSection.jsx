@@ -176,69 +176,71 @@ const DeveloperRestaurantManager = ({ token, selectedRestaurantId }) => {
 
 
 
-            <div className="glass-panel border border-white/10 rounded-2xl overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-white/5 text-zinc-400">
-                        <tr>
-                            <th className="p-4">Name</th>
-                            <th className="p-4">Cuisine</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Address</th>
-                            <th className="p-4 text-right">Edit</th>
-                            <th className="p-4 text-right">Delete</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {displayedRestaurants.map(r => (
-                            <tr key={r.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <RestaurantLogo url={r.logo_url} name={r.name} />
-                                        <span className="font-medium text-white">{r.name}</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-zinc-400">{r.cuisine_type || '-'}</td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                                        r.status === 'inactive' ? 'bg-yellow-500/20 text-yellow-400' :
-                                            'bg-red-500/20 text-red-400'}`}>
-                                        {r.status || 'active'}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-zinc-400 max-w-xs truncate">{r.address || '-'}</td>
-                                <td className="p-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <button
-                                            onClick={() => setEditingId(r.id)}
-                                            className="p-2 text-brand-lime hover:bg-brand-lime/10 rounded-lg transition-colors"
-                                            title="Edit Restaurant"
-                                        >
-                                            <Edit2 size={18} />
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-right">
-                                    <button
-                                        onClick={() => handleDeleteRestaurant(r.id)}
-                                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors inline-flex"
-                                        title="Delete Restaurant"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {displayedRestaurants.length === 0 && (
+            <div className="glass-panel overflow-hidden rounded-2xl border border-brand-orange/50">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-white/5 text-zinc-400">
                             <tr>
-                                <td colSpan="5" className="p-8 text-center text-zinc-500">
-                                    {restaurants.length > 0 && selectedRestaurantId
-                                        ? 'Restaurant filters active. Switch to "All" to see others.'
-                                        : 'No restaurants found.'}
-                                </td>
+                                <th className="p-4">Name</th>
+                                <th className="p-4">Cuisine</th>
+                                <th className="p-4">Status</th>
+                                <th className="p-4">Address</th>
+                                <th className="p-4 text-right">Edit</th>
+                                <th className="p-4 text-right">Delete</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {displayedRestaurants.map(r => (
+                                <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-3">
+                                            <RestaurantLogo url={r.logo_url} name={r.name} />
+                                            <span className="font-medium text-white">{r.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-zinc-400">{r.cuisine_type || '-'}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                                            r.status === 'inactive' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                'bg-red-500/20 text-red-400'}`}>
+                                            {r.status || 'active'}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-zinc-400 max-w-xs truncate">{r.address || '-'}</td>
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => setEditingId(r.id)}
+                                                className="p-2 text-brand-lime hover:bg-brand-lime/10 rounded-lg transition-colors"
+                                                title="Edit Restaurant"
+                                            >
+                                                <Edit2 size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <button
+                                            onClick={() => handleDeleteRestaurant(r.id)}
+                                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors inline-flex"
+                                            title="Delete Restaurant"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {displayedRestaurants.length === 0 && (
+                                <tr>
+                                    <td colSpan="5" className="p-8 text-center text-zinc-500">
+                                        {restaurants.length > 0 && selectedRestaurantId
+                                            ? 'Restaurant filters active. Switch to "All" to see others.'
+                                            : 'No restaurants found.'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Add Modal */}

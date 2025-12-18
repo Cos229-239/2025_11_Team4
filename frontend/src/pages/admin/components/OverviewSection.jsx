@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUserAuth } from '../../../hooks/useUserAuth';
 import { DollarSign, Utensils, Calendar, Users, TrendingUp } from 'lucide-react';
-// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const OverviewSection = ({ restaurantId }) => {
     const { token } = useUserAuth();
@@ -76,7 +76,7 @@ const OverviewSection = ({ restaurantId }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Chart Area */}
-                <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 h-[450px] flex flex-col group hover:border-brand-orange transition-all duration-300">
+                <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-brand-orange/50 h-[450px] flex flex-col group transition-all duration-300">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
                             <TrendingUp size={20} className="text-brand-lime" />
