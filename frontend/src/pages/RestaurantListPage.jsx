@@ -3,18 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
-  StarIcon,
   ClockIcon,
   MapPinIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
-import Logo from '../components/Logo';
-
-import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
-import SakuraImg from '../assets/sakurarestaurant.jpeg';
-import BellaItaliaImg from '../assets/bellaitaliarestaurant.jpeg';
-import McFoodImg from '../assets/mcfood.jpeg';
-
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid'
 import backgroundImg from '../assets/background.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -347,50 +339,50 @@ const RestaurantListPage = () => {
 
 
 
-  {/* Distance badge (when Near Me filter used) */ }
-  {
-    restaurant.distance && (
-      <div className="absolute top-3 left-3 bg-dark-card/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-text-primary">
-        {restaurant.distance}
-      </div>
-    )
-  }
+                  {/* Distance badge (when Near Me filter used) */}
+                  {
+                    restaurant.distance && (
+                      <div className="absolute top-3 left-3 bg-dark-card/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-text-primary">
+                        {restaurant.distance}
+                      </div>
+                    )
+                  }
 
-  {/* Rating badge */ }
-  <div className="absolute top-3 right-3 bg-dark-card/90 backdrop-blur-sm px-3 py-2 rounded-full flex items-center gap-1">
-    <StarIconSolid className="w-4 h-4 text-brand-lime" />
-    <span className="text-text-primary font-semibold text-sm">
-      {restaurant.rating}
-    </span>
-  </div>
+                  {/* Rating badge */}
+                  <div className="absolute top-3 right-3 bg-dark-card/90 backdrop-blur-sm px-3 py-2 rounded-full flex items-center gap-1">
+                    <StarIconSolid className="w-4 h-4 text-brand-lime" />
+                    <span className="text-text-primary font-semibold text-sm">
+                      {restaurant.rating}
+                    </span>
+                  </div>
                 </div >
 
-  {/* Content Section */ }
-  < div className = "p-6" >
-    {/* Name & Price Range */ }
-    < div className = "flex items-start justify-between mb-2" >
+                {/* Content Section */}
+                <div className="p-6">
+                  {/* Name & Price Range */}
+                  <div className="flex items-start justify-between mb-2">
                     <h3 className="text-xl font-bold text-text-primary group-hover:text-brand-lime transition-colors">
                       {restaurant.name}
                     </h3>
                     <span className="text-text-secondary font-semibold text-sm">
                       {restaurant.priceRange}
                     </span>
-                  </div >
+                  </div>
 
-  {/* Description */ }
-  < p className = "text-text-secondary text-sm mb-3 line-clamp-2" >
-    { restaurant.description }
-                  </p >
+                  {/* Description */}
+                  <p className="text-text-secondary text-sm mb-3 line-clamp-2">
+                    {restaurant.description}
+                  </p>
 
-  {/* Cuisine Badge */ }
-  < div className = "mb-4" >
-    <span className="inline-block bg-brand-orange/10 text-brand-orange px-3 py-1 rounded-full text-xs font-semibold">
-      {restaurant.cuisine}
-    </span>
-                  </div >
+                  {/* Cuisine Badge */}
+                  <div className="mb-4">
+                    <span className="inline-block bg-brand-orange/10 text-brand-orange px-3 py-1 rounded-full text-xs font-semibold">
+                      {restaurant.cuisine}
+                    </span>
+                  </div>
 
-  {/* Stats */ }
-  < div className = "flex items-center gap-4 text-sm text-text-secondary mb-4" >
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 text-sm text-text-secondary mb-4">
                     <div className="flex items-center gap-1">
                       <ClockIcon className="w-4 h-4" />
                       <span>{restaurant.deliveryTime}</span>
@@ -398,27 +390,27 @@ const RestaurantListPage = () => {
                     <div className="flex items-center gap-1">
                       <MapPinIcon className="w-4 h-4" />
                     </div>
-                  </div >
+                  </div>
 
-  {/* View Details Button */ }
-  < button
-onClick = {(e) => {
-  e.stopPropagation();
-  navigate(`/restaurant/${restaurant.id}`);
-}}
-className = "
-w - full
-bg - brand - lime text - dark - bg
-px - 6 py - 3 rounded - full
-font - bold
-hover: bg - brand - lime / 90
-                      transform group - hover: scale - 105
-transition - all duration - 200
-shadow - lg shadow - brand - lime / 20
-"
-  >
-  View Details
-                  </button >
+                  {/* View Details Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/restaurant/${restaurant.id}`);
+                    }}
+                    className="
+                        w-full
+                        bg-brand-lime text-dark-bg
+                        px-6 py-3 rounded-full
+                        font-bold
+                        hover:bg-brand-lime/90
+                        transform group-hover:scale-105
+                        transition-all duration-200
+                        shadow-lg shadow-brand-lime/20
+                      "
+                  >
+                    View Details
+                  </button>
                 </div >
               </div >
             ))}
