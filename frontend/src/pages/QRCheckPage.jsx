@@ -109,16 +109,18 @@ const QRCheckPage = () => {
       <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between mb-8">
-        <button
-          onClick={() => navigate('/')}
-          className="text-text-secondary hover:text-brand-lime transition-colors flex items-center gap-2"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span>Back to Home</span>
-        </button>
-        <div className="w-20"></div> {/* Spacer */}
-      </div>
+      <div className="relative z-10 flex items-center gap-2 mt-20 mb-6">
+  <button
+    onClick={() => navigate('/')}
+    className="text-text-secondary hover:text-brand-lime transition-colors flex items-center gap-2 text-sm"
+  >
+    <ArrowLeftIcon className="w-5 h-5" />
+    <span>Back to Home</span>
+  </button>
+</div>
+
+
+
 
       {/* Main Content */}
       <div className="relative z-10 max-w-2xl w-full mx-auto flex-grow flex flex-col justify-center">

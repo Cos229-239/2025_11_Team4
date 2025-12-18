@@ -190,13 +190,14 @@ const QRScannerPage = () => {
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between mb-8">
-        <button
-          onClick={() => navigate('/')}
-          className="text-text-secondary hover:text-brand-lime transition-colors flex items-center gap-2"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span>Back</span>
-        </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="text-text-secondary hover:text-brand-lime transition-colors flex items-center gap-2"
+            >
+              <ArrowLeftIcon className="w-5 h-5" />
+              <span>Back</span>
+            </button>
+
         <Logo size="sm" />
         <div className="w-16"></div> {/* Spacer for centering */}
       </div>
