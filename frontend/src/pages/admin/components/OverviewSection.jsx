@@ -13,6 +13,7 @@ const OverviewSection = ({ restaurantId }) => {
         activeTables: 0
     });
     const [chartData, setChartData] = useState([]);
+    const [recentActivity, setRecentActivity] = useState([]);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -37,6 +38,7 @@ const OverviewSection = ({ restaurantId }) => {
                         reservations: data.summary?.reservationsToday || 0,
                         activeTables: data.summary?.activeTables || 0
                     });
+                    setRecentActivity(data.recentOrders || []);
                 }
             } catch (err) {
                 console.error("Failed to load stats", err);
@@ -69,7 +71,7 @@ const OverviewSection = ({ restaurantId }) => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Today's Revenue" value={stats.revenue} prefix="$" icon={DollarSign} color="text-brand-lime" />
-                <StatCard title="Total Orders" value={stats.orders} icon={Utensils} color="text-brand-orange" />
+                <StatCard title="Today's Orders" value={stats.orders} icon={Utensils} color="text-brand-orange" />
                 <StatCard title="Reservations" value={stats.reservations} icon={Calendar} color="text-blue-400" />
                 <StatCard title="Active Tables" value={stats.activeTables} icon={Users} color="text-purple-400" />
             </div>
@@ -144,15 +146,21 @@ const OverviewSection = ({ restaurantId }) => {
                 <div className="glass-panel p-6 rounded-2xl border border-white/5 h-[400px] flex flex-col group hover:bg-zinc-800 hover:border-brand-orange transition-all duration-300">
                     <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
                     <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                                <div>
-                                    <p className="text-sm font-medium text-white">Order #{1000 + i}</p>
-                                    <p className="text-xs text-zinc-400">Table {i} • 2 mins ago</p>
+                        {recentActivity.length > 0 ? (
+                            recentActivity.map((order) => (
+                                <div key={order.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                                    <div>
+                                        <p className="text-sm font-medium text-white">Order #{order.id}</p>
+                                        <p className="text-xs text-zinc-400">
+                                            {order.table_number ? `Table ${order.table_number}` : 'Takeout'} • {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                    <span className="text-brand-lime text-sm font-bold">${parseFloat(order.total_amount).toFixed(2)}</span>
                                 </div>
-                                <span className="text-brand-lime text-sm font-bold">$45.00</span>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <div className="text-center text-zinc-500 py-4">No recent activity</div>
+                        )}
                     </div>
                 </div>
             </div>

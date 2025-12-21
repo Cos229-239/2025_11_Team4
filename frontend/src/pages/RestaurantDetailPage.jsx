@@ -141,46 +141,66 @@ const RestaurantDetailPage = () => {
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               {/* Left Column: Description & Actions */}
-              <div className="lg:col-span-2 space-y-6">
-                {restaurant.description && (
-                  <p className="text-text-primary/90 text-lg leading-relaxed">
-                    {restaurant.description}
-                  </p>
-                )}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="text-center max-w-2xl mx-auto space-y-6">
+                  {restaurant.description && (
+                    <p className="text-text-primary/90 text-lg leading-relaxed">
+                      {restaurant.description}
+                    </p>
+                  )}
 
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() =>
-                      navigate(`/restaurant/${id}/menu`, {
-                        state: {
-                          orderType: 'browse',
-                          restaurantId: id
-                        }
-                      })
-                    }
-                    className="bg-brand-lime text-dark-bg px-6 py-3 rounded-full font-bold hover:bg-brand-lime/90 shadow-lg"
-                  >
-                    View Menu
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/restaurant/${id}/menu`, {
-                        state: {
-                          orderType: 'takeout',
-                          restaurantId: id
-                        }
-                      })
-                    }
-                    className="bg-dark-surface text-text-primary px-6 py-3 rounded-full font-bold border border-dark-surface hover:border-brand-lime/70"
-                  >
-                    Order Takeout
-                  </button>
-                  <button
-                    onClick={() => navigate(`/restaurant/${id}/reserve`)}
-                    className="bg-brand-orange text-white px-6 py-3 rounded-full font-bold hover:bg-brand-orange/90 shadow-lg"
-                  >
-                    Reserve a Table
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button
+                      onClick={() =>
+                        navigate(`/restaurant/${id}/menu`, {
+                          state: {
+                            orderType: 'browse',
+                            restaurantId: id
+                          }
+                        })
+                      }
+                      className="bg-brand-lime text-dark-bg px-8 py-3 rounded-full font-bold hover:bg-brand-lime/90 shadow-lg transition-transform hover:scale-105"
+                    >
+                      View Menu
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/restaurant/${id}/menu`, {
+                          state: {
+                            orderType: 'takeout',
+                            restaurantId: id
+                          }
+                        })
+                      }
+                      className="bg-dark-surface text-text-primary px-8 py-3 rounded-full font-bold border border-dark-surface hover:border-brand-lime/70 transition-transform hover:scale-105"
+                    >
+                      Order Takeout
+                    </button>
+                    <button
+                      onClick={() => navigate(`/restaurant/${id}/reserve`)}
+                      className="bg-brand-orange text-white px-8 py-3 rounded-full font-bold hover:bg-brand-orange/90 shadow-lg transition-transform hover:scale-105"
+                    >
+                      Reserve a Table
+                    </button>
+                  </div>
+                </div>
+
+                {/* Map Section */}
+                <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative group">
+                  <div className="absolute inset-0 bg-dark-bg/50 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity z-10">
+                    <span className="text-white/50 font-medium flex items-center gap-2">
+                      Interact with Map
+                    </span>
+                  </div>
+                  <iframe
+                    title="Restaurant Location"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) contrast(85%)' }}
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(restaurant.address || 'Restaurant')}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    allowFullScreen
+                  />
                 </div>
               </div>
 
@@ -214,18 +234,44 @@ const RestaurantDetailPage = () => {
                   </div>
                   <div className="space-y-1 text-sm text-text-secondary">
                     {restaurant.opening_hours ? (
-                      // Handle both object (Days) and simple text formats if needed. 
-                      // Assuming standard JSON object { "Monday": "10:00-22:00", ... }
-                      typeof restaurant.opening_hours === 'object' ? (
-                        Object.entries(restaurant.opening_hours).map(([day, hours]) => (
-                          <div key={day} className="flex justify-between">
-                            <span className="capitalize">{day}</span>
-                            <span className="text-white/90">{hours}</span>
+                      (() => {
+                        const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+                        let hoursEntries = [];
+                        if (typeof restaurant.opening_hours === 'object') {
+                          hoursEntries = Object.entries(restaurant.opening_hours).sort(
+                            ([a], [b]) => daysOrder.indexOf(a) - daysOrder.indexOf(b)
+                          );
+                        } else {
+                          // Fallback for simple string
+                          return <span>{String(restaurant.opening_hours)}</span>;
+                        }
+
+                        return (
+                          <div className="grid gap-1.5 mt-2">
+                            {hoursEntries.map(([day, hours]) => {
+                              const isToday = day === today;
+                              return (
+                                <div
+                                  key={day}
+                                  className={`flex justify-between items-center text-sm p-2 rounded-lg transition-colors ${isToday ? 'bg-brand-lime/10 border border-brand-lime/20' : 'hover:bg-white/5'
+                                    }`}
+                                >
+                                  <span className={`capitalize font-medium ${isToday ? 'text-brand-lime' : 'text-text-secondary'}`}>
+                                    {day} {isToday && <span className="text-xs ml-1 opacity-70">(Today)</span>}
+                                  </span>
+                                  <span className={`font-medium ${isToday ? 'text-white' : 'text-white/80'}`}>
+                                    {typeof hours === 'object' && hours !== null
+                                      ? `${hours.open} - ${hours.close}`
+                                      : hours}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
-                        ))
-                      ) : (
-                        <span>{String(restaurant.opening_hours)}</span>
-                      )
+                        );
+                      })()
                     ) : (
                       <span className="italic opacity-60">Hours not available</span>
                     )}

@@ -290,7 +290,8 @@ class AdminService {
         `;
 
         // 2. Guests (Reservations)
-        const guestsQuery = `
+        // We also want to include "Walk-in" guests (orders without reservations), assuming 1 guest per order
+        const reservationsQuery = `
             SELECT
                 DATE_TRUNC($2, reservation_start) as date,
                 SUM(party_size) as guests
@@ -302,9 +303,23 @@ class AdminService {
             ORDER BY date
         `;
 
-        const [revRes, guestRes] = await Promise.all([
+        const walkinsQuery = `
+            SELECT
+                DATE_TRUNC($2, created_at) as date,
+                COUNT(*) as guests
+            FROM orders
+            WHERE restaurant_id = $1
+              AND reservation_id IS NULL
+              AND status != 'cancelled'
+              AND created_at > NOW() - $3::INTERVAL
+            GROUP BY date
+            ORDER BY date
+        `;
+
+        const [revRes, resRes, walkinRes] = await Promise.all([
             pool.query(revenueQuery, [restaurantId, dateTrunc, interval]),
-            pool.query(guestsQuery, [restaurantId, dateTrunc, interval])
+            pool.query(reservationsQuery, [restaurantId, dateTrunc, interval]),
+            pool.query(walkinsQuery, [restaurantId, dateTrunc, interval])
         ]);
 
         // Merge Data
@@ -317,10 +332,18 @@ class AdminService {
             mergedData[key].order_count = parseInt(r.order_count);
         });
 
-        guestRes.rows.forEach(r => {
+        // Add Reservation Guests
+        resRes.rows.forEach(r => {
             const key = new Date(r.date).toISOString();
-            if (!mergedData[key]) mergedData[key] = { date: key, revenue: 0, guests: 0 };
-            mergedData[key].guests = parseInt(r.guests);
+            if (!mergedData[key]) mergedData[key] = { date: key, revenue: 0, guests: 0, order_count: 0 };
+            mergedData[key].guests += parseInt(r.guests);
+        });
+
+        // Add Walk-in Guests (1 per order)
+        walkinRes.rows.forEach(r => {
+            const key = new Date(r.date).toISOString();
+            if (!mergedData[key]) mergedData[key] = { date: key, revenue: 0, guests: 0, order_count: 0 };
+            mergedData[key].guests += parseInt(r.guests);
         });
 
         const chartData = Object.values(mergedData).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -338,11 +361,21 @@ class AdminService {
             GROUP BY mi.id, mi.name ORDER BY quantity_sold DESC LIMIT 5
         `, [restaurantId]);
 
+        const recentOrdersRes = await pool.query(`
+            SELECT o.id, o.table_id, o.total_amount, o.created_at, o.status, t.table_number
+            FROM orders o
+            LEFT JOIN tables t ON o.table_id = t.id
+            WHERE o.restaurant_id = $1
+            ORDER BY o.created_at DESC
+            LIMIT 10
+        `, [restaurantId]);
+
 
 
         return {
             chartData,
             topItems: topItemsRes.rows,
+            recentOrders: recentOrdersRes.rows,
             summary: {
                 reservationsToday: parseInt(resCountRes.rows[0].count),
                 activeTables: parseInt(activeTablesRes.rows[0].count)

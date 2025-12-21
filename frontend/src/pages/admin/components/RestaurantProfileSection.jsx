@@ -375,7 +375,7 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
             console.log(`Compressed ${type}: ${compressedFile.size / 1024}KB`);
 
             const formData = new FormData();
-            formData.append('image', compressedFile);
+            formData.append('image', compressedFile, 'upload.webp');
 
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
                 method: 'POST',
@@ -509,7 +509,10 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
                                                 type="file"
                                                 accept="image/*"
                                                 className="hidden"
-                                                onChange={(e) => handleImageUpload(e, 'logo')}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file, 'logo');
+                                                }}
                                             />
                                         </label>
                                     </div>
@@ -536,7 +539,10 @@ const OwnerProfileEditor = ({ restaurantId, token }) => {
                                                 type="file"
                                                 accept="image/*"
                                                 className="hidden"
-                                                onChange={(e) => handleImageUpload(e, 'cover')}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(e.target.files[0], 'cover');
+                                                }}
                                             />
                                         </label>
                                     </div>
