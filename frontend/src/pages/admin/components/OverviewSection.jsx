@@ -53,7 +53,7 @@ const OverviewSection = ({ restaurantId }) => {
         const Icon = icon;
         return (
             <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:bg-zinc-800 hover:border-brand-orange transition-all duration-300 cursor-pointer">
-                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+                <div className={`absolute top-0 right-0 p-4 opacity-100 group-hover:opacity-20 transition-opacity ${color}`}>
                     <Icon size={64} />
                 </div>
                 <div>
