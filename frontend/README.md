@@ -363,6 +363,12 @@ Top navigation bar with:
 - **Near Me:** Geolocation-based filtering (requires browser permission)
 - **Sorting:** By rating, name, or cuisine
 
+### Restaurant Details
+- **Info:** Operating hours, contact details, and location
+- **Rating:** Visual star rating badge
+- **Actions:** Quick access to Menu, Takeout, and Reservation
+- **Preview:** Popular items highlight
+
 ### Reservation Flow
 1. Select date, time, and party size
 2. View available tables

@@ -6,6 +6,7 @@ OrderEasy is a modern, full-stack web application for restaurant discovery, tabl
 
 ### Customer Experience
 - **Restaurant Discovery** - Browse restaurants with search, cuisine filters, and location-based "Near Me" functionality
+- **Detailed Restaurant Info** - View menus, operating hours, contact details, and ratings
 - **Table Reservations** - Complete reservation flow with date/time selection, party size, and availability checking
 - **QR Code Ordering** - Scan table QR codes to instantly access restaurant menus
 - **Dine-In Ordering** - Add items to cart, select tables, and place orders
