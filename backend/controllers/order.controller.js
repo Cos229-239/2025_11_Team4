@@ -162,12 +162,16 @@ class OrderController {
       const { id } = req.params;
       const { status } = req.body;
 
-      const updatedOrder = await orderService.updateOrderStatus(id, status);
+      const result = await orderService.updateOrderStatus(id, status);
+      const updatedOrder = result.order || result; // support old/new return shapes
+      const changed = result.changed === true;
       const dto = new OrderDTO(updatedOrder);
 
-      // Socket Events
+      logger.info('Order status update', { orderId: id, targetStatus: status, changed: changed });
+
+      // Socket Events only if actual change happened
       const io = req.app.get('io');
-      if (io) {
+      if (io && changed) {
         io.to(`table-${updatedOrder.table_id}`).emit('order-updated', dto);
         io.to('kitchen').emit('order-updated', dto);
         io.to('admin').emit('order-updated', dto);
@@ -180,7 +184,7 @@ class OrderController {
         io.to(`table-${updatedOrder.table_id}`).emit('order-status-update', statusPayload);
       }
 
-      res.json({ success: true, data: dto, message: 'Order status updated successfully' });
+      res.json({ success: true, data: dto, changed, message: changed ? 'Order status updated successfully' : 'No change (status already set)' });
 
     } catch (error) {
       logger.error('Error updating order status', error);

@@ -191,21 +191,26 @@ class OrderService {
     }
 
     async updateOrderStatus(id, status) {
-        // Validate transition
+        // Validate and perform transition; return { order, changed }
         const currentOrder = await this.getOrderById(id);
         if (!currentOrder) throw new Error('Order not found');
 
-        const allowed = STATUS_TRANSITIONS[currentOrder.status];
-        if (!allowed || !allowed.includes(status)) {
-            // Allow admin overrides? For now stick to strict machine state
-            throw new Error(`Cannot transition from '${currentOrder.status}' to '${status}'. Allowed: ${allowed?.join(', ')}`);
+        // Idempotent: if status is already the target, return no-op
+        if (String(currentOrder.status) === String(status)) {
+            return { order: currentOrder, changed: false };
+        }
+
+        const allowed = STATUS_TRANSITIONS[currentOrder.status] || [];
+        if (!allowed.includes(status)) {
+            throw new Error(`Cannot transition from '${currentOrder.status}' to '${status}'. Allowed: ${allowed.join(', ')}`);
         }
 
         const result = await pool.query(
             'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
             [status, id]
         );
-        return this._attachItems(result.rows[0]);
+        const attached = await this._attachItems(result.rows[0]);
+        return { order: attached, changed: true };
     }
 
     // ==============================================================================

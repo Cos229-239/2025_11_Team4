@@ -8,3 +8,20 @@ export async function fetchActiveOrders() {
     }
     return response.json();
 }
+
+export async function updateOrderStatus(id, status) {
+    const response = await fetch(`${API_URL}/orders/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to update order status: ${text}`);
+    }
+
+    return response.json();
+}

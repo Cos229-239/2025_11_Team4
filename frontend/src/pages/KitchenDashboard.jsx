@@ -126,29 +126,25 @@ const KitchenDashboard = () => {
   const handleOrderUpdated = useCallback((updatedOrder) => {
     console.log('🔄 Order updated:', updatedOrder);
 
+    const uid = String(updatedOrder.id);
 
     setOrders((prevOrders) => {
       // If order is completed or cancelled, remove it from active orders
       if (updatedOrder.status === 'completed' || updatedOrder.status === 'cancelled') {
-        return prevOrders.filter((order) => order.id !== updatedOrder.id);
+        return prevOrders.filter((order) => String(order.id) !== uid);
       }
 
-
       // Otherwise, update the order in the list
-      const orderIndex = prevOrders.findIndex(
-        (order) => order.id === updatedOrder.id
-      );
-
+      const orderIndex = prevOrders.findIndex((order) => String(order.id) === uid);
 
       if (orderIndex !== -1) {
         const newOrders = [...prevOrders];
-        newOrders[orderIndex] = updatedOrder;
+        newOrders[orderIndex] = { ...newOrders[orderIndex], ...updatedOrder };
         return newOrders;
       }
 
-
       // If order doesn't exist but is active, add it
-      return [updatedOrder, ...prevOrders];
+      return [{ ...updatedOrder, id: isNaN(Number(updatedOrder.id)) ? updatedOrder.id : Number(updatedOrder.id) }, ...prevOrders];
     });
   }, []);
 
@@ -159,19 +155,34 @@ const KitchenDashboard = () => {
 
 
   // Handle status update from OrderCard (optimistic update)
+  // Returns true if we modified local state, false otherwise
   const handleStatusUpdate = (updatedOrder) => {
+    let modified = false;
+    const uid = String(updatedOrder.id);
+
     setOrders((prevOrders) => {
       // If order is completed or cancelled, remove it
       if (updatedOrder.status === 'completed' || updatedOrder.status === 'cancelled') {
-        return prevOrders.filter((order) => order.id !== updatedOrder.id);
+        const filtered = prevOrders.filter((order) => String(order.id) !== uid);
+        modified = filtered.length !== prevOrders.length;
+        return filtered;
       }
 
+      // Update the order if present
+      const foundIndex = prevOrders.findIndex((order) => String(order.id) === uid);
+      if (foundIndex !== -1) {
+        modified = true;
+        const newOrders = [...prevOrders];
+        newOrders[foundIndex] = { ...newOrders[foundIndex], ...updatedOrder };
+        return newOrders;
+      }
 
-      // Update the order
-      return prevOrders.map((order) =>
-        order.id === updatedOrder.id ? updatedOrder : order
-      );
+      // If not found, prepend it (active order)
+      modified = true;
+      return [{ ...updatedOrder, id: isNaN(Number(updatedOrder.id)) ? updatedOrder.id : Number(updatedOrder.id) }, ...prevOrders];
     });
+
+    return modified;
   };
 
 
@@ -575,6 +586,7 @@ const KitchenDashboard = () => {
 
       {/* == END SIDEBAR == */}
 
+      {/* Inventory logging handler passed to Yukon for text-based commands */}
       <YukonAssistant
         contextData={{
           orders: orders,
@@ -586,6 +598,27 @@ const KitchenDashboard = () => {
             preparing: orderCounts.preparing,
             ready: orderCounts.ready,
             occupancy: totalOccupancy
+          }
+        }}
+        onInventoryLog={(itemName, qty) => {
+          // Try to find an existing item (case-insensitive match)
+          setInventory((prev) => {
+            const idx = prev.findIndex(i => i.item.toLowerCase() === itemName.toLowerCase());
+            if (idx !== -1) {
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], quantity: Number(updated[idx].quantity || 0) + Number(qty) };
+              return updated;
+            }
+            // Add new item if not found
+            return [{ category: 'Misc', item: itemName, unit: 'units', quantity: Number(qty) }, ...prev];
+          });
+        }}
+        onOrderUpdated={(updatedOrder) => {
+          // Reuse existing handler to update order state (handles removal on completion/cancel)
+          const applied = handleStatusUpdate(updatedOrder);
+          // If local state wasn't changed (odd case), refetch to ensure UI sync
+          if (!applied) {
+            fetchActiveOrdersFromApi().catch(() => console.warn('Failed to refresh orders after Yukon update'));
           }
         }}
       />
