@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import yukonImage from '../assets/yukon-chef.png';
 import { PaperAirplaneIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
+import { updateOrderStatus } from '../api/orders';
 
 // Build a quick inventory summary using current quantities as a % of par
 const isInventoryQuery = (text = '') => {
@@ -327,7 +328,7 @@ const introMessage = () => ({
     text: "Hello! I'm Yukon, your kitchen command. Ask me about orders, inventory, occupancy, or staff; I can also execute tasks (start/complete/cancel orders, log/receive inventory) and push alerts on rushes, station bottlenecks, and low stock."
 });
 
-const YukonAssistant = ({ contextData = {} }) => {
+const YukonAssistant = ({ contextData = {}, onInventoryLog, onOrderUpdated }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState([introMessage()]);
@@ -335,6 +336,7 @@ const YukonAssistant = ({ contextData = {} }) => {
     const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // { type: 'order-status'|'inventory-log', payload }
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -364,6 +366,154 @@ const YukonAssistant = ({ contextData = {} }) => {
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
         setIsTyping(true);
+
+        const normalized = text.trim().toLowerCase();
+
+        // If there's a pending action, interpret simple confirmations
+        if (pendingAction) {
+            if (/^\s*(yes|yep|confirm|sure|do it|please do it|yeah)\b/.test(normalized)) {
+                // Execute the pending action
+                setIsTyping(true);
+                try {
+                    if (pendingAction.type === 'order-status') {
+                        const { id, status } = pendingAction.payload;
+
+                        // Check local context first — avoid calling backend when already at target state
+                        try {
+                            const localOrder = (contextData.orders || []).find(o => String(o.id) === String(id));
+                            if (localOrder && String(localOrder.status) === String(status)) {
+                                // Make sure parent UI is in sync
+                                if (typeof onOrderUpdated === 'function') {
+                                    try { onOrderUpdated(localOrder); } catch (e) { console.warn('onOrderUpdated failed', e); }
+                                }
+                                setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Order #${id} is already ${status}.` }]);
+                                setPendingAction(null);
+                                setIsTyping(false);
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn('Local order check failed', e);
+                        }
+
+                        // Attempt backend update
+                        try {
+                            const resp = await updateOrderStatus(id, status);
+                            console.debug('Yukon updateOrderStatus response:', resp);
+                            const changed = resp && resp.changed === true;
+                            // If parent provided an onOrderUpdated callback, call it with the updated order DTO
+                            const updatedOrder = resp && resp.data ? resp.data : resp;
+                            console.debug('Yukon updatedOrder (normalized):', updatedOrder, 'changed:', changed);
+                            if (typeof onOrderUpdated === 'function' && updatedOrder) {
+                                try {
+                                    onOrderUpdated(updatedOrder);
+                                } catch (e) {
+                                    console.warn('onOrderUpdated callback failed', e);
+                                }
+                            }
+
+                            setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: changed ? `Order #${id} marked ${status}.` : `Order #${id} is already ${status} (no change).` }]);
+                        } catch (err) {
+                            console.error('Action execution failed', err);
+
+                            // Robustly extract JSON body if present inside err.message
+                            let errText = err.message || 'unknown error';
+                            try {
+                                // Try to find a JSON object substring
+                                const jsonMatch = (err.message || '').match(/\{[\s\S]*\}/);
+                                if (jsonMatch) {
+                                    const parsed = JSON.parse(jsonMatch[0]);
+                                    errText = parsed.error || parsed.message || errText;
+                                }
+                            } catch (_) {
+                                // ignore parse errors
+                            }
+
+                            // If transition error, refresh order state from backend and sync UI
+                            if (errText && /cannot transition/i.test(errText)) {
+                                try {
+                                    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                                    const r = await fetch(`${API_URL}/api/orders/${id}`);
+                                    if (r.ok) {
+                                        const data = await r.json();
+                                        const latestOrder = data?.data || data;
+                                        if (typeof onOrderUpdated === 'function' && latestOrder) {
+                                            try { onOrderUpdated(latestOrder); } catch (e) { console.warn('onOrderUpdated failed', e); }
+                                        }
+                                        setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Failed to update order: ${errText}. Refreshed to status '${latestOrder?.status}'.` }]);
+                                    } else {
+                                        setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Failed to update order: ${errText}.` }]);
+                                    }
+                                } catch (fetchErr) {
+                                    console.error('Failed to refresh order after transition error', fetchErr);
+                                    setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Failed to execute action: ${errText}` }]);
+                                }
+                            } else {
+                                setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Failed to execute action: ${errText}` }]);
+                            }
+                        }
+                    } else if (pendingAction.type === 'inventory-log') {
+                    } else if (pendingAction.type === 'inventory-log') {
+                        const { item, qty } = pendingAction.payload;
+                        if (typeof onInventoryLog === 'function') {
+                            onInventoryLog(item, qty);
+                            setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Logged ${qty} of ${item} to inventory.` }]);
+                        } else {
+                            setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Logged ${qty} of ${item} (local session only).` }]);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Action execution failed', err);
+                    // Attempt to extract JSON body from server error message
+                    let errText = err.message || 'unknown error';
+                    try {
+                        const parsed = JSON.parse(err.message);
+                        errText = parsed.error || parsed.message || errText;
+                    } catch (_) {}
+                    setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Failed to execute action: ${errText}` }]);
+                } finally {
+                    setPendingAction(null);
+                    setIsTyping(false);
+                }
+                return;
+            }
+
+            if (/^\s*(no|cancel|abort|stop)\b/.test(normalized)) {
+                setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: 'Okay — action cancelled.' }]);
+                setPendingAction(null);
+                setIsTyping(false);
+                return;
+            }
+            // Otherwise continue to interpret as a normal message
+        }
+
+        // Parse immediate action intents (order status changes, inventory logs)
+        const orderActionMatch = text.match(/\b(?:order)\s*#?\s*(\d+)\b/i);
+        const hasOrderVerb = /\b(start|begin|prepare|mark|set|complete|finish|ready|cancel)\b/i.test(text);
+        if (orderActionMatch && hasOrderVerb) {
+            const id = Number(orderActionMatch[1]);
+            let status = null;
+            if (/cancel/i.test(text)) status = 'cancelled';
+            else if (/complete|finish/i.test(text)) status = 'completed';
+            else if (/ready/i.test(text)) status = 'ready';
+            else if (/start|begin|prepare/i.test(text)) status = 'preparing';
+
+            if (status) {
+                setPendingAction({ type: 'order-status', payload: { id, status } });
+                setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Confirm: set Order #${id} to '${status}'? Reply 'Yes' to confirm.` }]);
+                setIsTyping(false);
+                return;
+            }
+        }
+
+        const inventoryMatch = text.match(/\b(?:log|receive|add)\s+(\d+(?:\.\d+)?)\s*(?:cases|case|kg|kgs|kg\.?|kgs\.?|lbs|lb|liters|l|units)?\s*(?:of)?\s+(.+)/i);
+        if (inventoryMatch) {
+            const qty = parseFloat(inventoryMatch[1]);
+            const item = inventoryMatch[2].trim();
+            setPendingAction({ type: 'inventory-log', payload: { item, qty } });
+            setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'yukon', text: `Confirm: log ${qty} of ${item} into inventory? Reply 'Yes' to confirm.` }]);
+            setIsTyping(false);
+            return;
+        }
 
         if (options.inventoryAnalysis || options.forceInventorySummary || isInventoryQuery(userMessage.text)) {
             const analysis = buildInventoryAnalysis(contextData.inventory);
