@@ -6,8 +6,13 @@ import {
   ClockIcon,
   MapPinIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid'
+
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import Logo from '../components/Logo';
+import OrderEasyImg from '../assets/ordereasyrestaurant.jpeg';
+import McFoodImg from '../assets/mcfood.jpeg';
 import backgroundImg from '../assets/background.png';
+
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -391,26 +396,26 @@ const RestaurantListPage = () => {
                       <MapPinIcon className="w-4 h-4" />
                     </div>
                   </div>
-
-                  {/* View Details Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/restaurant/${restaurant.id}`);
-                    }}
-                    className="
+                      {/* View Details Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/restaurant/${restaurant.id}`);
+                      }}
+                      className="
                         w-full
                         bg-brand-lime text-dark-bg
                         px-6 py-3 rounded-full
                         font-bold
                         hover:bg-brand-lime/90
-                        transform group-hover:scale-105
+                        group-hover:scale-105
+                        transform
                         transition-all duration-200
                         shadow-lg shadow-brand-lime/20
                       "
-                  >
-                    View Details
-                  </button>
+                    >
+                      View Details
+                    </button>
                 </div >
               </div >
             ))}
