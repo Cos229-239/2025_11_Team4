@@ -203,14 +203,8 @@ class OrderController {
 
       // Socket Events only if actual change happened
       const io = req.app.get('io');
-<<<<<<< HEAD
-      if (io) {
-        // Customers in the table room should only receive a redacted payload
-        io.to(`table-${updatedOrder.table_id}`).emit('order-updated', publicDto);
-=======
       if (io && changed) {
         io.to(`table-${updatedOrder.table_id}`).emit('order-updated', dto);
->>>>>>> AntoynePersonal
         io.to('kitchen').emit('order-updated', dto);
         io.to('admin').emit('order-updated', dto);
 
